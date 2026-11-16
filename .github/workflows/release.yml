@@ -1,0 +1,60 @@
+name: Release APK
+
+# Builds the Android release APK and publishes it as a GitHub release.
+# Trigger: push a tag like v0.1.0, or start manually with a tag name.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release-Tag (z. B. v0.1.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Same Flutter version as .fvmrc (locally the project uses FVM).
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Tests
+        run: flutter test tests/
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --build-name="${TAG#v}" \
+            --build-number="${{ github.run_number }}"
+          cp build/app/outputs/flutter-apk/app-release.apk "nyooom-${TAG}.apk"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "nyooom-${TAG}.apk" --clobber
+          else
+            gh release create "$TAG" "nyooom-${TAG}.apk" \
+              --target "${{ github.sha }}" \
+              --title "Nyooom ${TAG}" \
+              --notes "Android-APK zum Installieren (Release-Build, signiert mit einem Debug-Schlüssel). Vor dem Update einer älteren Version diese ggf. deinstallieren, falls Android eine abweichende Signatur meldet."
+          fi

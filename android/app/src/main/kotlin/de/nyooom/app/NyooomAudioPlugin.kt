@@ -18,6 +18,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.util.Log
+import android.view.WindowManager
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -33,6 +34,9 @@ import io.flutter.plugin.common.PluginRegistry
  * support, otherwise VOICE_RECOGNITION; 16-bit PCM stereo. AGC, NS and AEC
  * are switched off for the session. Interleaved little-endian PCM blocks are
  * streamed to Dart over the event channel.
+ *
+ * While recording, the screen is kept on: without a foreground service
+ * Android silences the microphone once the app is no longer visible.
  *
  * Method channel `de.nyooom/audio`: getCapabilities, start({sampleRate}), stop.
  * Event channel `de.nyooom/audio_stream`: ByteArray blocks.
@@ -312,6 +316,7 @@ class NyooomAudioPlugin :
 
         recorder = record
         running = true
+        setKeepScreenOn(true)
         val blockBytes = record.sampleRate * BLOCK_MS / 1000 * record.channelCount * 2
         readThread = Thread({ readLoop(record, blockBytes) }, "NyooomAudioRecord").also { it.start() }
 
@@ -377,6 +382,18 @@ class NyooomAudioPlugin :
         readThread = null
         recorder?.let { releaseAll(it) }
         recorder = null
+        setKeepScreenOn(false)
+    }
+
+    private fun setKeepScreenOn(on: Boolean) {
+        val window = activityBinding?.activity?.window ?: return
+        mainHandler.post {
+            if (on) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
     }
 
     private fun releaseAll(record: AudioRecord) {

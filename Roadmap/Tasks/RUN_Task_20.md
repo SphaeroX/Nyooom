@@ -102,6 +102,15 @@ Automatische Tests entstehen hier nur, wenn echte Aufnahmen als Fixtures dazukom
 
 ## Notizen zu diesem Task
 
+**2026-11-16, Vorbereitung für den ersten Versuch am Fenster (ohne Kalibrierung):**
+
+- Neue Messreihen nehmen standardmäßig mit dem Mikrofon auf, nicht mehr mit der Simulation.
+- Startbildschirm ohne Standort: Knopf „Schnelltest-Standort anlegen“ (`quickTestSite()`: Spur → 5 m, Spur ← 8 m, Höhe 1,5 m, 50 km/h). Abstände später unter „Standorte“ korrigieren; die Geschwindigkeit skaliert linear mit dem angenommenen Abstand (v = κ·d), Erkennung und Zählung hängen nicht davon ab.
+- Ohne Kalibrierung: b = 0,15 m, Δ0 = 0, Kanäle nicht getauscht. Liefert das Gerät die Kanäle vertauscht, erscheinen die Richtungen spiegelverkehrt (→ statt ←) und die Spuren werden vertauscht zugeordnet.
+- Bildschirm bleibt während der Aufnahme an (`FLAG_KEEP_SCREEN_ON` im Kotlin-Plugin). App nicht wechseln: ohne Foreground-Service wird das Mikrofon im Hintergrund stummgeschaltet.
+- Für den Gerätetest die **Release-APK** nehmen: Im Debug-Build läuft Dart im JIT-Modus, die Live-Auswertung (≈ 2 s pro Ereignis am PC) wäre deutlich langsamer und würde Ereignisse verwerfen (`verloren`).
+- Die Checkliste oben ist damit noch nicht abgearbeitet; das braucht das Gerät und echte Vorbeifahrten.
+
 ## Abschluss-Checkliste
 
 - [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün

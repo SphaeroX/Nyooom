@@ -50,14 +50,15 @@ final recorderFactoryProvider = Provider<RecorderFactory>(
       : ref.read(stereoRecorderProvider),
 );
 
-/// Whether new series use the simulation by default (no device attached).
+/// Whether new series use the simulation by default. Off: on a phone the
+/// microphones are the normal source (Task_20).
 final simulationDefaultProvider = NotifierProvider<SimulationDefault, bool>(
   SimulationDefault.new,
 );
 
 class SimulationDefault extends Notifier<bool> {
   @override
-  bool build() => true;
+  bool build() => false;
 
   void set(bool value) => state = value;
 }

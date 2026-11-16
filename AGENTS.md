@@ -21,6 +21,7 @@ fvm flutter test tests/<pfad>/<name>_test.dart            # einzelne Datei
 fvm flutter analyze                                       # Lint
 fvm dart format lib tests                                 # Format
 fvm flutter build apk --debug                             # Build
+fvm flutter build apk --release                           # Build fürs Gerät (Live-Auswertung schnell genug)
 ```
 
 Tests liegen in `tests/` (nicht `test/`), den Pfad deshalb immer angeben.

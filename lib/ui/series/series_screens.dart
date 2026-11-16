@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/model/acoustics.dart';
 import '../../core/signal/level.dart';
+import '../../core/site/site.dart';
 import '../../data/repository.dart';
 import '../providers.dart';
 import '../sites/site_form.dart';
@@ -148,9 +149,26 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (sites.isEmpty)
-            const Text('Bitte zuerst unter „Standorte“ einen Standort anlegen.')
-          else
+          if (sites.isEmpty) ...[
+            const Text(
+              'Noch kein Standort. Für einen ersten Versuch ohne Ausmessen '
+              'einen Schnelltest-Standort anlegen (Spuren in 5 und 8 m, '
+              'später unter „Standorte“ anpassbar).',
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              key: const Key('quick-site'),
+              onPressed: () async {
+                final id = await ref
+                    .read(repositoryProvider)
+                    .createSite(quickTestSite());
+                ref.invalidate(sitesProvider);
+                if (mounted) setState(() => _siteId = id);
+              },
+              icon: const Icon(Icons.bolt),
+              label: const Text('Schnelltest-Standort anlegen'),
+            ),
+          ] else
             DropdownButtonFormField<int>(
               initialValue: site!.id,
               decoration: const InputDecoration(labelText: 'Standort'),

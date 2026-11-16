@@ -37,7 +37,7 @@ Stand: 2026-11-16 – **Entwicklung abgeschlossen (Task_01 bis Task_19).** Offen
 | 17 | Doppler Variante 2: Entzerrung | erledigt |
 | 18 | Selbstkalibrierung | erledigt |
 | 19 | Gemeinsame Ausgleichsrechnung | erledigt |
-| 20 | Geräte- und Feldtest | offen |
+| 20 | Geräte- und Feldtest | läuft (App für Schnelltest vorbereitet) |
 
 Status ist `offen`, `läuft` (Datei trägt das Präfix `RUN_`) oder `erledigt` (Datei liegt in `Archiv/`). Die Tabelle wird beim Archivieren eines Tasks aktualisiert.
 
@@ -149,6 +149,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_19:**
 
 - Gemeinsame Ausgleichsrechnung (`jointFit`, Kostenfunktion J) als Option `fusionMethod = 1`. Vergleich synthetisch: einfache Fusion 0,14 km/h, gemeinsam 0,13 km/h mittlerer Betragsfehler → Standard bleibt die einfache Fusion. Mit echten Daten wiederholen (Task_20). (Task_19)
+
+**Aus Task_20 (Vorbereitung):**
+
+- Mikrofon ist Standardquelle neuer Messreihen; Schnelltest-Standort ohne Ausmessen (`quickTestSite()`); Bildschirm bleibt während der Aufnahme an. Gerätetests mit der Release-APK (`fvm flutter build apk --release`, signiert mit Debug-Schlüssel), Debug-Build ist für die Live-Auswertung zu langsam. (Task_20)
 
 **Aus der Konzept- und Physikprüfung (2026-11-16, nach Task_19, kein eigener Task):**
 

@@ -74,6 +74,20 @@ class SiteSpec {
   }
 }
 
+/// A ready-made site for a first try without measuring anything: phone on
+/// a ground-floor window sill, near lane (+1) 5 m and far lane (−1) 8 m
+/// away. Speeds scale with the assumed distance (v = κ·d); detection and
+/// counting do not depend on it. Edit the site once the distances are known.
+SiteSpec quickTestSite() => const SiteSpec(
+  name: 'Fenster (Schnelltest)',
+  lanes: [
+    LaneSpec(horizontalDistance: 5, direction: 1),
+    LaneSpec(horizontalDistance: 8, direction: -1),
+  ],
+  micHeight: 1.5,
+  speedLimitKmh: 50,
+);
+
 enum SiteField { name, lanes, micHeight, speedLimit, position }
 
 /// A validation finding; errors block saving, warnings only inform.

@@ -116,7 +116,8 @@ android/app/src/main/kotlin/de/nyooom/app/
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
 - Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
 - Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), `share_plus` (Android-Teilen-Dialog für Exporte), `geolocator` (GPS-Logger für Referenzfahrten), `file_picker` (GPX/CSV-Import), dev: `test`, `drift_dev`, `build_runner`, `archive` (nur zum Prüfen der ZIP-Exporte in Tests) (Code-Generierung `fvm dart run build_runner build -d`).
-- Simulationsquelle: Beim Start einer Messreihe kann statt der Mikrofone `SimulatedStereoRecorder` gewählt werden (synthetischer Verkehr aus `lib/core/sim/`). Damit läuft die App im Emulator und ohne geeignetes Gerät.
+- Simulationsquelle: Beim Start einer Messreihe kann statt der Mikrofone `SimulatedStereoRecorder` gewählt werden (synthetischer Verkehr aus `lib/core/sim/`). Damit läuft die App im Emulator und ohne geeignetes Gerät. Standard ist seit Task_20 das Mikrofon (`simulationDefaultProvider` = false); die Simulation wird im Startbildschirm eingeschaltet.
+- Schnelltest: Ohne Standort bietet der Startbildschirm `quickTestSite()` an (`lib/core/site/site.dart`, Spuren 5 m → und 8 m ←, Höhe 1,5 m). Ohne Kalibrierung gelten b = 0,15 m und Δ0 = 0. Geschwindigkeiten skalieren mit dem angenommenen Abstand, Erkennung und Zählung nicht.
 
 ## Plattform-Schnittstelle Aufnahme
 
@@ -126,6 +127,7 @@ android/app/src/main/kotlin/de/nyooom/app/
   - `getInputDevices` → `[{id, name, type, isExternal, channelCounts}]` (`AudioManager.getDevices(GET_DEVICES_INPUTS)`)
   - `start` akzeptiert zusätzlich `inputDeviceId` (→ `AudioRecord.setPreferredDevice`, z. B. USB-Stereo-Interface, technik.pdf 4.3); Antwort enthält `preferredDevice`.
   - `stop`
+- Während einer Aufnahme setzt das Plugin `FLAG_KEEP_SCREEN_ON` am Activity-Fenster und nimmt es bei `stop` wieder weg. Grund: Es gibt keinen Foreground-Service (Task_04), und Android schaltet das Mikrofon stumm, sobald die App nicht mehr sichtbar ist.
 - EventChannel `de.nyooom/audio_stream`: `Uint8List`-Blöcke (ca. 20 ms), interleaved 16 Bit little-endian, L/R in der Reihenfolge von `CHANNEL_IN_STEREO`. Vor `start` abonnieren.
 - Rohaufnahmen landen als `nyooom_YYYYMMDD_HHMMSS.wav` in `<App-Dokumentordner>/recordings/`.
 
@@ -133,6 +135,13 @@ android/app/src/main/kotlin/de/nyooom/app/
 
 - Zielgerätemodell (Roadmap Task_01/05).
 - Ob reines Dart auf dem Zielgerät schnell genug ist: am PC ca. 1 s pro Ereignis, Messung auf dem Gerät in Roadmap Task_20. Eine neue Sprache (C++/FFI) nur nach Rückfrage.
+
+## Release (GitHub Actions)
+
+- `.github/workflows/release.yml` baut bei einem Tag `v*` (oder manuell mit Tag-Angabe) die Release-APK, führt vorher `flutter test tests/` aus und veröffentlicht `nyooom-<tag>.apk` als GitHub-Release.
+- CI nutzt `subosito/flutter-action` mit derselben Version wie `.fvmrc` (3.50.0), nicht FVM. Bei einem Versionswechsel beide Stellen anpassen.
+- Versionsname kommt aus dem Tag (`v0.1.0` → `0.1.0`), Build-Nummer aus der Laufnummer.
+- Signatur: Debug-Schlüssel des CI-Runners (wie lokal, `android/app/build.gradle.kts`). Jeder Lauf hat einen anderen Schlüssel, ein Update über eine ältere Installation kann deshalb an der Signatur scheitern; dann alte Version deinstallieren. Ein eigener Release-Schlüssel (als Repository-Secret) ist noch nicht eingerichtet.
 
 ---
 Pflege: Bei Änderungen an Stack oder Architektur diese Datei sofort aktualisieren.
