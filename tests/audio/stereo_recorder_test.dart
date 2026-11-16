@@ -142,4 +142,36 @@ void main() {
     await StereoRecorder().stop();
     expect(calls.single.method, 'stop');
   });
+
+  test('lists input devices for the selection', () async {
+    mockMethods(
+      (call) async => [
+        {
+          'id': 3,
+          'name': 'Built-in mic',
+          'type': 15,
+          'isExternal': false,
+          'channelCounts': [1, 2],
+        },
+        {
+          'id': 9,
+          'name': 'USB Audio',
+          'type': 11,
+          'isExternal': true,
+          'channelCounts': [2],
+        },
+      ],
+    );
+    final devices = await StereoRecorder().inputDevices();
+    expect(calls.single.method, 'getInputDevices');
+    expect(devices.map((d) => d.id), [3, 9]);
+    expect(devices[1].isExternal, isTrue);
+    expect(devices[1].name, 'USB Audio');
+  });
+
+  test('start passes the chosen input device', () async {
+    mockMethods((call) async => {'audioSource': 'UNPROCESSED'});
+    await StereoRecorder().start(sampleRate: 48000, inputDeviceId: 9);
+    expect(calls.single.arguments, {'sampleRate': 48000, 'inputDeviceId': 9});
+  });
 }

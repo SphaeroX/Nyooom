@@ -130,4 +130,29 @@ void main() {
     expect(state.running, isFalse);
     expect(state.error, isNotNull);
   });
+
+  test('a new series stores the current device calibration', () async {
+    final repo = NyooomRepository(db);
+    final deviceId = await repo.ensureDevice('Fake Phone');
+    final calibrationId = await repo.addCalibration(
+      CalibrationsCompanion.insert(
+        deviceId: deviceId,
+        micSpacingM: 0.147,
+        channelOffsetS: 5e-6,
+        temperatureC: 18,
+        createdAtUtcMs: 1000,
+      ),
+    );
+    final siteId = await createSite();
+    final controller = container.read(seriesRecordingProvider.notifier);
+    await controller.start(
+      SeriesStartRequest(siteId: siteId, temperatureC: 15),
+    );
+    final id = container.read(seriesRecordingProvider).seriesId!;
+    await controller.stop();
+    expect((await repo.series(id))!.row.calibrationId, calibrationId);
+    final metadata = (await SeriesStorage(dir).readMetadata(id))!;
+    expect(metadata.calibration!.micSpacing, 0.147);
+    expect(metadata.calibration!.channelOffset, 5e-6);
+  });
 }

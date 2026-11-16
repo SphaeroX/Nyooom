@@ -13,7 +13,7 @@ import '../data/series_storage.dart';
 import 'recorder/recorder_controller.dart';
 
 export 'recorder/recorder_controller.dart'
-    show configProvider, stereoRecorderProvider;
+    show capabilitiesProvider, configProvider, stereoRecorderProvider;
 
 /// App database (SQLite file `nyooom` in the app support directory).
 final databaseProvider = Provider<NyooomDatabase>((ref) {

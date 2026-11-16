@@ -96,6 +96,30 @@ class RecordingInfo {
 }
 
 /// Thrown when the user did not grant the microphone permission.
+/// An audio input (internal microphones or USB interface, technik.pdf 4.3).
+class InputDevice {
+  const InputDevice({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.isExternal,
+  });
+
+  factory InputDevice.fromMap(Map<Object?, Object?> map) => InputDevice(
+    id: (map['id'] as num).toInt(),
+    name: map['name'] as String? ?? '',
+    type: (map['type'] as num?)?.toInt() ?? 0,
+    isExternal: map['isExternal'] == true,
+  );
+
+  final int id;
+  final String name;
+
+  /// Android `AudioDeviceInfo.TYPE_*`.
+  final int type;
+  final bool isExternal;
+}
+
 class MicrophonePermissionDeniedException implements Exception {
   const MicrophonePermissionDeniedException([this.message]);
 
@@ -128,10 +152,22 @@ class StereoRecorder {
   }
 
   /// Starts recording; requests the microphone permission if needed.
-  Future<RecordingInfo> start({required int sampleRate}) async {
+  Future<List<InputDevice>> inputDevices() async {
+    final list = await _method.invokeListMethod<Object?>('getInputDevices');
+    return [
+      for (final m in list ?? const [])
+        InputDevice.fromMap((m as Map).cast<Object?, Object?>()),
+    ];
+  }
+
+  Future<RecordingInfo> start({
+    required int sampleRate,
+    int? inputDeviceId,
+  }) async {
     try {
       final map = await _method.invokeMapMethod<Object?, Object?>('start', {
         'sampleRate': sampleRate,
+        'inputDeviceId': ?inputDeviceId,
       });
       return RecordingInfo.fromMap(map ?? const {});
     } on PlatformException catch (e) {

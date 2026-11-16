@@ -44,9 +44,23 @@ class FakeStereoRecorder implements StereoRecorder {
   @override
   Future<AudioCapabilities> capabilities() async => capabilitiesResult;
 
+  /// Input device id of the last start call.
+  int? lastInputDeviceId;
+
+  List<InputDevice> devices = const [
+    InputDevice(id: 1, name: 'Intern', type: 15, isExternal: false),
+  ];
+
   @override
-  Future<RecordingInfo> start({required int sampleRate}) async {
+  Future<List<InputDevice>> inputDevices() async => devices;
+
+  @override
+  Future<RecordingInfo> start({
+    required int sampleRate,
+    int? inputDeviceId,
+  }) async {
     startCalls++;
+    lastInputDeviceId = inputDeviceId;
     final error = startError;
     if (error != null) throw error;
     return startResult;

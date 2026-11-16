@@ -71,7 +71,15 @@ class SimulatedStereoRecorder implements StereoRecorder {
   );
 
   @override
-  Future<RecordingInfo> start({required int sampleRate}) async {
+  Future<List<InputDevice>> inputDevices() async => const [
+    InputDevice(id: 0, name: 'Simulation', type: 0, isExternal: false),
+  ];
+
+  @override
+  Future<RecordingInfo> start({
+    required int sampleRate,
+    int? inputDeviceId,
+  }) async {
     if (_running) throw StateError('already running');
     _running = true;
     _emittedS = 0;

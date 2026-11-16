@@ -55,9 +55,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Auf dem Zielgerät ist dokumentiert, ob alle vier Prüfungen bestehen, und b liegt plausibel im Bereich 0,10 bis 0,20 m (oder abweichend begründet).
-- [ ] Jede neue Messreihe speichert die verwendete Kalibrierung in DB und `metadata.json`.
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20) Auf dem Zielgerät ist dokumentiert, ob alle vier Prüfungen bestehen, und b liegt plausibel im Bereich 0,10 bis 0,20 m (oder abweichend begründet).
+- [x] Jede neue Messreihe speichert die verwendete Kalibrierung in DB und `metadata.json`.
 
 ## Offene Fragen / Annahmen
 
@@ -68,23 +68,23 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Schwellen der Prüfungen (nicht in PDF 9.2, deshalb in `DeviceCheckLimits`): Transiente 15 dB über Median-Rahmenenergie (5-ms-Rahmen, 0,3 s Sperrzeit); Suchbereich vor der Kalibrierung b ≤ 0,3 m; Mono, wenn (Δ+ − Δ−)/2·c < 5 cm; Prüfung 2: Pegelschwankung der 100-ms-Rahmen ≤ 1,5 dB (erste 0,5 s ignoriert), mittlere Spektrumsänderung erste vs. letzte 3 s ≤ 2 dB im Band 300 Hz–8 kHz.
+- Vorzeichen: "rechts" = Seite, zu der Fahrzeuge der Richtung +1 fahren (x > 0). Dort muss Δ positiv sein, sonst sind die Kanäle vertauscht (Prüfung 4).
+- Gerätetest (Assistent auf dem echten Gerät, b und Δ0 dokumentieren, Ergebnis "zwei unbearbeitete Kanäle?") → Task_20.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** Prüf- und Kalibrierlogik `lib/core/calibration/device_checks.dart` (findTransients, measureAxis, checkStereo, checkNoProcessing, checkClipping, checkChannelMapping, calibrate). Synthetische Signale `lib/core/sim/calibration_signals.dart` (axialBursts, constantNoise). Kotlin: `getInputDevices`, `start {inputDeviceId}` mit `setPreferredDevice`. Dart: `StereoRecorder.inputDevices()`, `InputDevice`, `recordFor`, `CalibrationCapture` (echt oder simuliert). Assistent `CalibrationScreen` + `CalibrationController`, Status im Tab "Gerät" (`DeviceScreen`, mit Schalter "Simulation als Standard"). Ergebnis in `Calibrations` (inkl. `checksJson`), Messreihen übernehmen die neueste Kalibrierung des Geräts.
+- **Learnings & Stolpersteine:** Δ0 bezieht sich nach dem Tauschen auf die physikalische Kanalreihenfolge (links = −b/2). `calibrate(swapChannels: true)` liefert Δ0 deshalb für die getauschten (= korrigierten) Kanäle. Riverpod-Ausdrücke `x ?? ref.watch(notifierProvider)` brauchen eine explizite `bool`-Annotation, sonst meldet der Analyzer `bool?`.
+- **Wichtige Entscheidungen und ihre Gründe:** Kalibrierung pro (Gerätemodell, Eingabegerät); Simulation hat das Gerätemodell "Simulation" und damit eine eigene Kalibrierung. Klatschfenster = ein GCC-Block (2048 Abtastwerte) ab 5 ms vor dem Einsatz, Median über alle Klatscher.
+- **Auswirkungen auf Folge-Tasks:** Auswertung (Task_09) muss `swapChannels` der Kalibrierung anwenden (Kanäle tauschen, bevor GCC-PHAT läuft) und b, Δ0 aus der Kalibrierung nehmen; ohne Kalibrierung Standard b = 0,15 m, Δ0 = 0. Frequenzabhängigkeit von b ist nicht untersucht (offen, Task_20).
+- **Hinweise zu Tests und Befehlen:** `tests/core/calibration/`, `tests/ui/calibration/`. Der Assistent lässt sich mit simuliertem Gerät komplett durchklicken.

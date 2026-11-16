@@ -3,6 +3,7 @@ package de.nyooom.app
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
@@ -62,7 +63,7 @@ class NyooomAudioPlugin :
     @Volatile
     private var eventSink: EventChannel.EventSink? = null
 
-    private var pendingStart: Pair<Int, MethodChannel.Result>? = null
+    private var pendingStart: Pair<StartRequest, MethodChannel.Result>? = null
     private var recorder: AudioRecord? = null
     private var readThread: Thread? = null
 
@@ -112,12 +113,16 @@ class NyooomAudioPlugin :
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "getCapabilities" -> result.success(capabilities())
+            "getInputDevices" -> result.success(inputDevices())
             "start" -> {
-                val sampleRate = call.argument<Int>("sampleRate") ?: 48000
+                val request = StartRequest(
+                    call.argument<Int>("sampleRate") ?: 48000,
+                    call.argument<Int>("inputDeviceId"),
+                )
                 if (hasPermission()) {
-                    startRecording(sampleRate, result)
+                    startRecording(request, result)
                 } else {
-                    requestPermission(sampleRate, result)
+                    requestPermission(request, result)
                 }
             }
             "stop" -> {
@@ -156,6 +161,20 @@ class NyooomAudioPlugin :
         )
     }
 
+    /** Input devices for the selection (technik.pdf 4.3: external USB microphone). */
+    private fun inputDevices(): List<Map<String, Any>> =
+        audioManager().getDevices(AudioManager.GET_DEVICES_INPUTS).map { d ->
+            mapOf(
+                "id" to d.id,
+                "name" to d.productName.toString(),
+                "type" to d.type,
+                "isExternal" to (d.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
+                    d.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
+                    d.type == AudioDeviceInfo.TYPE_WIRED_HEADSET),
+                "channelCounts" to d.channelCounts.toList(),
+            )
+        }
+
     private fun describe(info: MicrophoneInfo): String {
         val p = info.position
         val position = if (p == MicrophoneInfo.POSITION_UNKNOWN) {
@@ -174,7 +193,7 @@ class NyooomAudioPlugin :
         context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun requestPermission(sampleRate: Int, result: MethodChannel.Result) {
+    private fun requestPermission(request: StartRequest, result: MethodChannel.Result) {
         val activity = activityBinding?.activity
         if (activity == null) {
             result.error("PERMISSION_DENIED", "No activity to request the permission", null)
@@ -184,7 +203,7 @@ class NyooomAudioPlugin :
             result.error("BUSY", "Permission request already pending", null)
             return
         }
-        pendingStart = sampleRate to result
+        pendingStart = request to result
         activity.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), PERMISSION_REQUEST_CODE)
     }
 
@@ -194,10 +213,10 @@ class NyooomAudioPlugin :
         grantResults: IntArray,
     ): Boolean {
         if (requestCode != PERMISSION_REQUEST_CODE) return false
-        val (sampleRate, result) = pendingStart ?: return true
+        val (request, result) = pendingStart ?: return true
         pendingStart = null
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startRecording(sampleRate, result)
+            startRecording(request, result)
         } else {
             result.error("PERMISSION_DENIED", "Microphone permission denied", null)
         }
@@ -221,7 +240,8 @@ class NyooomAudioPlugin :
         return null
     }
 
-    private fun startRecording(sampleRate: Int, result: MethodChannel.Result) {
+    private fun startRecording(request: StartRequest, result: MethodChannel.Result) {
+        val sampleRate = request.sampleRate
         if (running) {
             result.error("ALREADY_RUNNING", "Recording is already running", null)
             return
@@ -255,6 +275,15 @@ class NyooomAudioPlugin :
         if (record == null) {
             result.error("INIT_FAILED", "AudioRecord could not be initialized", null)
             return
+        }
+
+        var preferredDevice = ""
+        request.inputDeviceId?.let { id ->
+            val device = audioManager().getDevices(AudioManager.GET_DEVICES_INPUTS)
+                .firstOrNull { it.id == id }
+            if (device != null && record.setPreferredDevice(device)) {
+                preferredDevice = device.productName.toString()
+            }
         }
 
         val session = record.audioSessionId
@@ -303,6 +332,7 @@ class NyooomAudioPlugin :
                 "channels" to record.channelCount,
                 "effects" to effectStates,
                 "activeMicrophones" to activeMicrophones,
+                "preferredDevice" to preferredDevice,
             ),
         )
     }
@@ -374,3 +404,6 @@ class NyooomAudioPlugin :
 
     // endregion
 }
+
+/** Arguments of the `start` method. */
+private data class StartRequest(val sampleRate: Int, val inputDeviceId: Int?)

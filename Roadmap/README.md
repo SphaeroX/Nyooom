@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_05 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_06 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -22,8 +22,8 @@ Stand: 2026-11-16 – Task_05 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 02 | Signalmodell und synthetische Vorbeifahrten | erledigt |
 | 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | erledigt |
 | 04 | Messreihe anlegen und aufnehmen | erledigt |
-| 05 | Geräteeignung und Kalibrierung | läuft |
-| 06 | Sichtprüfung: Korrelogramm und Spektrogramm | offen |
+| 05 | Geräteeignung und Kalibrierung | erledigt (Gerätetest → 20) |
+| 06 | Sichtprüfung: Korrelogramm und Spektrogramm | läuft |
 | 07 | Ereigniserkennung | offen |
 | 08 | Anpassung des Bewegungsmodells | offen |
 | 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | offen |
@@ -87,6 +87,11 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 - Persistenz: `NyooomDatabase` + `NyooomRepository` (`lib/data/`), Provider in `lib/ui/providers.dart` (`databaseProvider`, `repositoryProvider`, `seriesStorageProvider`, `recorderFactoryProvider`, `sitesProvider`, `seriesListProvider`). Nach Schemaänderung `fvm dart run build_runner build -d` und `schemaVersion` + Migration. (Task_04)
 - Simulationsquelle: `SimulatedStereoRecorder(lanes:)` implementiert `StereoRecorder`; `TrafficGenerator` erzeugt deterministischen Mischverkehr (ca. 35 % E-Autos, Verbrenner mit Motorton, einige beschleunigen). `pastTruths` liefert die wahren Werte der bereits vorbeigefahrenen Fahrzeuge (für Vergleichsanzeigen). (Task_04)
 - Erweiterungspunkte der UI: `homeTabsProvider` (Tabs), `seriesOpenerProvider` (Tippen auf Messreihe), `recordingExtrasProvider` (Zusatzinhalt im Aufnahmebildschirm), `SeriesRecordingController.addBlockListener` (Live-Blöcke). (Task_04)
+
+**Aus Task_05:**
+
+- Kalibrierung: neueste Zeile in `Calibrations` je Gerät (`repo.latestCalibration(deviceId)`), Felder `micSpacingM`, `channelOffsetS`, `swapChannels`. Messreihen speichern `calibrationId` und die Werte in `metadata.json`. Ohne Kalibrierung gelten b = 0,15 m und Δ0 = 0. Bei `swapChannels` die Kanäle vor jeder Auswertung tauschen. (Task_05)
+- Vorzeichenkonvention am Standort: Richtung +1 = "nach rechts" (Blick vom Gerät zur Straße) = +x = Seite des rechten Mikrofons. (Task_05)
 
 ## Auffälligkeiten & Details
 

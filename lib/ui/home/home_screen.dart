@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../recorder/recorder_screen.dart';
+import '../calibration/calibration_screen.dart';
 import '../series/series_screens.dart';
 import '../sites/site_screens.dart';
 
@@ -18,7 +18,7 @@ final homeTabsProvider = Provider<List<HomeTab>>(
   (ref) => [
     HomeTab('Messreihen', Icons.list_alt, (_) => const SeriesListScreen()),
     HomeTab('Standorte', Icons.place_outlined, (_) => const SiteListScreen()),
-    HomeTab('Gerät', Icons.mic_none, (_) => const RecorderScreen()),
+    HomeTab('Gerät', Icons.mic_none, (_) => const DeviceScreen()),
   ],
 );
 

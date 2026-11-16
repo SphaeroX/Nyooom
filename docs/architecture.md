@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_04)
+## Projektstruktur (Stand Task_05)
 
 ```
 lib/
@@ -49,15 +49,19 @@ lib/
   core/sim/passby_simulator.dart    Generator synthetischer Vorbeifahrten mit GroundTruth
   core/sim/scenarios.dart           Fixture-Fabrik: Verbrenner, Elektroauto, Standard-Setups
   core/sim/traffic.dart             TrafficGenerator: deterministischer Mischverkehr für die Simulationsquelle
+  core/calibration/device_checks.dart  Eignungsprüfung 4.4 und Kalibrierung 7.1 (reine Logik)
+  core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
+  audio/capture.dart                Aufnahme fester Dauer, CalibrationCapture (echt/simuliert)
   data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes)
   data/repository.dart              NyooomRepository
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
   ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/sites/                         Standortliste und -formular
+  ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)
   ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController)
   core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
   core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
@@ -79,6 +83,8 @@ android/app/src/main/kotlin/de/nyooom/app/
 - MethodChannel `de.nyooom/audio`:
   - `getCapabilities` → `{unprocessedSupported, agcAvailable, nsAvailable, aecAvailable, deviceModel, sdkInt, microphones: [String]}`
   - `start {sampleRate}` → `{audioSource: "UNPROCESSED"|"VOICE_RECOGNITION", sampleRate, channels, effects: {agc, ns, aec: "unavailable"|"disabled"|"enabled"}, activeMicrophones: [String]}`; fragt bei Bedarf die Mikrofon-Berechtigung an. Fehlercodes: `PERMISSION_DENIED`, `INIT_FAILED`, `ALREADY_RUNNING`, `BUSY`.
+  - `getInputDevices` → `[{id, name, type, isExternal, channelCounts}]` (`AudioManager.getDevices(GET_DEVICES_INPUTS)`)
+  - `start` akzeptiert zusätzlich `inputDeviceId` (→ `AudioRecord.setPreferredDevice`, z. B. USB-Stereo-Interface, technik.pdf 4.3); Antwort enthält `preferredDevice`.
   - `stop`
 - EventChannel `de.nyooom/audio_stream`: `Uint8List`-Blöcke (ca. 20 ms), interleaved 16 Bit little-endian, L/R in der Reihenfolge von `CHANNEL_IN_STEREO`. Vor `start` abonnieren.
 - Rohaufnahmen landen als `nyooom_YYYYMMDD_HHMMSS.wav` in `<App-Dokumentordner>/recordings/`.
