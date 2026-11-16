@@ -52,9 +52,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Die Zeitauflösung der Korrelation entspricht 1/(48 kHz·16) ≈ 1,3 µs; durch Test belegt.
-- [ ] Die Berechnung eines 8-s-Fensters dauert auf dem Entwicklungsrechner unter einer festgehaltenen Schranke; Messwert steht in den Erkenntnissen (Grundlage für Task_12).
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] Die Zeitauflösung der Korrelation entspricht 1/(48 kHz·16) ≈ 1,3 µs; durch Test belegt.
+- [x] Die Berechnung eines 8-s-Fensters dauert auf dem Entwicklungsrechner unter einer festgehaltenen Schranke; Messwert steht in den Erkenntnissen (Grundlage für Task_12).
 
 ## Offene Fragen / Annahmen
 
@@ -64,23 +64,21 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Benchmark (Entwicklungsrechner, JIT im Testlauf): 8-s-Fenster, 747 Blöcke, **125 ms**. Schranke im Test: 5 s.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** Eigene radix-2-FFT `Fft` (`lib/core/dsp/fft.dart`, mit `Fft.of(n)`-Cache), `hannWindow` (periodisch), `blockStarts`. `GccPhat` (`lib/core/dsp/gcc_phat.dart`) mit `blockCorrelation`, `correlogram` (Datenstruktur `Correlogram` mit `times`, `peakDelays`, `peakWeights`, `valueAt(row, lag)`) und `singleTdoa` (Maximum der mittleren Korrelation, für die Kalibrierung). Abweichung: Das 16-fache Zero-Padding wird nicht als 32768-Punkte-IFFT gerechnet, sondern als gleichwertige bandbegrenzte Interpolation der ungepolsterten IFFT, nur im Suchbereich ±1,2·b/c. Ein Test vergleicht beides (Abweichung < 2e-3).
+- **Learnings & Stolpersteine:** Zwei reelle Kanäle in einer komplexen FFT (links = Real-, rechts = Imaginärteil) halbieren den Aufwand. R ist so normiert, dass perfekte Kohärenz 1 ergibt; das Gewicht ist damit zwischen Blöcken vergleichbar (unkorreliertes Rauschen deutlich < 0,3 der Quelle).
+- **Wichtige Entscheidungen und ihre Gründe:** Keine FFT-Abhängigkeit (`fftea` o. ä.), weil die eigene FFT klein, getestet und schnell genug ist.
+- **Auswirkungen auf Folge-Tasks:** Task_08 nutzt `Correlogram.valueAt` für die Grobsuche und `peakDelays`/`peakWeights` für die Feinanpassung. `times` sind Blockmitten relativ zum Start des übergebenen Ausschnitts (`from`). Task_06 nutzt `Fft.of` und `hannWindow` für das Spektrogramm. Dart ist schnell genug (Task_12: kein Optimierungsbedarf zu erwarten).
+- **Hinweise zu Tests und Befehlen:** `fvm flutter test tests/core/dsp/`. Der Benchmark-Test druckt die Laufzeit.

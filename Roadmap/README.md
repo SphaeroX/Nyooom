@@ -14,14 +14,14 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_03 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_04 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
 | 01 | Durchstich: Stereo-Rohaufnahme | erledigt (Gerätetest → 20) |
 | 02 | Signalmodell und synthetische Vorbeifahrten | erledigt |
-| 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | läuft |
-| 04 | Messreihe anlegen und aufnehmen | offen |
+| 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | erledigt |
+| 04 | Messreihe anlegen und aufnehmen | läuft |
 | 05 | Geräteeignung und Kalibrierung | offen |
 | 06 | Sichtprüfung: Korrelogramm und Spektrogramm | offen |
 | 07 | Ereigniserkennung | offen |
@@ -76,6 +76,11 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 - Kanalkonvention: links = Mikrofon bei −b/2, rechts bei +b/2, Δ = Ankunft links − rechts = +b/c·u + Δ0. GCC-PHAT mit X_links·X_rechts* liefert genau dieses Δ. (Task_02)
 - **Generator-API** (`lib/core/sim/`): `Scenarios.combustion(speedKmh:, distance:, direction:, t0:, tone:, acceleration:, toneLeadS:)`, `Scenarios.electric(..., warningTone:)`, `Scenarios.render(pass, durationS:, snrDb:, channelOffset:, micSpacing:, temperatureC:, seed:)` → `SimulatedRecording{signal: StereoBlock, truths: [GroundTruth]}`. Mehrere Fahrzeuge: `PassBySimulator(Scenarios.setup(...)).render(durationS, [pass1, pass2])`. `GroundTruth.model`/`toneModel` liefern das wahre `PassByModel`, `receptionT0` den Empfangszeitpunkt der größten Annäherung. Rechenzeit: ca. 0,1 s pro Sekunde Signal; in Tests kurze Fenster nehmen. (Task_02)
 - Hilfsbausteine: `fractionalSample` (Sinc-Interpolation), `Biquad`/`BiquadChain` (Hochpass, Tiefpass, Bandpass) in `lib/core/dsp/`. (Task_02)
+
+**Aus Task_03:**
+
+- `GccPhat(config:, micSpacing:, speedOfSound:)`: `correlogram(signal, from:, to:)` → `Correlogram` (Zeiten = Blockmitten relativ zu `from`, `peakDelays`, `peakWeights`, `valueAt`), `singleTdoa(signal)` für ganze Stücke. R normiert auf 1 bei perfekter Kohärenz. Laufzeit 8-s-Fenster: 125 ms am Entwicklungsrechner. (Task_03)
+- FFT: `Fft.of(n).transform(re, im, inverse:)`, `hannWindow(n)`, `blockStarts(len, block, hop)` in `lib/core/dsp/fft.dart`. (Task_03)
 
 ## Auffälligkeiten & Details
 

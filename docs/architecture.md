@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_02)
+## Projektstruktur (Stand Task_03)
 
 ```
 lib/
@@ -42,6 +42,8 @@ lib/
   core/config/nyooom_config.dart    Konfigurationsobjekt mit allen 9.2-Parametern (JSON); Kopie in assets/nyooom_config.json
   core/model/acoustics.dart         c(T), Schrägabstand, km/h-Umrechnung
   core/model/passby_model.dart      PassByModel: u, r, t = te + r/c, Δ(t), Doppler (technik.pdf 3.1–3.4)
+  core/dsp/fft.dart                 radix-2-FFT, Hann-Fenster, Blockzerlegung
+  core/dsp/gcc_phat.dart            GCC-PHAT, Correlogram, singleTdoa (technik.pdf 5.2)
   core/dsp/biquad.dart              IIR-Filter (Butterworth Hoch-/Tiefpass, Bandpass-Kette)
   core/dsp/fractional_delay.dart    Kaiser-gefensterter Sinc-Interpolator für Bruchteil-Verzögerungen
   core/sim/passby_simulator.dart    Generator synthetischer Vorbeifahrten mit GroundTruth
