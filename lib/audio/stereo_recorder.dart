@@ -6,6 +6,7 @@ import '../core/signal/pcm.dart';
 enum AudioSourceKind {
   unprocessed('UNPROCESSED'),
   voiceRecognition('VOICE_RECOGNITION'),
+  simulated('SIMULATED'),
   unknown('UNKNOWN');
 
   const AudioSourceKind(this.platformName);

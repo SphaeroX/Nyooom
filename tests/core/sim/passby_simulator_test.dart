@@ -201,6 +201,25 @@ void main() {
     });
   });
 
+  group('PassBySimulator in chunks', () {
+    test('consecutive chunks join seamlessly', () {
+      final passes = [
+        Scenarios.combustion(speedKmh: 40, distance: 5, t0: 1.8),
+        Scenarios.electric(speedKmh: 30, distance: 6, t0: 2.4, direction: -1),
+      ];
+      final sim = PassBySimulator(Scenarios.setup(backgroundRms: 0.003));
+      final whole = sim.render(4, passes);
+      final a = sim.render(2, passes);
+      final b = sim.render(2, passes, startTime: 2);
+      for (var i = 0; i < whole.signal.length; i++) {
+        final chunk = i < a.signal.length ? a : b;
+        final j = i < a.signal.length ? i : i - a.signal.length;
+        expect(chunk.signal.left[j], closeTo(whole.signal.left[i], 1e-9));
+        expect(chunk.signal.right[j], closeTo(whole.signal.right[i], 1e-9));
+      }
+    });
+  });
+
   group('Scenarios', () {
     test('standard fixtures in both directions, with and without tone', () {
       for (final direction in [1, -1]) {

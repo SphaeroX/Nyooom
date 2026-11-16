@@ -36,7 +36,27 @@ class VehiclePass {
     this.tones = const [],
     this.toneLeadS = 0,
     this.tonePitchFollowsSpeed = true,
+    this.noiseSeed,
+    this.audibleSpanS,
   });
+
+  /// If set, the source fades out (raised cosine over the last second)
+  /// when |te − t0| approaches this span, so a vehicle has a finite
+  /// audible life (used by the traffic simulation).
+  final double? audibleSpanS;
+
+  /// Source gain at emission time [emissionTime] (1 without [audibleSpanS]).
+  double envelopeAt(double emissionTime) {
+    final span = audibleSpanS;
+    if (span == null) return 1;
+    final d = (emissionTime - t0).abs();
+    if (d <= span - 1) return 1;
+    if (d >= span) return 0;
+    return 0.5 * (1 + math.cos(math.pi * (d - (span - 1))));
+  }
+
+  /// Seed of the tyre noise; defaults to the index in the rendered list.
+  final int? noiseSeed;
 
   /// Signed speed at t0 in m/s (positive in +x direction).
   final double speed;
@@ -184,34 +204,65 @@ class PassBySimulator {
 
   final SimulationSetup setup;
 
-  SimulatedRecording render(double durationS, List<VehiclePass> passes) {
+  /// Renders [durationS] seconds starting at absolute time [startTime].
+  ///
+  /// All random parts are derived from the absolute sample index, so
+  /// consecutive chunks join seamlessly (used by the live simulation).
+  SimulatedRecording render(
+    double durationS,
+    List<VehiclePass> passes, {
+    double startTime = 0,
+  }) {
     final fs = setup.sampleRate.toDouble();
     final n = (durationS * fs).round();
     final left = Float64List(n);
     final right = Float64List(n);
-    final random = math.Random(setup.seed);
 
-    for (final pass in passes) {
-      // Noise buffer on the emission-time grid, shared by both channels.
+    for (var p = 0; p < passes.length; p++) {
+      final pass = passes[p];
+      // Noise buffer on the absolute emission-time grid k/fs, shared by both
+      // channels.
       final c = setup.speedOfSound;
       final rMax = [
-        -1.0,
-        durationS + 1,
+        startTime - 1,
+        startTime + durationS + 1,
       ].map((t) => _range(pass, t, 0) + setup.micSpacing).reduce(math.max);
-      final teStart = -(rMax / c) - 0.1;
-      final teEnd = durationS + 0.1;
+      final kStart = ((startTime - rMax / c - 0.1) * fs).floor();
+      final kEnd = ((startTime + durationS + 0.1) * fs).ceil();
       final noise = pass.noiseRms > 0
-          ? _shapedNoise(((teEnd - teStart) * fs).ceil(), pass.noiseRms, random)
+          ? _shapedNoise(
+              kStart,
+              kEnd - kStart,
+              pass.noiseRms,
+              setup.seed * 1000003 + (pass.noiseSeed ?? p),
+            )
           : null;
-      _renderChannel(pass, left, -setup.micSpacing / 2, noise, teStart, true);
-      _renderChannel(pass, right, setup.micSpacing / 2, noise, teStart, false);
+      final teStart = kStart / fs;
+      _renderChannel(
+        pass,
+        left,
+        -setup.micSpacing / 2,
+        noise,
+        teStart,
+        startTime,
+        true,
+      );
+      _renderChannel(
+        pass,
+        right,
+        setup.micSpacing / 2,
+        noise,
+        teStart,
+        startTime,
+        false,
+      );
     }
 
     if (setup.backgroundRms > 0) {
-      final bg = math.Random(setup.seed * 7919 + 17);
+      final k0 = (startTime * fs).round();
       for (var i = 0; i < n; i++) {
-        left[i] += setup.backgroundRms * _gauss(bg);
-        right[i] += setup.backgroundRms * _gauss(bg);
+        left[i] += setup.backgroundRms * _hashGauss(setup.seed, 1, k0 + i);
+        right[i] += setup.backgroundRms * _hashGauss(setup.seed, 2, k0 + i);
       }
     }
 
@@ -236,17 +287,19 @@ class PassBySimulator {
     double micPosition,
     Float64List? noise,
     double teStart,
+    double startTime,
     bool isLeft,
   ) {
     final fs = setup.sampleRate.toDouble();
     final c = setup.speedOfSound;
     final channelDelay = isLeft ? setup.channelOffset : 0.0;
 
-    var teNoise = -pass.distance / c;
+    final firstT = startTime - channelDelay;
+    var teNoise = firstT - _range(pass, firstT, micPosition) / c;
     var teTone = teNoise;
     final toneSource = _ShiftedPass(pass, pass.toneLeadS);
     for (var i = 0; i < out.length; i++) {
-      final t = i / fs - channelDelay;
+      final t = startTime + i / fs - channelDelay;
       var sample = 0.0;
       if (noise != null) {
         teNoise = _solve(
@@ -259,7 +312,10 @@ class PassBySimulator {
           c,
         );
         final r = _range(pass, teNoise, micPosition);
-        sample += fractionalSample(noise, (teNoise - teStart) * fs) / r;
+        sample +=
+            pass.envelopeAt(teNoise) *
+            fractionalSample(noise, (teNoise - teStart) * fs) /
+            r;
       }
       if (pass.tones.isNotEmpty) {
         teTone = _solve(
@@ -278,8 +334,10 @@ class PassBySimulator {
         final cycles = pass.tonePitchFollowsSpeed && pass.speed != 0
             ? toneSource.positionAt(teTone) / pass.speed
             : teTone;
+        final envelope = pass.envelopeAt(teTone + pass.toneLeadS);
         for (final tone in pass.tones) {
           sample +=
+              envelope *
               tone.amplitude *
               math.sin(2 * math.pi * tone.frequency * cycles) /
               r;
@@ -316,33 +374,63 @@ class PassBySimulator {
     return te;
   }
 
-  Float64List _shapedNoise(int length, double rms, math.Random random) {
+  /// Band-limited Gaussian noise for absolute samples [first]..first+length.
+  Float64List _shapedNoise(int first, int length, double rms, int seed) {
     final fs = setup.sampleRate.toDouble();
-    final x = Float64List(length);
-    for (var i = 0; i < length; i++) {
-      x[i] = _gauss(random);
+    // Band-limit to 0.2·fs so the sinc interpolation stays exact. The IIR
+    // filter starts [_warmUp] samples early so its state no longer depends
+    // on where the chunk begins.
+    final lp = _noiseFilter(fs);
+    for (var k = first - _warmUp; k < first; k++) {
+      lp.process(_hashGauss(seed, 0, k));
     }
-    // Band-limit to 0.2·fs so the sinc interpolation stays exact.
-    final lp = BiquadChain([
-      Biquad.lowPass(fs, 0.2 * fs),
-      Biquad.lowPass(fs, 0.2 * fs),
-    ]);
-    final y = lp.processBlock(x);
-    var acc = 0.0;
-    for (final v in y) {
-      acc += v * v;
-    }
-    final scale = rms / math.sqrt(acc / length);
+    final scale = rms / math.sqrt(_noiseFilterEnergy(fs));
+    final y = Float64List(length);
     for (var i = 0; i < length; i++) {
-      y[i] *= scale;
+      y[i] = lp.process(_hashGauss(seed, 0, first + i)) * scale;
     }
     return y;
   }
 
-  static double _gauss(math.Random random) {
-    final u1 = 1 - random.nextDouble();
-    final u2 = random.nextDouble();
+  static const int _warmUp = 4096;
+
+  static BiquadChain _noiseFilter(double fs) =>
+      BiquadChain([Biquad.lowPass(fs, 0.2 * fs), Biquad.lowPass(fs, 0.2 * fs)]);
+
+  static final Map<double, double> _energyCache = {};
+
+  /// Output variance of [_noiseFilter] for unit-variance white input.
+  static double _noiseFilterEnergy(double fs) =>
+      _energyCache.putIfAbsent(fs, () {
+        final f = _noiseFilter(fs);
+        var energy = 0.0;
+        for (var i = 0; i < 4096; i++) {
+          final h = f.process(i == 0 ? 1 : 0);
+          energy += h * h;
+        }
+        return energy;
+      });
+
+  /// Standard normal value for (seed, stream, index), stateless.
+  static double _hashGauss(int seed, int stream, int index) {
+    final u1 =
+        (_mix(_mix(index ^ (seed * 0x9e3779b9)) + stream * 2) + 0.5) /
+        4294967296.0;
+    final u2 =
+        (_mix(_mix(index ^ (seed * 0x9e3779b9)) + stream * 2 + 1) + 0.5) /
+        4294967296.0;
     return math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2);
+  }
+
+  /// 32-bit avalanche mix (MurmurHash3 finaliser).
+  static int _mix(int value) {
+    var x = value & 0xffffffff;
+    x ^= x >> 16;
+    x = (x * 0x85ebca6b) & 0xffffffff;
+    x ^= x >> 13;
+    x = (x * 0xc2b2ae35) & 0xffffffff;
+    x ^= x >> 16;
+    return x;
   }
 }
 
