@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_07)
+## Projektstruktur (Stand Task_08)
 
 ```
 lib/
@@ -54,6 +54,8 @@ lib/
   core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
   core/events/event_detector.dart   Ereigniserkennung blockweise (technik.pdf 5.1)
   core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung
+  core/pipeline/motion_fit.dart     Grobsuche + robuste Feinanpassung von κ, t0 (technik.pdf 5.3)
+  core/pipeline/reasons.dart        Gründe für Klasse B/C (Code + Text)
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe

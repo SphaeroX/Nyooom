@@ -52,9 +52,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Alle Raster, Grenzen und Schwellen stammen aus der Konfiguration.
-- [ ] Die Laufzeit pro Ereignis ist gemessen und in den Erkenntnissen notiert (Grundlage für Task_12).
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] Alle Raster, Grenzen und Schwellen stammen aus der Konfiguration.
+- [x] Die Laufzeit pro Ereignis ist gemessen und in den Erkenntnissen notiert (Grundlage für Task_12).
 
 ## Offene Fragen / Annahmen
 
@@ -64,23 +64,25 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Laufzeit pro Ereignis (8-s-Fenster, Grobsuche 302 κ × 101 t0 × 742 Blöcke plus Feinanpassung): **666 ms** auf dem Entwicklungsrechner (JIT). Zusammen mit dem Korrelogramm (125 ms) ca. 0,8 s pro Ereignis.
+- Schalllaufzeit wird geschlossen gelöst: aus t − t0 = τ + √(d² + v²τ²)/c folgt eine quadratische Gleichung in τ (keine Iteration nötig).
+- Kovarianz: Gewichte auf Mittelwert 1 normiert, s² = Σw·r²/(n−2), mit Faktor Blocklänge/Vorschub (= 4) aufgeblasen, weil sich überlappende Blöcke korrelieren.
+- "Spur nicht monoton": Anteil der starken Blöcke (Gewicht ≥ 0,5·Maximum), die innerhalb der Ausreißergrenze auf der angepassten S-Kurve liegen, unter `monotonicMinFraction` (0,8).
+- Neue Konfigurationswerte: `fitHuberDeltaS` (10 µs), `fitMinPoints` (12), `kappaGridStep` (0,05 1/s).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `MotionFitter` (`lib/core/pipeline/motion_fit.dart`): Grobsuche über κ ∈ ±[0,5; 8] (Schritt 0,05) und t0 = Pegelmaximum ± 1 s (20 ms), robuste gewichtete LM-Feinanpassung mit Huber-IRLS, Ausreißergrenze 40 µs zur Startkurve, Kovarianz → σκ, σt0, Reststreuung, Gültigkeitsprüfungen. `MotionFit` mit `reason` (`DowngradeReason` in `lib/core/pipeline/reasons.dart`, mit `code` für `grund_code` und deutschem `text`). Option `includePropagation` nur für den Vergleichstest.
+- **Learnings & Stolpersteine:** t0 im Ergebnis ist die Abstrahlzeit (Modell inkl. r/c). Ohne Schalllaufzeit läge t0 um d/c (≈15–20 ms) zu spät. Reines Rauschen endet meist als "keine Laufzeitspur" (zu wenige Blockmaxima an der Startkurve).
+- **Wichtige Entscheidungen und ihre Gründe:** Grobsuche mit voller Rasterauflösung (schnell genug), damit kein lokales Optimum gewählt wird. Huber-δ = 10 µs (etwa die typische Streuung der Blockmaxima bei mäßigem SNR).
+- **Auswirkungen auf Folge-Tasks:** Task_09: `fit.kappa` · d_Spur = v_T, σ_T aus `sigmaKappa` und `lateralSpreadM`; `fit.reason` → Klasse C; `fit.residualS` → `rest_laufzeit`. Task_10: u(t) über `fitter.tdoaAt` bzw. `(tdoaAt − Δ0)/(b/c)`. Task_12: ca. 0,8 s Rechenzeit pro Ereignis am PC.
+- **Hinweise zu Tests und Befehlen:** `tests/core/pipeline/motion_fit_test.dart` (der Benchmark-Test druckt die Laufzeit).

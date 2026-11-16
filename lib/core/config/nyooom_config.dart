@@ -35,6 +35,8 @@ class NyooomConfig {
     this.t0SearchRangeS = 1,
     this.t0SearchStepS = 0.02,
     this.fitOutlierLimitS = 40e-6,
+    this.fitHuberDeltaS = 10e-6,
+    this.fitMinPoints = 12,
     this.spectrogramWindow = 4096,
     this.spectrogramHop = 512,
     this.spectrogramFftSize = 16384,
@@ -129,6 +131,12 @@ class NyooomConfig {
 
   /// Block maxima farther than this from the start curve are ignored (5.3).
   final double fitOutlierLimitS;
+
+  /// Huber threshold of the robust fine fit (5.3), in s.
+  final double fitHuberDeltaS;
+
+  /// Fewer block maxima near the start curve mean "no TDOA track".
+  final int fitMinPoints;
 
   /// Spectrogram window, hop and zero-padded FFT size in samples (5.4).
   final int spectrogramWindow;
@@ -229,6 +237,8 @@ class NyooomConfig {
       t0SearchRangeS: f('t0SearchRangeS', d.t0SearchRangeS),
       t0SearchStepS: f('t0SearchStepS', d.t0SearchStepS),
       fitOutlierLimitS: f('fitOutlierLimitS', d.fitOutlierLimitS),
+      fitHuberDeltaS: f('fitHuberDeltaS', d.fitHuberDeltaS),
+      fitMinPoints: i('fitMinPoints', d.fitMinPoints),
       spectrogramWindow: i('spectrogramWindow', d.spectrogramWindow),
       spectrogramHop: i('spectrogramHop', d.spectrogramHop),
       spectrogramFftSize: i('spectrogramFftSize', d.spectrogramFftSize),
@@ -299,6 +309,8 @@ class NyooomConfig {
     't0SearchRangeS': t0SearchRangeS,
     't0SearchStepS': t0SearchStepS,
     'fitOutlierLimitS': fitOutlierLimitS,
+    'fitHuberDeltaS': fitHuberDeltaS,
+    'fitMinPoints': fitMinPoints,
     'spectrogramWindow': spectrogramWindow,
     'spectrogramHop': spectrogramHop,
     'spectrogramFftSize': spectrogramFftSize,

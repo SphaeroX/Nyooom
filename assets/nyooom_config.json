@@ -26,6 +26,8 @@
   "t0SearchRangeS": 1.0,
   "t0SearchStepS": 0.02,
   "fitOutlierLimitS": 0.00004,
+  "fitHuberDeltaS": 0.00001,
+  "fitMinPoints": 12,
   "spectrogramWindow": 4096,
   "spectrogramHop": 512,
   "spectrogramFftSize": 16384,
