@@ -8,6 +8,7 @@ enum DowngradeReason {
   outOfRange('suchbereich', 'außerhalb des Suchbereichs', true),
   clipping('uebersteuerung', 'Übersteuerung', true),
   noTrack('keine_spur', 'keine Laufzeitspur', true),
+  noLane('keine_fahrspur', 'keine Fahrspur für diese Richtung', true),
 
   // Class B: Doppler not usable.
   noTone('kein_ton', 'kein Ton', false),

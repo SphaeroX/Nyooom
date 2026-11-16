@@ -2565,6 +2565,28 @@ class $PassesTable extends Passes with TableInfo<$PassesTable, PassRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sigmaLaufzeitMeta = const VerificationMeta(
+    'sigmaLaufzeit',
+  );
+  @override
+  late final GeneratedColumn<double> sigmaLaufzeit = GeneratedColumn<double>(
+    'sigma_laufzeit',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sigmaDopplerMeta = const VerificationMeta(
+    'sigmaDoppler',
+  );
+  @override
+  late final GeneratedColumn<double> sigmaDoppler = GeneratedColumn<double>(
+    'sigma_doppler',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2587,6 +2609,8 @@ class $PassesTable extends Passes with TableInfo<$PassesTable, PassRow> {
     grundCode,
     laneIndex,
     distanceUsedM,
+    sigmaLaufzeit,
+    sigmaDoppler,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2736,6 +2760,24 @@ class $PassesTable extends Passes with TableInfo<$PassesTable, PassRow> {
         ),
       );
     }
+    if (data.containsKey('sigma_laufzeit')) {
+      context.handle(
+        _sigmaLaufzeitMeta,
+        sigmaLaufzeit.isAcceptableOrUnknown(
+          data['sigma_laufzeit']!,
+          _sigmaLaufzeitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sigma_doppler')) {
+      context.handle(
+        _sigmaDopplerMeta,
+        sigmaDoppler.isAcceptableOrUnknown(
+          data['sigma_doppler']!,
+          _sigmaDopplerMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2825,6 +2867,14 @@ class $PassesTable extends Passes with TableInfo<$PassesTable, PassRow> {
         DriftSqlType.double,
         data['${effectivePrefix}distance_used_m'],
       ),
+      sigmaLaufzeit: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sigma_laufzeit'],
+      ),
+      sigmaDoppler: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sigma_doppler'],
+      ),
     );
   }
 
@@ -2861,6 +2911,10 @@ class PassRow extends DataClass implements Insertable<PassRow> {
   final String? grundCode;
   final int? laneIndex;
   final double? distanceUsedM;
+
+  /// Uncertainties of the single estimates in km/h (schema 2).
+  final double? sigmaLaufzeit;
+  final double? sigmaDoppler;
   const PassRow({
     required this.id,
     required this.seriesId,
@@ -2882,6 +2936,8 @@ class PassRow extends DataClass implements Insertable<PassRow> {
     this.grundCode,
     this.laneIndex,
     this.distanceUsedM,
+    this.sigmaLaufzeit,
+    this.sigmaDoppler,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2928,6 +2984,12 @@ class PassRow extends DataClass implements Insertable<PassRow> {
     if (!nullToAbsent || distanceUsedM != null) {
       map['distance_used_m'] = Variable<double>(distanceUsedM);
     }
+    if (!nullToAbsent || sigmaLaufzeit != null) {
+      map['sigma_laufzeit'] = Variable<double>(sigmaLaufzeit);
+    }
+    if (!nullToAbsent || sigmaDoppler != null) {
+      map['sigma_doppler'] = Variable<double>(sigmaDoppler);
+    }
     return map;
   }
 
@@ -2971,6 +3033,12 @@ class PassRow extends DataClass implements Insertable<PassRow> {
       distanceUsedM: distanceUsedM == null && nullToAbsent
           ? const Value.absent()
           : Value(distanceUsedM),
+      sigmaLaufzeit: sigmaLaufzeit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sigmaLaufzeit),
+      sigmaDoppler: sigmaDoppler == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sigmaDoppler),
     );
   }
 
@@ -3000,6 +3068,8 @@ class PassRow extends DataClass implements Insertable<PassRow> {
       grundCode: serializer.fromJson<String?>(json['grundCode']),
       laneIndex: serializer.fromJson<int?>(json['laneIndex']),
       distanceUsedM: serializer.fromJson<double?>(json['distanceUsedM']),
+      sigmaLaufzeit: serializer.fromJson<double?>(json['sigmaLaufzeit']),
+      sigmaDoppler: serializer.fromJson<double?>(json['sigmaDoppler']),
     );
   }
   @override
@@ -3026,6 +3096,8 @@ class PassRow extends DataClass implements Insertable<PassRow> {
       'grundCode': serializer.toJson<String?>(grundCode),
       'laneIndex': serializer.toJson<int?>(laneIndex),
       'distanceUsedM': serializer.toJson<double?>(distanceUsedM),
+      'sigmaLaufzeit': serializer.toJson<double?>(sigmaLaufzeit),
+      'sigmaDoppler': serializer.toJson<double?>(sigmaDoppler),
     };
   }
 
@@ -3050,6 +3122,8 @@ class PassRow extends DataClass implements Insertable<PassRow> {
     Value<String?> grundCode = const Value.absent(),
     Value<int?> laneIndex = const Value.absent(),
     Value<double?> distanceUsedM = const Value.absent(),
+    Value<double?> sigmaLaufzeit = const Value.absent(),
+    Value<double?> sigmaDoppler = const Value.absent(),
   }) => PassRow(
     id: id ?? this.id,
     seriesId: seriesId ?? this.seriesId,
@@ -3073,6 +3147,10 @@ class PassRow extends DataClass implements Insertable<PassRow> {
     distanceUsedM: distanceUsedM.present
         ? distanceUsedM.value
         : this.distanceUsedM,
+    sigmaLaufzeit: sigmaLaufzeit.present
+        ? sigmaLaufzeit.value
+        : this.sigmaLaufzeit,
+    sigmaDoppler: sigmaDoppler.present ? sigmaDoppler.value : this.sigmaDoppler,
   );
   PassRow copyWithCompanion(PassesCompanion data) {
     return PassRow(
@@ -3100,6 +3178,12 @@ class PassRow extends DataClass implements Insertable<PassRow> {
       distanceUsedM: data.distanceUsedM.present
           ? data.distanceUsedM.value
           : this.distanceUsedM,
+      sigmaLaufzeit: data.sigmaLaufzeit.present
+          ? data.sigmaLaufzeit.value
+          : this.sigmaLaufzeit,
+      sigmaDoppler: data.sigmaDoppler.present
+          ? data.sigmaDoppler.value
+          : this.sigmaDoppler,
     );
   }
 
@@ -3125,13 +3209,15 @@ class PassRow extends DataClass implements Insertable<PassRow> {
           ..write('grund: $grund, ')
           ..write('grundCode: $grundCode, ')
           ..write('laneIndex: $laneIndex, ')
-          ..write('distanceUsedM: $distanceUsedM')
+          ..write('distanceUsedM: $distanceUsedM, ')
+          ..write('sigmaLaufzeit: $sigmaLaufzeit, ')
+          ..write('sigmaDoppler: $sigmaDoppler')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     seriesId,
     zeit,
@@ -3152,7 +3238,9 @@ class PassRow extends DataClass implements Insertable<PassRow> {
     grundCode,
     laneIndex,
     distanceUsedM,
-  );
+    sigmaLaufzeit,
+    sigmaDoppler,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3176,7 +3264,9 @@ class PassRow extends DataClass implements Insertable<PassRow> {
           other.grund == this.grund &&
           other.grundCode == this.grundCode &&
           other.laneIndex == this.laneIndex &&
-          other.distanceUsedM == this.distanceUsedM);
+          other.distanceUsedM == this.distanceUsedM &&
+          other.sigmaLaufzeit == this.sigmaLaufzeit &&
+          other.sigmaDoppler == this.sigmaDoppler);
 }
 
 class PassesCompanion extends UpdateCompanion<PassRow> {
@@ -3200,6 +3290,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
   final Value<String?> grundCode;
   final Value<int?> laneIndex;
   final Value<double?> distanceUsedM;
+  final Value<double?> sigmaLaufzeit;
+  final Value<double?> sigmaDoppler;
   const PassesCompanion({
     this.id = const Value.absent(),
     this.seriesId = const Value.absent(),
@@ -3221,6 +3313,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
     this.grundCode = const Value.absent(),
     this.laneIndex = const Value.absent(),
     this.distanceUsedM = const Value.absent(),
+    this.sigmaLaufzeit = const Value.absent(),
+    this.sigmaDoppler = const Value.absent(),
   });
   PassesCompanion.insert({
     this.id = const Value.absent(),
@@ -3243,6 +3337,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
     this.grundCode = const Value.absent(),
     this.laneIndex = const Value.absent(),
     this.distanceUsedM = const Value.absent(),
+    this.sigmaLaufzeit = const Value.absent(),
+    this.sigmaDoppler = const Value.absent(),
   }) : seriesId = Value(seriesId),
        zeit = Value(zeit),
        offsetS = Value(offsetS),
@@ -3272,6 +3368,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
     Expression<String>? grundCode,
     Expression<int>? laneIndex,
     Expression<double>? distanceUsedM,
+    Expression<double>? sigmaLaufzeit,
+    Expression<double>? sigmaDoppler,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3294,6 +3392,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
       if (grundCode != null) 'grund_code': grundCode,
       if (laneIndex != null) 'lane_index': laneIndex,
       if (distanceUsedM != null) 'distance_used_m': distanceUsedM,
+      if (sigmaLaufzeit != null) 'sigma_laufzeit': sigmaLaufzeit,
+      if (sigmaDoppler != null) 'sigma_doppler': sigmaDoppler,
     });
   }
 
@@ -3318,6 +3418,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
     Value<String?>? grundCode,
     Value<int?>? laneIndex,
     Value<double?>? distanceUsedM,
+    Value<double?>? sigmaLaufzeit,
+    Value<double?>? sigmaDoppler,
   }) {
     return PassesCompanion(
       id: id ?? this.id,
@@ -3340,6 +3442,8 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
       grundCode: grundCode ?? this.grundCode,
       laneIndex: laneIndex ?? this.laneIndex,
       distanceUsedM: distanceUsedM ?? this.distanceUsedM,
+      sigmaLaufzeit: sigmaLaufzeit ?? this.sigmaLaufzeit,
+      sigmaDoppler: sigmaDoppler ?? this.sigmaDoppler,
     );
   }
 
@@ -3406,6 +3510,12 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
     if (distanceUsedM.present) {
       map['distance_used_m'] = Variable<double>(distanceUsedM.value);
     }
+    if (sigmaLaufzeit.present) {
+      map['sigma_laufzeit'] = Variable<double>(sigmaLaufzeit.value);
+    }
+    if (sigmaDoppler.present) {
+      map['sigma_doppler'] = Variable<double>(sigmaDoppler.value);
+    }
     return map;
   }
 
@@ -3431,7 +3541,9 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
           ..write('grund: $grund, ')
           ..write('grundCode: $grundCode, ')
           ..write('laneIndex: $laneIndex, ')
-          ..write('distanceUsedM: $distanceUsedM')
+          ..write('distanceUsedM: $distanceUsedM, ')
+          ..write('sigmaLaufzeit: $sigmaLaufzeit, ')
+          ..write('sigmaDoppler: $sigmaDoppler')
           ..write(')'))
         .toString();
   }
@@ -5842,6 +5954,8 @@ typedef $$PassesTableCreateCompanionBuilder = PassesCompanion Function({
   Value<String?> grundCode,
   Value<int?> laneIndex,
   Value<double?> distanceUsedM,
+  Value<double?> sigmaLaufzeit,
+  Value<double?> sigmaDoppler,
 });
 typedef $$PassesTableUpdateCompanionBuilder = PassesCompanion Function({
   Value<int> id,
@@ -5864,6 +5978,8 @@ typedef $$PassesTableUpdateCompanionBuilder = PassesCompanion Function({
   Value<String?> grundCode,
   Value<int?> laneIndex,
   Value<double?> distanceUsedM,
+  Value<double?> sigmaLaufzeit,
+  Value<double?> sigmaDoppler,
 });
 
 final class $$PassesTableReferences
@@ -5990,6 +6106,16 @@ class $$PassesTableFilterComposer
 
   ColumnFilters<double> get distanceUsedM => $composableBuilder(
     column: $table.distanceUsedM,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sigmaLaufzeit => $composableBuilder(
+    column: $table.sigmaLaufzeit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sigmaDoppler => $composableBuilder(
+    column: $table.sigmaDoppler,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6121,6 +6247,16 @@ class $$PassesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get sigmaLaufzeit => $composableBuilder(
+    column: $table.sigmaLaufzeit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sigmaDoppler => $composableBuilder(
+    column: $table.sigmaDoppler,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$MeasurementSeriesTableOrderingComposer get seriesId {
     final $$MeasurementSeriesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6215,6 +6351,16 @@ class $$PassesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get sigmaLaufzeit => $composableBuilder(
+    column: $table.sigmaLaufzeit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sigmaDoppler => $composableBuilder(
+    column: $table.sigmaDoppler,
+    builder: (column) => column,
+  );
+
   $$MeasurementSeriesTableAnnotationComposer get seriesId {
     final $$MeasurementSeriesTableAnnotationComposer composer =
         $composerBuilder(
@@ -6288,6 +6434,8 @@ class $$PassesTableTableManager
                 Value<String?> grundCode = const Value.absent(),
                 Value<int?> laneIndex = const Value.absent(),
                 Value<double?> distanceUsedM = const Value.absent(),
+                Value<double?> sigmaLaufzeit = const Value.absent(),
+                Value<double?> sigmaDoppler = const Value.absent(),
               }) => PassesCompanion(
                 id: id,
                 seriesId: seriesId,
@@ -6309,6 +6457,8 @@ class $$PassesTableTableManager
                 grundCode: grundCode,
                 laneIndex: laneIndex,
                 distanceUsedM: distanceUsedM,
+                sigmaLaufzeit: sigmaLaufzeit,
+                sigmaDoppler: sigmaDoppler,
               ),
           createCompanionCallback:
               ({
@@ -6332,6 +6482,8 @@ class $$PassesTableTableManager
                 Value<String?> grundCode = const Value.absent(),
                 Value<int?> laneIndex = const Value.absent(),
                 Value<double?> distanceUsedM = const Value.absent(),
+                Value<double?> sigmaLaufzeit = const Value.absent(),
+                Value<double?> sigmaDoppler = const Value.absent(),
               }) => PassesCompanion.insert(
                 id: id,
                 seriesId: seriesId,
@@ -6353,6 +6505,8 @@ class $$PassesTableTableManager
                 grundCode: grundCode,
                 laneIndex: laneIndex,
                 distanceUsedM: distanceUsedM,
+                sigmaLaufzeit: sigmaLaufzeit,
+                sigmaDoppler: sigmaDoppler,
               ),
           withReferenceMapper: (p0) => p0
               .map(

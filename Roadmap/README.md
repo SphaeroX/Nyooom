@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_09 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_10 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -26,8 +26,8 @@ Stand: 2026-11-16 – Task_09 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 06 | Sichtprüfung: Korrelogramm und Spektrogramm | erledigt (Entscheidung → 20) |
 | 07 | Ereigniserkennung | erledigt |
 | 08 | Anpassung des Bewegungsmodells | erledigt |
-| 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | läuft |
-| 10 | Doppler Variante 1: Linienverfolgung | offen |
+| 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | erledigt |
+| 10 | Doppler Variante 1: Linienverfolgung | läuft |
 | 11 | Beschleunigungsprüfung, Fusion, Klasse A | offen |
 | 12 | Live-Auswertung | offen |
 | 13 | Statistik | offen |
@@ -105,6 +105,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_08:**
 
 - `MotionFitter(config:, maxTdoa:, channelOffset:, speedOfSound:, laneDistance:)` → `fit(correlogram, timeOffsetS:, peakTimeS:)` → `MotionFit` (κ, σκ, t0 als Abstrahlzeit, Reststreuung, `reason`). Gründe für B/C zentral in `DowngradeReason`. Rechenzeit ≈ 0,7 s pro Ereignis am PC. (Task_08)
+
+**Aus Task_09:**
+
+- Datensatz: `PassRecord` (km/h wie 9.1, `reason` als `DowngradeReason`). Auswertung pro Ereignisfenster zentral über `EventPipeline` (`lib/data/event_pipeline.dart`); ganze Dateien über `runSeriesAnalysis`/`analyseSeriesInBackground`. Persistenz `repo.replacePasses/addPass/passes`. DB-Schema jetzt Version 2. (Task_09)
 
 ## Auffälligkeiten & Details
 

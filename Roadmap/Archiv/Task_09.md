@@ -56,9 +56,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Eine echte Messreihe ergibt eine Ergebnisliste mit plausiblen Geschwindigkeiten (Ergebnis in den Notizen).
-- [ ] Jeder Datensatz enthält alle Felder aus PDF 9.1; nicht belegte Doppler-Felder sind leer, nicht null-wertig falsch belegt.
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20; simulierte Messreihen liefern plausible Listen) Eine echte Messreihe ergibt eine Ergebnisliste mit plausiblen Geschwindigkeiten (Ergebnis in den Notizen).
+- [x] Jeder Datensatz enthält alle Felder aus PDF 9.1; nicht belegte Doppler-Felder sind leer, nicht null-wertig falsch belegt.
 
 ## Offene Fragen / Annahmen
 
@@ -68,23 +68,24 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Klasse B ohne Grund, solange Doppler fehlt (Task_11 setzt "kein Ton" usw.). Klasse C: `v`, `sigma_v`, `v_laufzeit` leer; κ und Reststreuung bleiben zur Diagnose gefüllt.
+- `zeit` = Startzeit der Messreihe + t0 (Abstrahlzeit). `offset_s` = t0 relativ zum Aufnahmebeginn.
+- Neuer Grund `noLane` (C), falls keine Spur für die erkannte Richtung angelegt ist.
+- Schema 2: `passes.sigma_laufzeit`, `passes.sigma_doppler` (Migration mit `addColumn`, Test simuliert eine Schema-1-Datei per `DROP COLUMN` + `user_version = 1`).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `PassRecord` (`lib/core/pipeline/pass_record.dart`, Felder nach 9.1, `toJson` mit 9.1-Namen), `EventEvaluator` + `evaluateSignal` + `laufzeitSigma` (`event_evaluator.dart`), `EventPipeline` (`lib/data/event_pipeline.dart`, zentraler Einstieg pro Ereignisfenster für offline und live), `runSeriesAnalysis`/`analyseSeriesInBackground` (`lib/data/series_analysis.dart`, WAV in 1-s-Stücken, Isolate mit Fortschritt). Repository: `replacePasses`, `addPass`, `passes`. UI: Abschnitt "Auswertung" in der Detailansicht (Button, Fortschritt, A/B/C-Zähler, Liste), `PassDetailScreen` mit allen Feldern und Korrelogramm samt angepasster Modellkurve (`InspectionScreen(fixedModel:)`).
+- **Learnings & Stolpersteine:** `Isolate.spawn` braucht eine Top-Level-Einstiegsfunktion; Closures, die einen `ReceivePort` erfassen, sind nicht sendbar. Die Datei-Auswertung muss mit dem 16-Bit-quantisierten Signal verglichen werden.
+- **Wichtige Entscheidungen und ihre Gründe:** Fenster werden pro Ereignis aus der Datei gelesen (keine ganze Aufnahme im Speicher). `PassRecord` speichert km/h (wie 9.1), intern bleibt alles SI.
+- **Auswirkungen auf Folge-Tasks:** Task_10/11 erweitern `EventPipeline.evaluate` (Doppler, Fusion); `EventEvaluator.analyse` liefert dafür `EventAnalysis` mit Fit, Fitter und Fenstersignal. Task_12 ruft `EventPipeline` pro Live-Ereignis auf und speichert per `repo.addPass`. Task_13/14 lesen `repo.passes(seriesId)`.
+- **Hinweise zu Tests und Befehlen:** `tests/core/pipeline/event_evaluator_test.dart` (mehrere Fahrzeuge, seitlicher Versatz, C-Gründe, Kanaltausch), `tests/data/passes_test.dart` (Roundtrip, Migration), `tests/data/series_analysis_test.dart`.

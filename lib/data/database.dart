@@ -105,6 +105,10 @@ class Passes extends Table {
   TextColumn get grundCode => text().named('grund_code').nullable()();
   IntColumn get laneIndex => integer().nullable()();
   RealColumn get distanceUsedM => real().nullable()();
+
+  /// Uncertainties of the single estimates in km/h (schema 2).
+  RealColumn get sigmaLaufzeit => real().named('sigma_laufzeit').nullable()();
+  RealColumn get sigmaDoppler => real().named('sigma_doppler').nullable()();
 }
 
 @DriftDatabase(
@@ -113,13 +117,20 @@ class Passes extends Table {
 class NyooomDatabase extends _$NyooomDatabase {
   NyooomDatabase(super.executor);
 
-  /// Schema history: 1 = Task_04.
+  /// Schema history: 1 = Task_04; 2 = Task_09 (passes.sigma_laufzeit,
+  /// passes.sigma_doppler).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(passes, passes.sigmaLaufzeit);
+        await m.addColumn(passes, passes.sigmaDoppler);
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

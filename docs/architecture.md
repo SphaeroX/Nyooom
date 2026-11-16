@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_08)
+## Projektstruktur (Stand Task_09)
 
 ```
 lib/
@@ -56,17 +56,22 @@ lib/
   core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung
   core/pipeline/motion_fit.dart     Grobsuche + robuste Feinanpassung von κ, t0 (technik.pdf 5.3)
   core/pipeline/reasons.dart        Gründe für Klasse B/C (Code + Text)
+  core/pipeline/event_evaluator.dart  Laufzeitauswertung eines Ereignisfensters (v_T, σ_T, Klasse B/C)
+  core/pipeline/pass_record.dart    Datensatz nach technik.pdf 9.1
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
   audio/capture.dart                Aufnahme fester Dauer, CalibrationCapture (echt/simuliert)
-  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes)
+  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes), Version 2
   data/repository.dart              NyooomRepository
+  data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live)
+  data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
   ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/sites/                         Standortliste und -formular
+  ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt
   ui/inspection/                    Sichtprüfung (Korrelogramm, Spektrogramm, Modellkurve)
   ui/common/                        RgbaImageView
   ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)

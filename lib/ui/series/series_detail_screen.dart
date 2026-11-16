@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../data/repository.dart';
+import '../evaluation/pass_widgets.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
 import 'series_screens.dart';
@@ -10,7 +11,9 @@ import 'series_screens.dart';
 typedef SeriesSection = Widget Function(BuildContext context, StoredSeries s);
 
 /// Sections added by later tasks (evaluation, statistics, export, …).
-final seriesSectionsProvider = Provider<List<SeriesSection>>((ref) => const []);
+final seriesSectionsProvider = Provider<List<SeriesSection>>(
+  (ref) => [(context, s) => EvaluationSection(series: s)],
+);
 
 /// Detail of one measurement series.
 class SeriesDetailScreen extends ConsumerWidget {

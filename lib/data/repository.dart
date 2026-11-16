@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 
 import '../core/model/acoustics.dart';
 import '../core/pipeline/analysis_setup.dart';
+import '../core/pipeline/pass_record.dart';
+import '../core/pipeline/reasons.dart';
 import '../core/site/site.dart';
 import 'database.dart';
 
@@ -265,4 +267,76 @@ class NyooomRepository {
       ],
     );
   }
+
+  /// Replaces all pass records of a series (re-evaluation).
+  Future<void> replacePasses(int seriesId, List<PassRecord> records) =>
+      db.transaction(() async {
+        await (db.delete(
+          db.passes,
+        )..where((p) => p.seriesId.equals(seriesId))).go();
+        await db.batch((b) {
+          b.insertAll(db.passes, [
+            for (final r in records) passCompanion(seriesId, r),
+          ]);
+        });
+      });
+
+  Future<void> addPass(int seriesId, PassRecord record) =>
+      db.into(db.passes).insert(passCompanion(seriesId, record));
+
+  Future<List<PassRecord>> passes(int seriesId) async {
+    final rows =
+        await (db.select(db.passes)
+              ..where((p) => p.seriesId.equals(seriesId))
+              ..orderBy([(p) => OrderingTerm.asc(p.zeit)]))
+            .get();
+    return rows.map(passFromRow).toList();
+  }
+
+  static PassesCompanion passCompanion(int seriesId, PassRecord r) =>
+      PassesCompanion.insert(
+        seriesId: seriesId,
+        zeit: r.zeitUtcMs,
+        offsetS: r.offsetS,
+        richtung: r.richtung,
+        klasse: r.klasse.label,
+        v: Value(r.v),
+        sigmaV: Value(r.sigmaV),
+        vLaufzeit: Value(r.vLaufzeit),
+        vDoppler: Value(r.vDoppler),
+        kappa: Value(r.kappa),
+        dEst: Value(r.dEst),
+        nToene: r.nToene,
+        restLaufzeit: Value(r.restLaufzeitUs),
+        pegel: r.pegel,
+        dauer: r.dauer,
+        grund: Value(r.grund),
+        grundCode: Value(r.reason?.code),
+        laneIndex: Value(r.laneIndex),
+        distanceUsedM: Value(r.distanceUsedM),
+        sigmaLaufzeit: Value(r.sigmaLaufzeit),
+        sigmaDoppler: Value(r.sigmaDoppler),
+      );
+
+  static PassRecord passFromRow(PassRow p) => PassRecord(
+    zeitUtcMs: p.zeit,
+    offsetS: p.offsetS,
+    richtung: p.richtung,
+    klasse: QualityClass.fromLabel(p.klasse),
+    v: p.v,
+    sigmaV: p.sigmaV,
+    vLaufzeit: p.vLaufzeit,
+    vDoppler: p.vDoppler,
+    kappa: p.kappa,
+    dEst: p.dEst,
+    nToene: p.nToene,
+    restLaufzeitUs: p.restLaufzeit,
+    pegel: p.pegel,
+    dauer: p.dauer,
+    reason: DowngradeReason.fromCode(p.grundCode),
+    laneIndex: p.laneIndex,
+    distanceUsedM: p.distanceUsedM,
+    sigmaLaufzeit: p.sigmaLaufzeit,
+    sigmaDoppler: p.sigmaDoppler,
+  );
 }

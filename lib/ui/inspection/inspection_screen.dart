@@ -56,16 +56,27 @@ final inspectionProvider =
 /// Visual inspection of a recording (technik.pdf 10, step 2): level,
 /// correlogram (S-shaped TDOA track) and spectrogram (Doppler of tones).
 class InspectionScreen extends ConsumerStatefulWidget {
-  const InspectionScreen({super.key, required this.seriesId});
+  const InspectionScreen({
+    super.key,
+    required this.seriesId,
+    this.initialStartS = 0,
+    this.fixedModel,
+  });
 
   final int seriesId;
+
+  /// Start of the first excerpt in s.
+  final double initialStartS;
+
+  /// Fitted model of a pass (absolute times), drawn over the correlogram.
+  final PassByModel? fixedModel;
 
   @override
   ConsumerState<InspectionScreen> createState() => _InspectionScreenState();
 }
 
 class _InspectionScreenState extends ConsumerState<InspectionScreen> {
-  double _startS = 0;
+  late double _startS = widget.initialStartS;
   double _windowS = 8;
   bool _showModel = false;
   final _kappa = TextEditingController(text: '2');
@@ -179,7 +190,8 @@ class _InspectionScreenState extends ConsumerState<InspectionScreen> {
 
   Widget _plots(InspectionData d, _Setup? setup) {
     final theme = Theme.of(context);
-    PassByModel? model;
+    PassByModel? model = widget.fixedModel;
+    var modelOffset = model == null ? 0.0 : d.startS;
     final kappa = parseDecimal(_kappa.text);
     final t0 = parseDecimal(_t0.text);
     if (_showModel && setup != null && kappa != null && t0 != null) {
@@ -192,6 +204,7 @@ class _InspectionScreenState extends ConsumerState<InspectionScreen> {
         speedOfSound: setup.speedOfSound,
         channelOffset: setup.channelOffset,
       );
+      modelOffset = 0;
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +232,12 @@ class _InspectionScreenState extends ConsumerState<InspectionScreen> {
           image: d.correlogramImage,
           overlay: model == null
               ? null
-              : _ModelPainter(model, d.correlogram.times, d.correlogram.maxLag),
+              : _ModelPainter(
+                  model,
+                  d.correlogram.times,
+                  d.correlogram.maxLag,
+                  modelOffset,
+                ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -287,17 +305,20 @@ class _LinePainter extends CustomPainter {
 }
 
 class _ModelPainter extends CustomPainter {
-  _ModelPainter(this.model, this.times, this.maxLag);
+  _ModelPainter(this.model, this.times, this.maxLag, this.timeOffset);
   final PassByModel model;
   final List<double> times;
   final double maxLag;
+
+  /// Added to the excerpt times before evaluating the model.
+  final double timeOffset;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (times.isEmpty) return;
     final path = Path();
     for (var i = 0; i < times.length; i++) {
-      final lag = model.tdoa(times[i]);
+      final lag = model.tdoa(times[i] + timeOffset);
       final p = Offset(
         (i + 0.5) / times.length * size.width,
         size.height * (0.5 - lag / (2 * maxLag)),
