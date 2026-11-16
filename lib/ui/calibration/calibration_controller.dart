@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -10,17 +11,37 @@ import '../../core/signal/pcm.dart';
 import '../../data/database.dart';
 import '../providers.dart';
 
-/// Recording length per step.
+/// Recording length per step. The clap steps leave time for three claps
+/// after the user has walked to the clap position.
 const Map<CalibrationStep, Duration> calibrationStepDuration = {
-  CalibrationStep.clapsRight: Duration(seconds: 3),
-  CalibrationStep.clapsLeft: Duration(seconds: 3),
+  CalibrationStep.clapsRight: Duration(seconds: 5),
+  CalibrationStep.clapsLeft: Duration(seconds: 5),
   CalibrationStep.constantSignal: Duration(seconds: 10),
 };
+
+/// Lead time before a recording starts, so the user can walk the 3 m to the
+/// clap position (or start the loudspeaker) after tapping the button.
+class CalibrationCountdown {
+  const CalibrationCountdown({
+    this.seconds = 5,
+    this.tick = const Duration(seconds: 1),
+  });
+
+  final int seconds;
+
+  /// Length of one countdown second (shorter in tests).
+  final Duration tick;
+}
+
+final calibrationCountdownProvider = Provider<CalibrationCountdown>(
+  (_) => const CalibrationCountdown(),
+);
 
 class CalibrationState {
   const CalibrationState({
     this.temperatureC = 15,
     this.busy,
+    this.countdown,
     this.right,
     this.left,
     this.stereo,
@@ -34,8 +55,12 @@ class CalibrationState {
 
   final double temperatureC;
 
-  /// Step currently being recorded.
+  /// Step currently counting down or being recorded.
   final CalibrationStep? busy;
+
+  /// Seconds left before the recording of [busy] starts; null while it
+  /// records.
+  final int? countdown;
   final AxisMeasurement? right;
   final AxisMeasurement? left;
   final CheckResult? stereo;
@@ -64,6 +89,7 @@ final latestCalibrationProvider =
 class CalibrationController extends Notifier<CalibrationState> {
   CalibrationCapture? _capture;
   final List<StereoBlock> _recordings = [];
+  int _countdownRun = 0;
 
   @override
   CalibrationState build() => const CalibrationState();
@@ -73,6 +99,36 @@ class CalibrationController extends Notifier<CalibrationState> {
     _recordings.clear();
     state = CalibrationState(temperatureC: temperatureC);
   }
+
+  /// Counts down [CalibrationCountdown.seconds], then records [step].
+  Future<void> recordAfterCountdown(CalibrationStep step) async {
+    if (_capture == null) throw StateError('begin() first');
+    final run = ++_countdownRun;
+    final countdown = ref.read(calibrationCountdownProvider);
+    for (var left = countdown.seconds; left > 0; left--) {
+      state = _copy(busy: step, countdown: left);
+      await Future<void>.delayed(countdown.tick);
+      if (!ref.mounted || run != _countdownRun) return;
+    }
+    await record(step);
+  }
+
+  /// Aborts a running countdown; nothing is recorded.
+  void cancelCountdown() {
+    if (state.countdown == null) return;
+    _countdownRun++;
+    state = _copy(busy: null);
+  }
+
+  /// Whether [step] has a usable result: claps were detected on that side
+  /// (and, once both sides exist, the stereo check passed), or the constant
+  /// signal showed no processing.
+  bool stepPassed(CalibrationStep step) => switch (step) {
+    CalibrationStep.clapsRight => (state.right?.count ?? 0) > 0,
+    CalibrationStep.clapsLeft =>
+      (state.left?.count ?? 0) > 0 && (state.stereo?.passed ?? false),
+    CalibrationStep.constantSignal => state.processing?.passed ?? false,
+  };
 
   Future<void> record(CalibrationStep step) async {
     final capture = _capture;
@@ -181,17 +237,21 @@ class CalibrationController extends Notifier<CalibrationState> {
     return id;
   }
 
-  CalibrationState _copy({CalibrationStep? busy, String? error}) =>
-      CalibrationState(
-        temperatureC: state.temperatureC,
-        busy: busy,
-        right: state.right,
-        left: state.left,
-        stereo: state.stereo,
-        mapping: state.mapping,
-        processing: state.processing,
-        clipping: state.clipping,
-        result: state.result,
-        error: error,
-      );
+  CalibrationState _copy({
+    CalibrationStep? busy,
+    int? countdown,
+    String? error,
+  }) => CalibrationState(
+    temperatureC: state.temperatureC,
+    busy: busy,
+    countdown: countdown,
+    right: state.right,
+    left: state.left,
+    stereo: state.stereo,
+    mapping: state.mapping,
+    processing: state.processing,
+    clipping: state.clipping,
+    result: state.result,
+    error: error,
+  );
 }
