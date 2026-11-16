@@ -3,7 +3,6 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import '../core/signal/pcm.dart';
-import '../core/sim/passby_simulator.dart';
 import '../core/sim/scenarios.dart';
 import '../core/sim/traffic.dart';
 import 'stereo_recorder.dart';

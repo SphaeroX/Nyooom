@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'ui/recorder/recorder_screen.dart';
+import 'ui/home/home_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: NyooomApp()));
@@ -17,7 +17,7 @@ class NyooomApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
       ),
-      home: const RecorderScreen(),
+      home: const HomeScreen(),
     );
   }
 }

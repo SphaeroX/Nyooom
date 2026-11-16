@@ -55,9 +55,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Eine Messreihe mit zwei Fahrspuren lässt sich anlegen, aufnehmen, stoppen und erscheint in der Liste; WAV und `metadata.json` liegen im Messreihen-Ordner.
-- [ ] Eine 10-minütige Aufnahme verursacht keinen wachsenden Speicherverbrauch (manuell geprüft, Ergebnis in den Notizen).
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] (Controller-Test mit Fake-Recorder; echtes Gerät → Task_20) Eine Messreihe mit zwei Fahrspuren lässt sich anlegen, aufnehmen, stoppen und erscheint in der Liste; WAV und `metadata.json` liegen im Messreihen-Ordner.
+- [ ] (→ Task_20) Eine 10-minütige Aufnahme verursacht keinen wachsenden Speicherverbrauch (manuell geprüft, Ergebnis in den Notizen).
 
 ## Offene Fragen / Annahmen
 
@@ -68,23 +68,22 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Entscheidung Foreground-Service: **nein** (vorerst). Die Aufnahme läuft, solange der App-Prozess lebt; der Aufnahmebildschirm verhindert das Zurücknavigieren während der Aufnahme (`PopScope`). Verhalten bei App-Wechsel/Bildschirm aus wird in Task_20 auf dem Gerät geprüft; falls Android die Aufnahme im Hintergrund abbricht, Foreground-Service vom Typ `microphone` nachrüsten.
+- Speicher: WAV wird blockweise per `WavFileWriter` in die Datei geschrieben, nichts sammelt sich im Speicher. Messung auf dem Gerät → Task_20.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** drift-Datenbank `NyooomDatabase` (`lib/data/database.dart`, Schema 1) mit Tabellen Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes (Spalten nach PDF 9.1, plus `grund_code`, `laneIndex`, `distanceUsedM`, `offsetS`). Repository `NyooomRepository`, Dateiablage `SeriesStorage` (`<Dokumente>/series/<id>/audio.wav` + `metadata.json`). Fachmodelle in `lib/core/site/site.dart` (SiteSpec, LaneSpec, validateSite) und `lib/core/series/series_metadata.dart`. UI: Home mit Tabs (Messreihen, Standorte, Gerät), Standortformular, Start-, Aufnahme- und Listenbildschirm. Zusätzlich (Simulationsentscheidung): `SimulatedStereoRecorder` und `TrafficGenerator`, umschaltbar beim Start einer Messreihe (Standard: Simulation an).
+- **Learnings & Stolpersteine:** drift braucht `PRAGMA foreign_keys = ON` in `beforeOpen`, sonst greift die Kaskade nicht. sqlite3 3.x bringt die native Bibliothek per Build-Hook mit; Tests mit `NativeDatabase.memory()` laufen ohne Zusatzinstallation. Code-Generierung: `fvm dart run build_runner build -d`.
+- **Wichtige Entscheidungen und ihre Gründe:** Kein Foreground-Service (siehe Notizen). Lateral-Spread der simulierten Fahrzeuge ist auf 2,5·σ_d begrenzt. Richtung → Spur ist eindeutig (Validierung verbietet zwei Spuren mit gleicher Richtung), weil die Auswertung die Spur aus der Fahrtrichtung ableitet (PDF 5.3).
+- **Auswirkungen auf Folge-Tasks:** Task_05 schreibt in `Calibrations` (`addCalibration`), Messreihen übernehmen automatisch `latestCalibration`. Task_09 schreibt `Passes`. Task_12 hängt sich per `SeriesRecordingController.addBlockListener` in den Block-Strom und per `recordingExtrasProvider` in den Aufnahmebildschirm. Task_09 setzt `seriesOpenerProvider` für die Detailansicht. Neue Tabs über `homeTabsProvider`. Task_15/16 brauchen eine Migration auf Schema 2 (Referenzfahrten); `Sites` hat schon `latitude`/`longitude`.
+- **Hinweise zu Tests und Befehlen:** Controller-Tests überschreiben `databaseProvider` (In-Memory), `seriesStorageProvider` (Temp-Ordner) und `recorderFactoryProvider` (FakeStereoRecorder).

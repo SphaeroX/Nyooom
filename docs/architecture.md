@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_03)
+## Projektstruktur (Stand Task_04)
 
 ```
 lib/
@@ -48,6 +48,17 @@ lib/
   core/dsp/fractional_delay.dart    Kaiser-gefensterter Sinc-Interpolator für Bruchteil-Verzögerungen
   core/sim/passby_simulator.dart    Generator synthetischer Vorbeifahrten mit GroundTruth
   core/sim/scenarios.dart           Fixture-Fabrik: Verbrenner, Elektroauto, Standard-Setups
+  core/sim/traffic.dart             TrafficGenerator: deterministischer Mischverkehr für die Simulationsquelle
+  core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
+  core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
+  audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
+  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes)
+  data/repository.dart              NyooomRepository
+  data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
+  ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
+  ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
+  ui/sites/                         Standortliste und -formular
+  ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController)
   core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
   core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
   audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo)
@@ -60,7 +71,8 @@ android/app/src/main/kotlin/de/nyooom/app/
 
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
 - Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
-- Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), dev: `test`.
+- Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), dev: `test`, `drift_dev`, `build_runner` (Code-Generierung `fvm dart run build_runner build -d`).
+- Simulationsquelle: Beim Start einer Messreihe kann statt der Mikrofone `SimulatedStereoRecorder` gewählt werden (synthetischer Verkehr aus `lib/core/sim/`). Damit läuft die App im Emulator und ohne geeignetes Gerät.
 
 ## Plattform-Schnittstelle Aufnahme
 

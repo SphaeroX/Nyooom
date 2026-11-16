@@ -14,15 +14,15 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_04 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_05 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
 | 01 | Durchstich: Stereo-Rohaufnahme | erledigt (Gerätetest → 20) |
 | 02 | Signalmodell und synthetische Vorbeifahrten | erledigt |
 | 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | erledigt |
-| 04 | Messreihe anlegen und aufnehmen | läuft |
-| 05 | Geräteeignung und Kalibrierung | offen |
+| 04 | Messreihe anlegen und aufnehmen | erledigt |
+| 05 | Geräteeignung und Kalibrierung | läuft |
 | 06 | Sichtprüfung: Korrelogramm und Spektrogramm | offen |
 | 07 | Ereigniserkennung | offen |
 | 08 | Anpassung des Bewegungsmodells | offen |
@@ -81,6 +81,12 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 
 - `GccPhat(config:, micSpacing:, speedOfSound:)`: `correlogram(signal, from:, to:)` → `Correlogram` (Zeiten = Blockmitten relativ zu `from`, `peakDelays`, `peakWeights`, `valueAt`), `singleTdoa(signal)` für ganze Stücke. R normiert auf 1 bei perfekter Kohärenz. Laufzeit 8-s-Fenster: 125 ms am Entwicklungsrechner. (Task_03)
 - FFT: `Fft.of(n).transform(re, im, inverse:)`, `hannWindow(n)`, `blockStarts(len, block, hop)` in `lib/core/dsp/fft.dart`. (Task_03)
+
+**Aus Task_04:**
+
+- Persistenz: `NyooomDatabase` + `NyooomRepository` (`lib/data/`), Provider in `lib/ui/providers.dart` (`databaseProvider`, `repositoryProvider`, `seriesStorageProvider`, `recorderFactoryProvider`, `sitesProvider`, `seriesListProvider`). Nach Schemaänderung `fvm dart run build_runner build -d` und `schemaVersion` + Migration. (Task_04)
+- Simulationsquelle: `SimulatedStereoRecorder(lanes:)` implementiert `StereoRecorder`; `TrafficGenerator` erzeugt deterministischen Mischverkehr (ca. 35 % E-Autos, Verbrenner mit Motorton, einige beschleunigen). `pastTruths` liefert die wahren Werte der bereits vorbeigefahrenen Fahrzeuge (für Vergleichsanzeigen). (Task_04)
+- Erweiterungspunkte der UI: `homeTabsProvider` (Tabs), `seriesOpenerProvider` (Tippen auf Messreihe), `recordingExtrasProvider` (Zusatzinhalt im Aufnahmebildschirm), `SeriesRecordingController.addBlockListener` (Live-Blöcke). (Task_04)
 
 ## Auffälligkeiten & Details
 
