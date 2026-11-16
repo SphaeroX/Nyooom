@@ -51,8 +51,8 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Der Statistik-Bildschirm zeigt für eine echte Messreihe alle Kennzahlen getrennt nach A und B sowie den Anteil C.
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] (mit simulierter Messreihe; echte → Task_20) Der Statistik-Bildschirm zeigt für eine echte Messreihe alle Kennzahlen getrennt nach A und B sowie den Anteil C.
 
 ## Offene Fragen / Annahmen
 
@@ -62,23 +62,25 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Perzentil-Definition: lineare Interpolation zwischen den Rängen, h = (n − 1)·p ("Typ 7", Standard in NumPy/Excel PERZENTIL.INKL). Begründung: stetig, verbreitet, Median identisch mit der üblichen Definition.
+- Anteil über Limit: nur echt schneller (v > Limit); genau gleich zählt nicht.
+- Korrektur 8.3: σ_wahr = √(max(0, σ² − σ_Messung²)) mit σ_Messung = RMS der σ_v der Gruppe; V85 korr. = Mittel + 1,0364·σ_wahr (Normalverteilung). Zusätzlich das empirische V85.
+- Stundengruppen in Ortszeit des Geräts. Fahrspur-Gruppen werden berechnet (`byLane`), angezeigt werden Richtungen (Richtung = Spur, siehe Task_04).
+- Kein Chart-Paket: Histogramm per `CustomPainter` (gestapelt, A grün, B blau, Linie = Tempolimit).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/stats/statistics.dart`: `percentile`, `speedStats` (`SpeedStats`), `ClassStats` (A, B, A+B), `StatisticsReport.from` (gesamt, Richtung, Spur, Stunde, Klasse C mit Gründen), `speedHistogram`, Korrektur `correctedSd`/`v85Shift`. UI: `StatisticsScreen`/`StatisticsView` aus der Detailansicht einer Messreihe und aus dem Standort (alle Messreihen, `repo.passesForSite`).
+- **Learnings & Stolpersteine:** Zeitgruppen hängen von der Zeitzone ab; Tests mit `toLocal()` rechnen.
+- **Wichtige Entscheidungen und ihre Gründe:** Statistik nur über `v` (Klasse C hat kein `v`), C wird separat gezählt (PDF 5.6).
+- **Auswirkungen auf Folge-Tasks:** Task_14 kann `StatisticsReport` als Zusammenfassung exportieren. Task_16 nutzt eigene Fehlerkennzahlen, kann aber `percentile` verwenden.
+- **Hinweise zu Tests und Befehlen:** `tests/core/stats/`, `tests/ui/stats/`.

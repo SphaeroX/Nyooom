@@ -8,9 +8,17 @@ double? parseDecimal(String text) =>
 
 /// Form for a measuring site (technik.pdf 4.1, 7.2).
 class SiteForm extends StatefulWidget {
-  const SiteForm({super.key, this.initial, required this.onSubmit});
+  const SiteForm({
+    super.key,
+    this.initial,
+    required this.onSubmit,
+    this.header,
+  });
 
   final SiteSpec? initial;
+
+  /// Optional widget above the form (e.g. a statistics button).
+  final Widget? header;
   final ValueChanged<SiteSpec> onSubmit;
 
   @override
@@ -88,6 +96,10 @@ class _SiteFormState extends State<SiteForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.header != null) ...[
+            widget.header!,
+            const SizedBox(height: 12),
+          ],
           TextField(
             key: const Key('site-name'),
             controller: _name,

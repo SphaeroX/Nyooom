@@ -293,6 +293,19 @@ class NyooomRepository {
     return rows.map(passFromRow).toList();
   }
 
+  /// All pass records of all series of a site.
+  Future<List<PassRecord>> passesForSite(int siteId) async {
+    final query = db.select(db.passes).join([
+      innerJoin(
+        db.measurementSeries,
+        db.measurementSeries.id.equalsExp(db.passes.seriesId),
+      ),
+    ])..where(db.measurementSeries.siteId.equals(siteId));
+    query.orderBy([OrderingTerm.asc(db.passes.zeit)]);
+    final rows = await query.get();
+    return [for (final r in rows) passFromRow(r.readTable(db.passes))];
+  }
+
   static PassesCompanion passCompanion(int seriesId, PassRecord r) =>
       PassesCompanion.insert(
         seriesId: seriesId,

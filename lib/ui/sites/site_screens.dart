@@ -4,7 +4,14 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/site/site.dart';
 import '../../data/repository.dart';
 import '../providers.dart';
+import '../../core/pipeline/pass_record.dart';
+import '../stats/statistics_screen.dart';
 import 'site_form.dart';
+
+/// All records of all series of a site.
+final sitePassesProvider = FutureProvider.family<List<PassRecord>, int>(
+  (ref, siteId) => ref.watch(repositoryProvider).passesForSite(siteId),
+);
 
 /// List of measuring sites.
 class SiteListScreen extends ConsumerWidget {
@@ -103,6 +110,21 @@ class SiteEditScreen extends ConsumerWidget {
         ],
       ),
       body: SiteForm(
+        header: existing == null
+            ? null
+            : OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => StatisticsScreen(
+                      title: 'Statistik ${existing.spec.name}',
+                      records: sitePassesProvider(existing.id),
+                      limitKmh: existing.spec.speedLimitKmh,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('Statistik des Standorts'),
+              ),
         initial: existing?.spec,
         onSubmit: (spec) async {
           final repo = ref.read(repositoryProvider);

@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_12)
+## Projektstruktur (Stand Task_13)
 
 ```
 lib/
@@ -61,6 +61,7 @@ lib/
   core/pipeline/fusion.dart         Beschleunigungs-/Abstandsprüfung, gewichtete Fusion, Klassenlogik (5.4–5.6)
   core/pipeline/pass_record.dart    Datensatz nach technik.pdf 9.1
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
+  core/stats/statistics.dart        Median, V85, Anteil über Limit, Korrektur 8.3, Gruppierung, Histogramm
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
@@ -75,6 +76,7 @@ lib/
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/sites/                         Standortliste und -formular
   ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt
+  ui/stats/                         Statistik-Bildschirm (Tabellen, Histogramm)
   ui/inspection/                    Sichtprüfung (Korrelogramm, Spektrogramm, Modellkurve)
   ui/common/                        RgbaImageView
   ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)

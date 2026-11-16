@@ -6,6 +6,7 @@ import '../../core/pipeline/pass_record.dart';
 import '../../data/repository.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
+import '../stats/statistics_screen.dart';
 import 'evaluation_controller.dart';
 
 String formatTime(int utcMs) {
@@ -119,6 +120,20 @@ class EvaluationSection extends ConsumerWidget {
             eval.error!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => StatisticsScreen(
+                title: 'Statistik der Messreihe',
+                records: passesProvider(series.id),
+                limitKmh: series.site.spec.speedLimitKmh,
+              ),
+            ),
+          ),
+          icon: const Icon(Icons.bar_chart),
+          label: const Text('Statistik'),
+        ),
         passes.when(
           loading: () => const SizedBox.shrink(),
           error: (e, _) => Text('Fehler: $e'),
