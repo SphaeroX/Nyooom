@@ -4,6 +4,7 @@ import '../core/model/acoustics.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/pipeline/reasons.dart';
+import '../core/reference/reference_track.dart';
 import '../core/site/site.dart';
 import 'database.dart';
 
@@ -305,6 +306,72 @@ class NyooomRepository {
     final rows = await query.get();
     return [for (final r in rows) passFromRow(r.readTable(db.passes))];
   }
+
+  /// Stores a reference drive; returns its id.
+  Future<int> addReferenceTrack(ReferenceTrack track, {int? siteId}) =>
+      db.transaction(() async {
+        final id = await db
+            .into(db.referenceTracks)
+            .insert(
+              ReferenceTracksCompanion.insert(
+                name: track.name,
+                source: track.source.name,
+                siteId: Value(siteId),
+                createdAtUtcMs: DateTime.now().toUtc().millisecondsSinceEpoch,
+              ),
+            );
+        await db.batch((b) {
+          b.insertAll(db.referencePoints, [
+            for (final p in track.points)
+              ReferencePointsCompanion.insert(
+                trackId: id,
+                timeUtcMs: p.timeUtcMs,
+                lat: p.lat,
+                lon: p.lon,
+                speedMs: Value(p.speed),
+                accuracyM: Value(p.accuracyM),
+                speedAccuracy: Value(p.speedAccuracy),
+                speedDerived: Value(p.speedDerived),
+              ),
+          ]);
+        });
+        return id;
+      });
+
+  Future<List<ReferenceTrackRow>> referenceTracks() => (db.select(
+    db.referenceTracks,
+  )..orderBy([(t) => OrderingTerm.desc(t.createdAtUtcMs)])).get();
+
+  Future<ReferenceTrack?> referenceTrack(int id) async {
+    final row = await (db.select(
+      db.referenceTracks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return null;
+    final points =
+        await (db.select(db.referencePoints)
+              ..where((p) => p.trackId.equals(id))
+              ..orderBy([(p) => OrderingTerm.asc(p.timeUtcMs)]))
+            .get();
+    return ReferenceTrack(
+      name: row.name,
+      source: ReferenceSource.values.byName(row.source),
+      points: [
+        for (final p in points)
+          ReferencePoint(
+            timeUtcMs: p.timeUtcMs,
+            lat: p.lat,
+            lon: p.lon,
+            speed: p.speedMs,
+            accuracyM: p.accuracyM,
+            speedAccuracy: p.speedAccuracy,
+            speedDerived: p.speedDerived,
+          ),
+      ],
+    );
+  }
+
+  Future<void> deleteReferenceTrack(int id) =>
+      (db.delete(db.referenceTracks)..where((t) => t.id.equals(id))).go();
 
   static PassesCompanion passCompanion(int seriesId, PassRecord r) =>
       PassesCompanion.insert(

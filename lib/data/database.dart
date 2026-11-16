@@ -111,16 +111,56 @@ class Passes extends Table {
   RealColumn get sigmaDoppler => real().named('sigma_doppler').nullable()();
 }
 
+/// GPS reference drive (technik.pdf 8.1, schema 3).
+@DataClassName('ReferenceTrackRow')
+class ReferenceTracks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+
+  /// `logger`, `gpx` or `csv`.
+  TextColumn get source => text()();
+  IntColumn get siteId => integer().nullable().references(
+    Sites,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  IntColumn get createdAtUtcMs => integer()();
+}
+
+@DataClassName('ReferencePointRow')
+class ReferencePoints extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trackId =>
+      integer().references(ReferenceTracks, #id, onDelete: KeyAction.cascade)();
+  IntColumn get timeUtcMs => integer()();
+  RealColumn get lat => real()();
+  RealColumn get lon => real()();
+  RealColumn get speedMs => real().nullable()();
+  RealColumn get accuracyM => real().nullable()();
+  RealColumn get speedAccuracy => real().nullable()();
+  BoolColumn get speedDerived => boolean().withDefault(const Constant(false))();
+}
+
 @DriftDatabase(
-  tables: [Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes],
+  tables: [
+    Devices,
+    Calibrations,
+    Sites,
+    Lanes,
+    MeasurementSeries,
+    Passes,
+    ReferenceTracks,
+    ReferencePoints,
+  ],
 )
 class NyooomDatabase extends _$NyooomDatabase {
   NyooomDatabase(super.executor);
 
   /// Schema history: 1 = Task_04; 2 = Task_09 (passes.sigma_laufzeit,
-  /// passes.sigma_doppler).
+  /// passes.sigma_doppler); 3 = Task_15 (reference_tracks,
+  /// reference_points).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -129,6 +169,10 @@ class NyooomDatabase extends _$NyooomDatabase {
       if (from < 2) {
         await m.addColumn(passes, passes.sigmaLaufzeit);
         await m.addColumn(passes, passes.sigmaDoppler);
+      }
+      if (from < 3) {
+        await m.createTable(referenceTracks);
+        await m.createTable(referencePoints);
       }
     },
     beforeOpen: (details) async {

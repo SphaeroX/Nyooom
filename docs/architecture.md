@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_14)
+## Projektstruktur (Stand Task_15)
 
 ```
 lib/
@@ -62,12 +62,13 @@ lib/
   core/pipeline/pass_record.dart    Datensatz nach technik.pdf 9.1
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
   core/export/                      CSV (9.1), JSON-Export, ZIP-Writer
+  core/reference/                   Referenzfahrten: GPX/CSV-Leser, Logger, abgeleitete Geschwindigkeit
   core/stats/statistics.dart        Median, V85, Anteil über Limit, Korrektur 8.3, Gruppierung, Histogramm
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
   audio/capture.dart                Aufnahme fester Dauer, CalibrationCapture (echt/simuliert)
-  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes), Version 2
+  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes, ReferenceTracks, ReferencePoints), Version 3
   data/repository.dart              NyooomRepository
   data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live)
   data/live_pipeline.dart           Live-Auswertung: Ringpuffer, Worker-Isolate, Warteschlange
@@ -78,6 +79,7 @@ lib/
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/sites/                         Standortliste und -formular
   ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt
+  ui/reference/                     Tab "Referenz": Logger, Import, Verlauf
   ui/export/                        Teilen-Buttons (share_plus)
   ui/stats/                         Statistik-Bildschirm (Tabellen, Histogramm)
   ui/inspection/                    Sichtprüfung (Korrelogramm, Spektrogramm, Modellkurve)
@@ -96,7 +98,7 @@ android/app/src/main/kotlin/de/nyooom/app/
 
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
 - Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
-- Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), `share_plus` (Android-Teilen-Dialog für Exporte), dev: `test`, `drift_dev`, `build_runner`, `archive` (nur zum Prüfen der ZIP-Exporte in Tests) (Code-Generierung `fvm dart run build_runner build -d`).
+- Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), `share_plus` (Android-Teilen-Dialog für Exporte), `geolocator` (GPS-Logger für Referenzfahrten), `file_picker` (GPX/CSV-Import), dev: `test`, `drift_dev`, `build_runner`, `archive` (nur zum Prüfen der ZIP-Exporte in Tests) (Code-Generierung `fvm dart run build_runner build -d`).
 - Simulationsquelle: Beim Start einer Messreihe kann statt der Mikrofone `SimulatedStereoRecorder` gewählt werden (synthetischer Verkehr aus `lib/core/sim/`). Damit läuft die App im Emulator und ohne geeignetes Gerät.
 
 ## Plattform-Schnittstelle Aufnahme

@@ -3549,6 +3549,930 @@ class PassesCompanion extends UpdateCompanion<PassRow> {
   }
 }
 
+class $ReferenceTracksTable extends ReferenceTracks
+    with TableInfo<$ReferenceTracksTable, ReferenceTrackRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReferenceTracksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _siteIdMeta = const VerificationMeta('siteId');
+  @override
+  late final GeneratedColumn<int> siteId = GeneratedColumn<int>(
+    'site_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sites (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _createdAtUtcMsMeta = const VerificationMeta(
+    'createdAtUtcMs',
+  );
+  @override
+  late final GeneratedColumn<int> createdAtUtcMs = GeneratedColumn<int>(
+    'created_at_utc_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    source,
+    siteId,
+    createdAtUtcMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reference_tracks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReferenceTrackRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('site_id')) {
+      context.handle(
+        _siteIdMeta,
+        siteId.isAcceptableOrUnknown(data['site_id']!, _siteIdMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc_ms')) {
+      context.handle(
+        _createdAtUtcMsMeta,
+        createdAtUtcMs.isAcceptableOrUnknown(
+          data['created_at_utc_ms']!,
+          _createdAtUtcMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReferenceTrackRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReferenceTrackRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      siteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}site_id'],
+      ),
+      createdAtUtcMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_utc_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ReferenceTracksTable createAlias(String alias) {
+    return $ReferenceTracksTable(attachedDatabase, alias);
+  }
+}
+
+class ReferenceTrackRow extends DataClass
+    implements Insertable<ReferenceTrackRow> {
+  final int id;
+  final String name;
+
+  /// `logger`, `gpx` or `csv`.
+  final String source;
+  final int? siteId;
+  final int createdAtUtcMs;
+  const ReferenceTrackRow({
+    required this.id,
+    required this.name,
+    required this.source,
+    this.siteId,
+    required this.createdAtUtcMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || siteId != null) {
+      map['site_id'] = Variable<int>(siteId);
+    }
+    map['created_at_utc_ms'] = Variable<int>(createdAtUtcMs);
+    return map;
+  }
+
+  ReferenceTracksCompanion toCompanion(bool nullToAbsent) {
+    return ReferenceTracksCompanion(
+      id: Value(id),
+      name: Value(name),
+      source: Value(source),
+      siteId: siteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteId),
+      createdAtUtcMs: Value(createdAtUtcMs),
+    );
+  }
+
+  factory ReferenceTrackRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReferenceTrackRow(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      source: serializer.fromJson<String>(json['source']),
+      siteId: serializer.fromJson<int?>(json['siteId']),
+      createdAtUtcMs: serializer.fromJson<int>(json['createdAtUtcMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'source': serializer.toJson<String>(source),
+      'siteId': serializer.toJson<int?>(siteId),
+      'createdAtUtcMs': serializer.toJson<int>(createdAtUtcMs),
+    };
+  }
+
+  ReferenceTrackRow copyWith({
+    int? id,
+    String? name,
+    String? source,
+    Value<int?> siteId = const Value.absent(),
+    int? createdAtUtcMs,
+  }) => ReferenceTrackRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    source: source ?? this.source,
+    siteId: siteId.present ? siteId.value : this.siteId,
+    createdAtUtcMs: createdAtUtcMs ?? this.createdAtUtcMs,
+  );
+  ReferenceTrackRow copyWithCompanion(ReferenceTracksCompanion data) {
+    return ReferenceTrackRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      source: data.source.present ? data.source.value : this.source,
+      siteId: data.siteId.present ? data.siteId.value : this.siteId,
+      createdAtUtcMs: data.createdAtUtcMs.present
+          ? data.createdAtUtcMs.value
+          : this.createdAtUtcMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReferenceTrackRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('source: $source, ')
+          ..write('siteId: $siteId, ')
+          ..write('createdAtUtcMs: $createdAtUtcMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, source, siteId, createdAtUtcMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReferenceTrackRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.source == this.source &&
+          other.siteId == this.siteId &&
+          other.createdAtUtcMs == this.createdAtUtcMs);
+}
+
+class ReferenceTracksCompanion extends UpdateCompanion<ReferenceTrackRow> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> source;
+  final Value<int?> siteId;
+  final Value<int> createdAtUtcMs;
+  const ReferenceTracksCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.source = const Value.absent(),
+    this.siteId = const Value.absent(),
+    this.createdAtUtcMs = const Value.absent(),
+  });
+  ReferenceTracksCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String source,
+    this.siteId = const Value.absent(),
+    required int createdAtUtcMs,
+  }) : name = Value(name),
+       source = Value(source),
+       createdAtUtcMs = Value(createdAtUtcMs);
+  static Insertable<ReferenceTrackRow> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? source,
+    Expression<int>? siteId,
+    Expression<int>? createdAtUtcMs,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (source != null) 'source': source,
+      if (siteId != null) 'site_id': siteId,
+      if (createdAtUtcMs != null) 'created_at_utc_ms': createdAtUtcMs,
+    });
+  }
+
+  ReferenceTracksCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? source,
+    Value<int?>? siteId,
+    Value<int>? createdAtUtcMs,
+  }) {
+    return ReferenceTracksCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      source: source ?? this.source,
+      siteId: siteId ?? this.siteId,
+      createdAtUtcMs: createdAtUtcMs ?? this.createdAtUtcMs,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (siteId.present) {
+      map['site_id'] = Variable<int>(siteId.value);
+    }
+    if (createdAtUtcMs.present) {
+      map['created_at_utc_ms'] = Variable<int>(createdAtUtcMs.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReferenceTracksCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('source: $source, ')
+          ..write('siteId: $siteId, ')
+          ..write('createdAtUtcMs: $createdAtUtcMs')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReferencePointsTable extends ReferencePoints
+    with TableInfo<$ReferencePointsTable, ReferencePointRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReferencePointsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _trackIdMeta = const VerificationMeta(
+    'trackId',
+  );
+  @override
+  late final GeneratedColumn<int> trackId = GeneratedColumn<int>(
+    'track_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES reference_tracks (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _timeUtcMsMeta = const VerificationMeta(
+    'timeUtcMs',
+  );
+  @override
+  late final GeneratedColumn<int> timeUtcMs = GeneratedColumn<int>(
+    'time_utc_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lonMeta = const VerificationMeta('lon');
+  @override
+  late final GeneratedColumn<double> lon = GeneratedColumn<double>(
+    'lon',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _speedMsMeta = const VerificationMeta(
+    'speedMs',
+  );
+  @override
+  late final GeneratedColumn<double> speedMs = GeneratedColumn<double>(
+    'speed_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _accuracyMMeta = const VerificationMeta(
+    'accuracyM',
+  );
+  @override
+  late final GeneratedColumn<double> accuracyM = GeneratedColumn<double>(
+    'accuracy_m',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _speedAccuracyMeta = const VerificationMeta(
+    'speedAccuracy',
+  );
+  @override
+  late final GeneratedColumn<double> speedAccuracy = GeneratedColumn<double>(
+    'speed_accuracy',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _speedDerivedMeta = const VerificationMeta(
+    'speedDerived',
+  );
+  @override
+  late final GeneratedColumn<bool> speedDerived = GeneratedColumn<bool>(
+    'speed_derived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("speed_derived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    trackId,
+    timeUtcMs,
+    lat,
+    lon,
+    speedMs,
+    accuracyM,
+    speedAccuracy,
+    speedDerived,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reference_points';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReferencePointRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('track_id')) {
+      context.handle(
+        _trackIdMeta,
+        trackId.isAcceptableOrUnknown(data['track_id']!, _trackIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trackIdMeta);
+    }
+    if (data.containsKey('time_utc_ms')) {
+      context.handle(
+        _timeUtcMsMeta,
+        timeUtcMs.isAcceptableOrUnknown(data['time_utc_ms']!, _timeUtcMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timeUtcMsMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lon')) {
+      context.handle(
+        _lonMeta,
+        lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lonMeta);
+    }
+    if (data.containsKey('speed_ms')) {
+      context.handle(
+        _speedMsMeta,
+        speedMs.isAcceptableOrUnknown(data['speed_ms']!, _speedMsMeta),
+      );
+    }
+    if (data.containsKey('accuracy_m')) {
+      context.handle(
+        _accuracyMMeta,
+        accuracyM.isAcceptableOrUnknown(data['accuracy_m']!, _accuracyMMeta),
+      );
+    }
+    if (data.containsKey('speed_accuracy')) {
+      context.handle(
+        _speedAccuracyMeta,
+        speedAccuracy.isAcceptableOrUnknown(
+          data['speed_accuracy']!,
+          _speedAccuracyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('speed_derived')) {
+      context.handle(
+        _speedDerivedMeta,
+        speedDerived.isAcceptableOrUnknown(
+          data['speed_derived']!,
+          _speedDerivedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReferencePointRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReferencePointRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      trackId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}track_id'],
+      )!,
+      timeUtcMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}time_utc_ms'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lon'],
+      )!,
+      speedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}speed_ms'],
+      ),
+      accuracyM: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}accuracy_m'],
+      ),
+      speedAccuracy: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}speed_accuracy'],
+      ),
+      speedDerived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}speed_derived'],
+      )!,
+    );
+  }
+
+  @override
+  $ReferencePointsTable createAlias(String alias) {
+    return $ReferencePointsTable(attachedDatabase, alias);
+  }
+}
+
+class ReferencePointRow extends DataClass
+    implements Insertable<ReferencePointRow> {
+  final int id;
+  final int trackId;
+  final int timeUtcMs;
+  final double lat;
+  final double lon;
+  final double? speedMs;
+  final double? accuracyM;
+  final double? speedAccuracy;
+  final bool speedDerived;
+  const ReferencePointRow({
+    required this.id,
+    required this.trackId,
+    required this.timeUtcMs,
+    required this.lat,
+    required this.lon,
+    this.speedMs,
+    this.accuracyM,
+    this.speedAccuracy,
+    required this.speedDerived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['track_id'] = Variable<int>(trackId);
+    map['time_utc_ms'] = Variable<int>(timeUtcMs);
+    map['lat'] = Variable<double>(lat);
+    map['lon'] = Variable<double>(lon);
+    if (!nullToAbsent || speedMs != null) {
+      map['speed_ms'] = Variable<double>(speedMs);
+    }
+    if (!nullToAbsent || accuracyM != null) {
+      map['accuracy_m'] = Variable<double>(accuracyM);
+    }
+    if (!nullToAbsent || speedAccuracy != null) {
+      map['speed_accuracy'] = Variable<double>(speedAccuracy);
+    }
+    map['speed_derived'] = Variable<bool>(speedDerived);
+    return map;
+  }
+
+  ReferencePointsCompanion toCompanion(bool nullToAbsent) {
+    return ReferencePointsCompanion(
+      id: Value(id),
+      trackId: Value(trackId),
+      timeUtcMs: Value(timeUtcMs),
+      lat: Value(lat),
+      lon: Value(lon),
+      speedMs: speedMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speedMs),
+      accuracyM: accuracyM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accuracyM),
+      speedAccuracy: speedAccuracy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speedAccuracy),
+      speedDerived: Value(speedDerived),
+    );
+  }
+
+  factory ReferencePointRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReferencePointRow(
+      id: serializer.fromJson<int>(json['id']),
+      trackId: serializer.fromJson<int>(json['trackId']),
+      timeUtcMs: serializer.fromJson<int>(json['timeUtcMs']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lon: serializer.fromJson<double>(json['lon']),
+      speedMs: serializer.fromJson<double?>(json['speedMs']),
+      accuracyM: serializer.fromJson<double?>(json['accuracyM']),
+      speedAccuracy: serializer.fromJson<double?>(json['speedAccuracy']),
+      speedDerived: serializer.fromJson<bool>(json['speedDerived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trackId': serializer.toJson<int>(trackId),
+      'timeUtcMs': serializer.toJson<int>(timeUtcMs),
+      'lat': serializer.toJson<double>(lat),
+      'lon': serializer.toJson<double>(lon),
+      'speedMs': serializer.toJson<double?>(speedMs),
+      'accuracyM': serializer.toJson<double?>(accuracyM),
+      'speedAccuracy': serializer.toJson<double?>(speedAccuracy),
+      'speedDerived': serializer.toJson<bool>(speedDerived),
+    };
+  }
+
+  ReferencePointRow copyWith({
+    int? id,
+    int? trackId,
+    int? timeUtcMs,
+    double? lat,
+    double? lon,
+    Value<double?> speedMs = const Value.absent(),
+    Value<double?> accuracyM = const Value.absent(),
+    Value<double?> speedAccuracy = const Value.absent(),
+    bool? speedDerived,
+  }) => ReferencePointRow(
+    id: id ?? this.id,
+    trackId: trackId ?? this.trackId,
+    timeUtcMs: timeUtcMs ?? this.timeUtcMs,
+    lat: lat ?? this.lat,
+    lon: lon ?? this.lon,
+    speedMs: speedMs.present ? speedMs.value : this.speedMs,
+    accuracyM: accuracyM.present ? accuracyM.value : this.accuracyM,
+    speedAccuracy: speedAccuracy.present
+        ? speedAccuracy.value
+        : this.speedAccuracy,
+    speedDerived: speedDerived ?? this.speedDerived,
+  );
+  ReferencePointRow copyWithCompanion(ReferencePointsCompanion data) {
+    return ReferencePointRow(
+      id: data.id.present ? data.id.value : this.id,
+      trackId: data.trackId.present ? data.trackId.value : this.trackId,
+      timeUtcMs: data.timeUtcMs.present ? data.timeUtcMs.value : this.timeUtcMs,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lon: data.lon.present ? data.lon.value : this.lon,
+      speedMs: data.speedMs.present ? data.speedMs.value : this.speedMs,
+      accuracyM: data.accuracyM.present ? data.accuracyM.value : this.accuracyM,
+      speedAccuracy: data.speedAccuracy.present
+          ? data.speedAccuracy.value
+          : this.speedAccuracy,
+      speedDerived: data.speedDerived.present
+          ? data.speedDerived.value
+          : this.speedDerived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReferencePointRow(')
+          ..write('id: $id, ')
+          ..write('trackId: $trackId, ')
+          ..write('timeUtcMs: $timeUtcMs, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('speedMs: $speedMs, ')
+          ..write('accuracyM: $accuracyM, ')
+          ..write('speedAccuracy: $speedAccuracy, ')
+          ..write('speedDerived: $speedDerived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    trackId,
+    timeUtcMs,
+    lat,
+    lon,
+    speedMs,
+    accuracyM,
+    speedAccuracy,
+    speedDerived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReferencePointRow &&
+          other.id == this.id &&
+          other.trackId == this.trackId &&
+          other.timeUtcMs == this.timeUtcMs &&
+          other.lat == this.lat &&
+          other.lon == this.lon &&
+          other.speedMs == this.speedMs &&
+          other.accuracyM == this.accuracyM &&
+          other.speedAccuracy == this.speedAccuracy &&
+          other.speedDerived == this.speedDerived);
+}
+
+class ReferencePointsCompanion extends UpdateCompanion<ReferencePointRow> {
+  final Value<int> id;
+  final Value<int> trackId;
+  final Value<int> timeUtcMs;
+  final Value<double> lat;
+  final Value<double> lon;
+  final Value<double?> speedMs;
+  final Value<double?> accuracyM;
+  final Value<double?> speedAccuracy;
+  final Value<bool> speedDerived;
+  const ReferencePointsCompanion({
+    this.id = const Value.absent(),
+    this.trackId = const Value.absent(),
+    this.timeUtcMs = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
+    this.speedMs = const Value.absent(),
+    this.accuracyM = const Value.absent(),
+    this.speedAccuracy = const Value.absent(),
+    this.speedDerived = const Value.absent(),
+  });
+  ReferencePointsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trackId,
+    required int timeUtcMs,
+    required double lat,
+    required double lon,
+    this.speedMs = const Value.absent(),
+    this.accuracyM = const Value.absent(),
+    this.speedAccuracy = const Value.absent(),
+    this.speedDerived = const Value.absent(),
+  }) : trackId = Value(trackId),
+       timeUtcMs = Value(timeUtcMs),
+       lat = Value(lat),
+       lon = Value(lon);
+  static Insertable<ReferencePointRow> custom({
+    Expression<int>? id,
+    Expression<int>? trackId,
+    Expression<int>? timeUtcMs,
+    Expression<double>? lat,
+    Expression<double>? lon,
+    Expression<double>? speedMs,
+    Expression<double>? accuracyM,
+    Expression<double>? speedAccuracy,
+    Expression<bool>? speedDerived,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trackId != null) 'track_id': trackId,
+      if (timeUtcMs != null) 'time_utc_ms': timeUtcMs,
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon,
+      if (speedMs != null) 'speed_ms': speedMs,
+      if (accuracyM != null) 'accuracy_m': accuracyM,
+      if (speedAccuracy != null) 'speed_accuracy': speedAccuracy,
+      if (speedDerived != null) 'speed_derived': speedDerived,
+    });
+  }
+
+  ReferencePointsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? trackId,
+    Value<int>? timeUtcMs,
+    Value<double>? lat,
+    Value<double>? lon,
+    Value<double?>? speedMs,
+    Value<double?>? accuracyM,
+    Value<double?>? speedAccuracy,
+    Value<bool>? speedDerived,
+  }) {
+    return ReferencePointsCompanion(
+      id: id ?? this.id,
+      trackId: trackId ?? this.trackId,
+      timeUtcMs: timeUtcMs ?? this.timeUtcMs,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
+      speedMs: speedMs ?? this.speedMs,
+      accuracyM: accuracyM ?? this.accuracyM,
+      speedAccuracy: speedAccuracy ?? this.speedAccuracy,
+      speedDerived: speedDerived ?? this.speedDerived,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trackId.present) {
+      map['track_id'] = Variable<int>(trackId.value);
+    }
+    if (timeUtcMs.present) {
+      map['time_utc_ms'] = Variable<int>(timeUtcMs.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lon.present) {
+      map['lon'] = Variable<double>(lon.value);
+    }
+    if (speedMs.present) {
+      map['speed_ms'] = Variable<double>(speedMs.value);
+    }
+    if (accuracyM.present) {
+      map['accuracy_m'] = Variable<double>(accuracyM.value);
+    }
+    if (speedAccuracy.present) {
+      map['speed_accuracy'] = Variable<double>(speedAccuracy.value);
+    }
+    if (speedDerived.present) {
+      map['speed_derived'] = Variable<bool>(speedDerived.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReferencePointsCompanion(')
+          ..write('id: $id, ')
+          ..write('trackId: $trackId, ')
+          ..write('timeUtcMs: $timeUtcMs, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('speedMs: $speedMs, ')
+          ..write('accuracyM: $accuracyM, ')
+          ..write('speedAccuracy: $speedAccuracy, ')
+          ..write('speedDerived: $speedDerived')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$NyooomDatabase extends GeneratedDatabase {
   _$NyooomDatabase(QueryExecutor e) : super(e);
   $NyooomDatabaseManager get managers => $NyooomDatabaseManager(this);
@@ -3559,6 +4483,12 @@ abstract class _$NyooomDatabase extends GeneratedDatabase {
   late final $MeasurementSeriesTable measurementSeries =
       $MeasurementSeriesTable(this);
   late final $PassesTable passes = $PassesTable(this);
+  late final $ReferenceTracksTable referenceTracks = $ReferenceTracksTable(
+    this,
+  );
+  late final $ReferencePointsTable referencePoints = $ReferencePointsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3570,6 +4500,8 @@ abstract class _$NyooomDatabase extends GeneratedDatabase {
     lanes,
     measurementSeries,
     passes,
+    referenceTracks,
+    referencePoints,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3614,6 +4546,20 @@ abstract class _$NyooomDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('passes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'sites',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reference_tracks', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'reference_tracks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reference_points', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4513,6 +5459,27 @@ final class $$SitesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ReferenceTracksTable, List<ReferenceTrackRow>>
+  _referenceTracksRefsTable(_$NyooomDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.referenceTracks,
+        aliasName: 'sites__id__reference_tracks__site_id',
+      );
+
+  $$ReferenceTracksTableProcessedTableManager get referenceTracksRefs {
+    final manager = $$ReferenceTracksTableTableManager(
+      $_db,
+      $_db.referenceTracks,
+    ).filter((f) => f.siteId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _referenceTracksRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SitesTableFilterComposer
@@ -4595,6 +5562,31 @@ class $$SitesTableFilterComposer
           }) => $$MeasurementSeriesTableFilterComposer(
             $db: $db,
             $table: $db.measurementSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> referenceTracksRefs(
+    Expression<bool> Function($$ReferenceTracksTableFilterComposer f) f,
+  ) {
+    final $$ReferenceTracksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.referenceTracks,
+      getReferencedColumn: (t) => t.siteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferenceTracksTableFilterComposer(
+            $db: $db,
+            $table: $db.referenceTracks,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4726,6 +5718,31 @@ class $$SitesTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> referenceTracksRefs<T extends Object>(
+    Expression<T> Function($$ReferenceTracksTableAnnotationComposer a) f,
+  ) {
+    final $$ReferenceTracksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.referenceTracks,
+      getReferencedColumn: (t) => t.siteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferenceTracksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.referenceTracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SitesTableTableManager
@@ -4741,7 +5758,11 @@ class $$SitesTableTableManager
           $$SitesTableUpdateCompanionBuilder,
           (SiteRow, $$SitesTableReferences),
           SiteRow,
-          PrefetchHooks Function({bool lanesRefs, bool measurementSeriesRefs})
+          PrefetchHooks Function({
+            bool lanesRefs,
+            bool measurementSeriesRefs,
+            bool referenceTracksRefs,
+          })
         > {
   $$SitesTableTableManager(_$NyooomDatabase db, $SitesTable table)
     : super(
@@ -4795,12 +5816,17 @@ class $$SitesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({lanesRefs = false, measurementSeriesRefs = false}) {
+              ({
+                lanesRefs = false,
+                measurementSeriesRefs = false,
+                referenceTracksRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (lanesRefs) db.lanes,
                     if (measurementSeriesRefs) db.measurementSeries,
+                    if (referenceTracksRefs) db.referenceTracks,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4841,6 +5867,26 @@ class $$SitesTableTableManager
                           referencedColumn: 'site_id',
                           typedResults: items,
                         ),
+                      if (referenceTracksRefs)
+                        await $_getPrefetchedDataByColumns<
+                          SiteRow,
+                          $SitesTable,
+                          ReferenceTrackRow,
+                          $ReferenceTracksTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SitesTableReferences
+                              ._referenceTracksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SitesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).referenceTracksRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'site_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4861,7 +5907,11 @@ typedef $$SitesTableProcessedTableManager =
       $$SitesTableUpdateCompanionBuilder,
       (SiteRow, $$SitesTableReferences),
       SiteRow,
-      PrefetchHooks Function({bool lanesRefs, bool measurementSeriesRefs})
+      PrefetchHooks Function({
+        bool lanesRefs,
+        bool measurementSeriesRefs,
+        bool referenceTracksRefs,
+      })
     >;
 typedef $$LanesTableCreateCompanionBuilder = LanesCompanion Function({
   Value<int> id,
@@ -6574,6 +7624,824 @@ typedef $$PassesTableProcessedTableManager =
       PassRow,
       PrefetchHooks Function({bool seriesId})
     >;
+typedef $$ReferenceTracksTableCreateCompanionBuilder =
+    ReferenceTracksCompanion Function({
+      Value<int> id,
+      required String name,
+      required String source,
+      Value<int?> siteId,
+      required int createdAtUtcMs,
+    });
+typedef $$ReferenceTracksTableUpdateCompanionBuilder =
+    ReferenceTracksCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> source,
+      Value<int?> siteId,
+      Value<int> createdAtUtcMs,
+    });
+
+final class $$ReferenceTracksTableReferences
+    extends
+        BaseReferences<
+          _$NyooomDatabase,
+          $ReferenceTracksTable,
+          ReferenceTrackRow
+        > {
+  $$ReferenceTracksTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $SitesTable _siteIdTable(_$NyooomDatabase db) =>
+      db.sites.createAlias('reference_tracks__site_id__sites__id');
+
+  $$SitesTableProcessedTableManager? get siteId {
+    final $_column = $_itemColumn<int>('site_id');
+    if ($_column == null) return null;
+    final manager = $$SitesTableTableManager(
+      $_db,
+      $_db.sites,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_siteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ReferencePointsTable, List<ReferencePointRow>>
+  _referencePointsRefsTable(_$NyooomDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.referencePoints,
+        aliasName: 'reference_tracks__id__reference_points__track_id',
+      );
+
+  $$ReferencePointsTableProcessedTableManager get referencePointsRefs {
+    final manager = $$ReferencePointsTableTableManager(
+      $_db,
+      $_db.referencePoints,
+    ).filter((f) => f.trackId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _referencePointsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ReferenceTracksTableFilterComposer
+    extends Composer<_$NyooomDatabase, $ReferenceTracksTable> {
+  $$ReferenceTracksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAtUtcMs => $composableBuilder(
+    column: $table.createdAtUtcMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$SitesTableFilterComposer get siteId {
+    final $$SitesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.siteId,
+      referencedTable: $db.sites,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SitesTableFilterComposer(
+            $db: $db,
+            $table: $db.sites,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> referencePointsRefs(
+    Expression<bool> Function($$ReferencePointsTableFilterComposer f) f,
+  ) {
+    final $$ReferencePointsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.referencePoints,
+      getReferencedColumn: (t) => t.trackId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferencePointsTableFilterComposer(
+            $db: $db,
+            $table: $db.referencePoints,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReferenceTracksTableOrderingComposer
+    extends Composer<_$NyooomDatabase, $ReferenceTracksTable> {
+  $$ReferenceTracksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAtUtcMs => $composableBuilder(
+    column: $table.createdAtUtcMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$SitesTableOrderingComposer get siteId {
+    final $$SitesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.siteId,
+      referencedTable: $db.sites,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SitesTableOrderingComposer(
+            $db: $db,
+            $table: $db.sites,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReferenceTracksTableAnnotationComposer
+    extends Composer<_$NyooomDatabase, $ReferenceTracksTable> {
+  $$ReferenceTracksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAtUtcMs => $composableBuilder(
+    column: $table.createdAtUtcMs,
+    builder: (column) => column,
+  );
+
+  $$SitesTableAnnotationComposer get siteId {
+    final $$SitesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.siteId,
+      referencedTable: $db.sites,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SitesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sites,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> referencePointsRefs<T extends Object>(
+    Expression<T> Function($$ReferencePointsTableAnnotationComposer a) f,
+  ) {
+    final $$ReferencePointsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.referencePoints,
+      getReferencedColumn: (t) => t.trackId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferencePointsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.referencePoints,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReferenceTracksTableTableManager
+    extends
+        RootTableManager<
+          _$NyooomDatabase,
+          $ReferenceTracksTable,
+          ReferenceTrackRow,
+          $$ReferenceTracksTableFilterComposer,
+          $$ReferenceTracksTableOrderingComposer,
+          $$ReferenceTracksTableAnnotationComposer,
+          $$ReferenceTracksTableCreateCompanionBuilder,
+          $$ReferenceTracksTableUpdateCompanionBuilder,
+          (ReferenceTrackRow, $$ReferenceTracksTableReferences),
+          ReferenceTrackRow,
+          PrefetchHooks Function({bool siteId, bool referencePointsRefs})
+        > {
+  $$ReferenceTracksTableTableManager(
+    _$NyooomDatabase db,
+    $ReferenceTracksTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReferenceTracksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReferenceTracksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReferenceTracksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int?> siteId = const Value.absent(),
+                Value<int> createdAtUtcMs = const Value.absent(),
+              }) => ReferenceTracksCompanion(
+                id: id,
+                name: name,
+                source: source,
+                siteId: siteId,
+                createdAtUtcMs: createdAtUtcMs,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String source,
+                Value<int?> siteId = const Value.absent(),
+                required int createdAtUtcMs,
+              }) => ReferenceTracksCompanion.insert(
+                id: id,
+                name: name,
+                source: source,
+                siteId: siteId,
+                createdAtUtcMs: createdAtUtcMs,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReferenceTracksTable, ReferenceTrackRow>(table),
+                  $$ReferenceTracksTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({siteId = false, referencePointsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (referencePointsRefs) db.referencePoints,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (siteId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.siteId,
+                            referencedTable: $$ReferenceTracksTableReferences
+                                ._siteIdTable(db),
+                            referencedColumn: $$ReferenceTracksTableReferences
+                                ._siteIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (referencePointsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ReferenceTrackRow,
+                          $ReferenceTracksTable,
+                          ReferencePointRow,
+                          $ReferencePointsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReferenceTracksTableReferences
+                              ._referencePointsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReferenceTracksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).referencePointsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'track_id',
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ReferenceTracksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$NyooomDatabase,
+      $ReferenceTracksTable,
+      ReferenceTrackRow,
+      $$ReferenceTracksTableFilterComposer,
+      $$ReferenceTracksTableOrderingComposer,
+      $$ReferenceTracksTableAnnotationComposer,
+      $$ReferenceTracksTableCreateCompanionBuilder,
+      $$ReferenceTracksTableUpdateCompanionBuilder,
+      (ReferenceTrackRow, $$ReferenceTracksTableReferences),
+      ReferenceTrackRow,
+      PrefetchHooks Function({bool siteId, bool referencePointsRefs})
+    >;
+typedef $$ReferencePointsTableCreateCompanionBuilder =
+    ReferencePointsCompanion Function({
+      Value<int> id,
+      required int trackId,
+      required int timeUtcMs,
+      required double lat,
+      required double lon,
+      Value<double?> speedMs,
+      Value<double?> accuracyM,
+      Value<double?> speedAccuracy,
+      Value<bool> speedDerived,
+    });
+typedef $$ReferencePointsTableUpdateCompanionBuilder =
+    ReferencePointsCompanion Function({
+      Value<int> id,
+      Value<int> trackId,
+      Value<int> timeUtcMs,
+      Value<double> lat,
+      Value<double> lon,
+      Value<double?> speedMs,
+      Value<double?> accuracyM,
+      Value<double?> speedAccuracy,
+      Value<bool> speedDerived,
+    });
+
+final class $$ReferencePointsTableReferences
+    extends
+        BaseReferences<
+          _$NyooomDatabase,
+          $ReferencePointsTable,
+          ReferencePointRow
+        > {
+  $$ReferencePointsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ReferenceTracksTable _trackIdTable(_$NyooomDatabase db) => db
+      .referenceTracks
+      .createAlias('reference_points__track_id__reference_tracks__id');
+
+  $$ReferenceTracksTableProcessedTableManager get trackId {
+    final $_column = $_itemColumn<int>('track_id')!;
+
+    final manager = $$ReferenceTracksTableTableManager(
+      $_db,
+      $_db.referenceTracks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_trackIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReferencePointsTableFilterComposer
+    extends Composer<_$NyooomDatabase, $ReferencePointsTable> {
+  $$ReferencePointsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timeUtcMs => $composableBuilder(
+    column: $table.timeUtcMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get speedMs => $composableBuilder(
+    column: $table.speedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get accuracyM => $composableBuilder(
+    column: $table.accuracyM,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get speedAccuracy => $composableBuilder(
+    column: $table.speedAccuracy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get speedDerived => $composableBuilder(
+    column: $table.speedDerived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ReferenceTracksTableFilterComposer get trackId {
+    final $$ReferenceTracksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.referenceTracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferenceTracksTableFilterComposer(
+            $db: $db,
+            $table: $db.referenceTracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReferencePointsTableOrderingComposer
+    extends Composer<_$NyooomDatabase, $ReferencePointsTable> {
+  $$ReferencePointsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timeUtcMs => $composableBuilder(
+    column: $table.timeUtcMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get speedMs => $composableBuilder(
+    column: $table.speedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get accuracyM => $composableBuilder(
+    column: $table.accuracyM,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get speedAccuracy => $composableBuilder(
+    column: $table.speedAccuracy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get speedDerived => $composableBuilder(
+    column: $table.speedDerived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ReferenceTracksTableOrderingComposer get trackId {
+    final $$ReferenceTracksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.referenceTracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferenceTracksTableOrderingComposer(
+            $db: $db,
+            $table: $db.referenceTracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReferencePointsTableAnnotationComposer
+    extends Composer<_$NyooomDatabase, $ReferencePointsTable> {
+  $$ReferencePointsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get timeUtcMs =>
+      $composableBuilder(column: $table.timeUtcMs, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lon =>
+      $composableBuilder(column: $table.lon, builder: (column) => column);
+
+  GeneratedColumn<double> get speedMs =>
+      $composableBuilder(column: $table.speedMs, builder: (column) => column);
+
+  GeneratedColumn<double> get accuracyM =>
+      $composableBuilder(column: $table.accuracyM, builder: (column) => column);
+
+  GeneratedColumn<double> get speedAccuracy => $composableBuilder(
+    column: $table.speedAccuracy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get speedDerived => $composableBuilder(
+    column: $table.speedDerived,
+    builder: (column) => column,
+  );
+
+  $$ReferenceTracksTableAnnotationComposer get trackId {
+    final $$ReferenceTracksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackId,
+      referencedTable: $db.referenceTracks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReferenceTracksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.referenceTracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReferencePointsTableTableManager
+    extends
+        RootTableManager<
+          _$NyooomDatabase,
+          $ReferencePointsTable,
+          ReferencePointRow,
+          $$ReferencePointsTableFilterComposer,
+          $$ReferencePointsTableOrderingComposer,
+          $$ReferencePointsTableAnnotationComposer,
+          $$ReferencePointsTableCreateCompanionBuilder,
+          $$ReferencePointsTableUpdateCompanionBuilder,
+          (ReferencePointRow, $$ReferencePointsTableReferences),
+          ReferencePointRow,
+          PrefetchHooks Function({bool trackId})
+        > {
+  $$ReferencePointsTableTableManager(
+    _$NyooomDatabase db,
+    $ReferencePointsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReferencePointsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReferencePointsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReferencePointsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> trackId = const Value.absent(),
+                Value<int> timeUtcMs = const Value.absent(),
+                Value<double> lat = const Value.absent(),
+                Value<double> lon = const Value.absent(),
+                Value<double?> speedMs = const Value.absent(),
+                Value<double?> accuracyM = const Value.absent(),
+                Value<double?> speedAccuracy = const Value.absent(),
+                Value<bool> speedDerived = const Value.absent(),
+              }) => ReferencePointsCompanion(
+                id: id,
+                trackId: trackId,
+                timeUtcMs: timeUtcMs,
+                lat: lat,
+                lon: lon,
+                speedMs: speedMs,
+                accuracyM: accuracyM,
+                speedAccuracy: speedAccuracy,
+                speedDerived: speedDerived,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int trackId,
+                required int timeUtcMs,
+                required double lat,
+                required double lon,
+                Value<double?> speedMs = const Value.absent(),
+                Value<double?> accuracyM = const Value.absent(),
+                Value<double?> speedAccuracy = const Value.absent(),
+                Value<bool> speedDerived = const Value.absent(),
+              }) => ReferencePointsCompanion.insert(
+                id: id,
+                trackId: trackId,
+                timeUtcMs: timeUtcMs,
+                lat: lat,
+                lon: lon,
+                speedMs: speedMs,
+                accuracyM: accuracyM,
+                speedAccuracy: speedAccuracy,
+                speedDerived: speedDerived,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReferencePointsTable, ReferencePointRow>(table),
+                  $$ReferencePointsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trackId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (trackId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.trackId,
+                        referencedTable: $$ReferencePointsTableReferences
+                            ._trackIdTable(db),
+                        referencedColumn: $$ReferencePointsTableReferences
+                            ._trackIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReferencePointsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$NyooomDatabase,
+      $ReferencePointsTable,
+      ReferencePointRow,
+      $$ReferencePointsTableFilterComposer,
+      $$ReferencePointsTableOrderingComposer,
+      $$ReferencePointsTableAnnotationComposer,
+      $$ReferencePointsTableCreateCompanionBuilder,
+      $$ReferencePointsTableUpdateCompanionBuilder,
+      (ReferencePointRow, $$ReferencePointsTableReferences),
+      ReferencePointRow,
+      PrefetchHooks Function({bool trackId})
+    >;
 
 class $NyooomDatabaseManager {
   final _$NyooomDatabase _db;
@@ -6590,4 +8458,8 @@ class $NyooomDatabaseManager {
       $$MeasurementSeriesTableTableManager(_db, _db.measurementSeries);
   $$PassesTableTableManager get passes =>
       $$PassesTableTableManager(_db, _db.passes);
+  $$ReferenceTracksTableTableManager get referenceTracks =>
+      $$ReferenceTracksTableTableManager(_db, _db.referenceTracks);
+  $$ReferencePointsTableTableManager get referencePoints =>
+      $$ReferencePointsTableTableManager(_db, _db.referencePoints);
 }

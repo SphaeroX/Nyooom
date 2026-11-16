@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_15 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_16 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -32,8 +32,8 @@ Stand: 2026-11-16 – Task_15 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 12 | Live-Auswertung | erledigt (Gerätemessung → 20) |
 | 13 | Statistik | erledigt |
 | 14 | Export | erledigt |
-| 15 | GPS-Referenzfahrten | läuft |
-| 16 | Validierung und Abnahme | offen |
+| 15 | GPS-Referenzfahrten | erledigt (Feldtest → 20) |
+| 16 | Validierung und Abnahme | läuft |
 | 17 | Doppler Variante 2: Entzerrung | offen |
 | 18 | Selbstkalibrierung | offen |
 | 19 | Gemeinsame Ausgleichsrechnung | offen |
@@ -129,6 +129,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_14:**
 
 - Exportformate: CSV (`;`, Dezimalpunkt, Spalten = 9.1, Einheiten in `einheiten.txt`), JSON `nyooom-series` v1, ZIP (ungepackt, mit `audio.wav` und `metadata.json`). Code: `lib/core/export/`, `exportSeries` in `lib/data/series_export.dart`. (Task_14)
+
+**Aus Task_15:**
+
+- Referenzfahrten: `ReferenceTrack` (`lib/core/reference/`), Import GPX/CSV, Logger über `geolocator`; DB-Schema 3 (`reference_tracks`, `reference_points`). (Task_15)
 
 ## Auffälligkeiten & Details
 

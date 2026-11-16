@@ -51,8 +51,8 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Eine echte GPS-Aufzeichnung und ein GPX-Import sind in der App sichtbar.
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20) Eine echte GPS-Aufzeichnung und ein GPX-Import sind in der App sichtbar.
 
 ## Offene Fragen / Annahmen
 
@@ -62,23 +62,26 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Pakete: `geolocator` (GPS, höchste Genauigkeit, 1 Hz über `AndroidSettings`), `file_picker` (GPX/CSV wählen). Berechtigungen `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` im Manifest; Anfrage zur Laufzeit über Geolocator.
+- Logger läuft im Vordergrund (Bildschirm an lassen); Hintergrundbetrieb mit Foreground-Service nur bei Bedarf nach dem Feldtest (Task_20). Annahme laut Task: Logger auf einem zweiten Gerät mit derselben App.
+- GPX ohne XML-Paket: toleranter Leser für `trkpt`/`rtept`/`wpt` mit `time` und optionaler `speed` (auch Erweiterungen wie `gpxtpx:speed`, m/s). Fehlt die Geschwindigkeit, wird sie aus den Positionen abgeleitet (Haversine, zentrale Differenz).
+- CSV: Spaltennamen siehe `parseReferenceCsv` (Zeit, Breite, Länge, Geschwindigkeit m/s oder km/h), Zeiten ISO 8601, `yyyy-MM-dd HH:mm:ss` (als UTC), Epoch-Sekunden oder -Millisekunden; fehlerhafte Zeilen werden mit Zeilennummer gemeldet.
+- Uhrzeit: Der Logger zeigt "Geräteuhr minus GPS-Zeit" (GPS-Fix-Zeit von Android) als Hinweis auf die Synchronisation.
+- Schema 3: Tabellen `reference_tracks`, `reference_points` (Verknüpfung mit Standort optional über `siteId`).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/reference/` (`ReferenceTrack` mit `speedAt`/`meanSpeed`, `haversineM`, `deriveSpeeds`, `parseGpx`, `parseReferenceCsv`, `ReferenceLogger` mit `PositionSample`-Strom). Repository `addReferenceTrack`, `referenceTracks`, `referenceTrack`, `deleteReferenceTrack`. UI: neuer Tab "Referenz" mit Liste, Import, Logger-Bildschirm und Geschwindigkeitsverlauf.
+- **Learnings & Stolpersteine:** file_picker 13 hat eine statische API (`FilePicker.pickFiles()` → `List<PlatformFile>`, `readAsBytes()`). drift `createTable` nutzt `IF NOT EXISTS`, die Migration ist dadurch robust. Unter Windows sperren sich manchmal `.dart_tool/build/generated` und `build/unit_test_assets`; löschen und neu starten.
+- **Wichtige Entscheidungen und ihre Gründe:** Kein XML-Paket (GPX-Teilmenge reicht), Positionsstrom über `positionStreamProvider` austauschbar (Tests ohne GPS).
+- **Auswirkungen auf Folge-Tasks:** Task_16 ordnet Referenzfahrten über die Uhrzeit zu: `ReferenceTrack.points` (lat/lon/Zeit) für den Zeitpunkt größter Annäherung an die Standortkoordinate (`Sites.latitude/longitude`), `meanSpeed` um die Vorbeifahrt.
+- **Hinweise zu Tests und Befehlen:** `tests/core/reference/`, `tests/data/reference_repository_test.dart`, `tests/ui/reference/`.
