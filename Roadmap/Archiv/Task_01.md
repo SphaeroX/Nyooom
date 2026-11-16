@@ -59,11 +59,11 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün und enthält die oben genannten Tests.
-- [ ] `fvm flutter build apk --debug` und `fvm flutter analyze` laufen ohne Fehler.
-- [ ] Auf einem echten Gerät zeigt die App zwei unabhängig reagierende Pegel und meldet die genutzte Audioquelle (UNPROCESSED oder Rückfall).
-- [ ] Eine gespeicherte WAV-Datei ist Stereo, 48 kHz, 16 Bit; geprüft durch Test des WAV-Readers und manuell am PC.
-- [ ] Tatsächlich entstandene Projektstruktur ist in `docs/architecture.md` nachgezogen, Abweichungen bei Testbefehlen in `docs/testing.md`.
+- [x] `fvm flutter test tests/` läuft grün und enthält die oben genannten Tests.
+- [x] `fvm flutter build apk --debug` und `fvm flutter analyze` laufen ohne Fehler.
+- [ ] (→ Task_20) Auf einem echten Gerät zeigt die App zwei unabhängig reagierende Pegel und meldet die genutzte Audioquelle (UNPROCESSED oder Rückfall).
+- [x] (Test; manuell → Task_20) Eine gespeicherte WAV-Datei ist Stereo, 48 kHz, 16 Bit; geprüft durch Test des WAV-Readers und manuell am PC.
+- [x] Tatsächlich entstandene Projektstruktur ist in `docs/architecture.md` nachgezogen, Abweichungen bei Testbefehlen in `docs/testing.md`.
 
 ## Offene Fragen / Annahmen
 
@@ -81,37 +81,21 @@ Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergrei
 - `fvm flutter test tests/`: 42 Tests grün. `fvm flutter analyze`: keine Probleme. `fvm dart format --output=none --set-exit-if-changed lib tests`: sauber. `fvm flutter build apk --debug`: erfolgreich.
 - **Offen: manuelle Geräte-Checkliste.** Beim Arbeiten war kein Android-Gerät per adb verbunden. Deshalb bleibt der Task als `RUN_` liegen, bis jemand die App auf einem Gerät geprüft hat.
 
-**Manuelle Geräte-Checkliste (auszufüllen):**
-
-| Prüfung | Ergebnis |
-|---|---|
-| Gerätemodell / Android-Version | |
-| App startet, Berechtigung wird angefragt | |
-| Gemeldete Audioquelle (UNPROCESSED / Rückfall) | |
-| Effektstatus AGC / NS / AEC | |
-| Gemeldete Mikrofone (`getMicrophones`) | |
-| Pegel reagieren getrennt (oberes bzw. unteres Mikrofon zuhalten); welcher Kanal = welches Mikrofon | |
-| Gespeicherte WAV am PC: Stereo, 48 kHz, 16 Bit | |
-
-WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls files/recordings` bzw. `adb exec-out run-as de.nyooom.app cat files/recordings/<name>.wav > aufnahme.local.wav` (Pfad je nach `getApplicationDocumentsDirectory`, ggf. `app_flutter/recordings`).
+**Geräteprüfung verschoben (Entscheidung des Nutzers, 2026-11-16):** Es war kein Gerät angeschlossen. Die manuelle Geräte-Checkliste dieses Tasks steht jetzt in `Roadmap/Tasks/Task_20.md` (Geräte- und Feldtest) und wird dort am Ende gesammelt durchgeführt. Der Task wurde mit allen automatisch prüfbaren Kriterien archiviert.
 
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** Flutter-Projekt `de.nyooom.app` (minSdk 24), Kotlin-Plugin `NyooomAudioPlugin` (UNPROCESSED mit Rückfall VOICE_RECOGNITION, AGC/NS/AEC aus, Mikrofonliste), Dart-Seite `StereoRecorder`, `StereoBlock`/De-Interleaving, Pegelmessung, WAV-Writer (Streaming in Datei, Header beim Schließen) und WAV-Reader, Recorder-Screen. Abweichung: Geräteprüfung nach Task_20 verschoben.
+- **Learnings & Stolpersteine:** Flutter 3.50 lagert Material aus (`package:material_ui/material_ui.dart`). Im Controller den State setzen, bevor eine Subscription gecancelt wird, und nach jedem `await` `ref.mounted` prüfen, sonst `UnmountedRefException` in Widget-Tests. `ListView` in Widget-Tests baut unsichtbare Kinder nicht, deshalb `SingleChildScrollView`.
+- **Wichtige Entscheidungen und ihre Gründe:** Plugin direkt im App-Modul (kein separates Paket), Laufzeitberechtigung ohne androidx über `activity.requestPermissions`. PCM16 statt Float (PDF 4.2 genügt).
+- **Auswirkungen auf Folge-Tasks:** `WavFileWriter` streamt bereits in die Datei (Task_04 kann ihn direkt nutzen). `NyooomConfig` wird in Task_02 erweitert. `StereoRecorder` ist austauschbar (Provider), darüber läuft die Simulationsquelle.
+- **Hinweise zu Tests und Befehlen:** `FakeStereoRecorder` und `sinePcm16` in `tests/helpers/`. fvm liegt unter `%LOCALAPPDATA%\Pub\Cache\bin` und ist in Git-Bash nicht im PATH; Befehle über PowerShell ausführen.

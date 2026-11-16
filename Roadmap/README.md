@@ -14,12 +14,12 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_01 läuft: Code, Tests und Build fertig, manuelle Geräteprüfung steht aus.
+Stand: 2026-11-16 – Task_02 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
-| 01 | Durchstich: Stereo-Rohaufnahme | läuft |
-| 02 | Signalmodell und synthetische Vorbeifahrten | offen |
+| 01 | Durchstich: Stereo-Rohaufnahme | erledigt (Gerätetest → 20) |
+| 02 | Signalmodell und synthetische Vorbeifahrten | läuft |
 | 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | offen |
 | 04 | Messreihe anlegen und aufnehmen | offen |
 | 05 | Geräteeignung und Kalibrierung | offen |
@@ -37,6 +37,7 @@ Stand: 2026-11-16 – Task_01 läuft: Code, Tests und Build fertig, manuelle Ger
 | 17 | Doppler Variante 2: Entzerrung | offen |
 | 18 | Selbstkalibrierung | offen |
 | 19 | Gemeinsame Ausgleichsrechnung | offen |
+| 20 | Geräte- und Feldtest | offen |
 
 Status ist `offen`, `läuft` (Datei trägt das Präfix `RUN_`) oder `erledigt` (Datei liegt in `Archiv/`). Die Tabelle wird beim Archivieren eines Tasks aktualisiert.
 
@@ -54,6 +55,12 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 - **Tests:** Ablage in `tests/` im Projekt-Root (nicht Flutters Standard `test/`). DSP-Tests nutzen den synthetischen Vorbeifahrt-Generator aus Task_02. Was nur auf einem echten Gerät prüfbar ist, steht als manuelle Checkliste im jeweiligen Task.
 - **UI-Sprache:** Deutsch (Annahme).
 - **Fachliche Referenz:** `technik.pdf`. Formeln, Startwerte und Abschnittsnummern in den Tasks beziehen sich darauf.
+
+**Entscheidung des Nutzers (2026-11-16): Simulation statt Gerät während der Entwicklung**
+
+- Es ist kein Android-Gerät angeschlossen. Alle Tasks werden gegen synthetische Daten abgearbeitet; der Generator (Task_02) bietet dafür Fahrzeugprofile **Elektroauto** (breitbandiges Reifenrauschen, optional Warnton) und **Verbrenner** (Rauschen plus Motorharmonische).
+- Alles, was nur auf einem echten Gerät, mit echten Vorbeifahrten oder echten Referenzfahrten prüfbar ist, steht gesammelt in `Tasks/Task_20.md` (Geräte- und Feldtest) und wird ganz am Ende durchgeführt. Tasks werden archiviert, sobald alle automatisch prüfbaren Kriterien erfüllt sind; manuelle Kriterien werden im Task mit „→ Task_20“ markiert.
+- Die App bekommt eine Simulationsquelle (synthetische Vorbeifahrten statt Mikrofon), damit sie ohne Gerät bzw. im Emulator ausprobiert werden kann.
 
 **Aus Task_01:**
 

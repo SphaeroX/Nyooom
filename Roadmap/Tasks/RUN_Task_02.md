@@ -23,6 +23,7 @@ Das Signalmodell aus der PDF steht als getestete Dart-Bibliothek bereit, alle Pa
 - Generator für synthetische Vorbeifahrten: Punktquelle mit breitbandigem Rauschen plus optional harmonischen Tönen, Ausbreitung zu zwei Mikrofonen im Abstand b (exakte Laufzeit je Mikrofon, 1/r-Dämpfung), Hintergrundrauschen mit wählbarem SNR, Ausgabe als zwei Float-Kanäle und optional WAV.
 - Optionen im Generator: Fahrtrichtung, Beschleunigung, Zeitversatz zwischen Tonquelle und Rauschquelle, zweites überlappendes Fahrzeug, Kanalversatz Δ0.
 - Struktur `GroundTruth` mit allen wahren Größen für Tests.
+- Fahrzeugprofile (Ergänzung 2026-11-16): **Elektroauto** (breitbandiges Reifenrauschen, optional AVAS-Warnton, leiser) und **Verbrenner** (Rauschen plus Motorgrundton mit Harmonischen). Sie ersetzen bis Task_20 echte Aufnahmen.
 
 **Gehört nicht dazu:**
 
