@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_10 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_11 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -27,8 +27,8 @@ Stand: 2026-11-16 – Task_10 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 07 | Ereigniserkennung | erledigt |
 | 08 | Anpassung des Bewegungsmodells | erledigt |
 | 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | erledigt |
-| 10 | Doppler Variante 1: Linienverfolgung | läuft |
-| 11 | Beschleunigungsprüfung, Fusion, Klasse A | offen |
+| 10 | Doppler Variante 1: Linienverfolgung | erledigt |
+| 11 | Beschleunigungsprüfung, Fusion, Klasse A | läuft |
 | 12 | Live-Auswertung | offen |
 | 13 | Statistik | offen |
 | 14 | Export | offen |
@@ -109,6 +109,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_09:**
 
 - Datensatz: `PassRecord` (km/h wie 9.1, `reason` als `DowngradeReason`). Auswertung pro Ereignisfenster zentral über `EventPipeline` (`lib/data/event_pipeline.dart`); ganze Dateien über `runSeriesAnalysis`/`analyseSeriesInBackground`. Persistenz `repo.replacePasses/addPass/passes`. DB-Schema jetzt Version 2. (Task_09)
+
+**Aus Task_10:**
+
+- Doppler Variante 1: `DopplerEstimator(config:, speedOfSound:).estimate(window, windowStartS:, receptionT0:, directionCosine:)` → `DopplerResult`. In `EventPipeline` integriert. (Task_10)
 
 ## Auffälligkeiten & Details
 

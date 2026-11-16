@@ -36,6 +36,7 @@
   "toneMinProminenceDb": 8.0,
   "toneMinLengthS": 0.5,
   "toneMaxJumpHz": 15.0,
+  "toneMaxGapS": 0.1,
   "toneMedianWidthHz": 150.0,
   "toneOffsetRangeS": 0.3,
   "toneOffsetStepS": 0.05,

@@ -45,6 +45,7 @@ class NyooomConfig {
     this.toneMinProminenceDb = 8,
     this.toneMinLengthS = 0.5,
     this.toneMaxJumpHz = 15,
+    this.toneMaxGapS = 0.1,
     this.toneMedianWidthHz = 150,
     this.toneOffsetRangeS = 0.3,
     this.toneOffsetStepS = 0.05,
@@ -156,6 +157,9 @@ class NyooomConfig {
   /// Largest frequency jump between two frames of one tone track.
   final double toneMaxJumpHz;
 
+  /// A tone track may miss frames for up to this time and continue.
+  final double toneMaxGapS;
+
   /// Width of the running median across frequency (5.4 step 2).
   final double toneMedianWidthHz;
 
@@ -247,6 +251,7 @@ class NyooomConfig {
       toneMinProminenceDb: f('toneMinProminenceDb', d.toneMinProminenceDb),
       toneMinLengthS: f('toneMinLengthS', d.toneMinLengthS),
       toneMaxJumpHz: f('toneMaxJumpHz', d.toneMaxJumpHz),
+      toneMaxGapS: f('toneMaxGapS', d.toneMaxGapS),
       toneMedianWidthHz: f('toneMedianWidthHz', d.toneMedianWidthHz),
       toneOffsetRangeS: f('toneOffsetRangeS', d.toneOffsetRangeS),
       toneOffsetStepS: f('toneOffsetStepS', d.toneOffsetStepS),
@@ -319,6 +324,7 @@ class NyooomConfig {
     'toneMinProminenceDb': toneMinProminenceDb,
     'toneMinLengthS': toneMinLengthS,
     'toneMaxJumpHz': toneMaxJumpHz,
+    'toneMaxGapS': toneMaxGapS,
     'toneMedianWidthHz': toneMedianWidthHz,
     'toneOffsetRangeS': toneOffsetRangeS,
     'toneOffsetStepS': toneOffsetStepS,

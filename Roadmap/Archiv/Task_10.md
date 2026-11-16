@@ -53,9 +53,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Alle Schwellen aus der Konfiguration.
-- [ ] Auf echten Aufnahmen ist der Anteil der Ereignisse mit nutzbarem Ton gezählt und in `Roadmap/README.md` notiert (offener Punkt der PDF).
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] Alle Schwellen aus der Konfiguration.
+- [ ] (→ Task_20) Auf echten Aufnahmen ist der Anteil der Ereignisse mit nutzbarem Ton gezählt und in `Roadmap/README.md` notiert (offener Punkt der PDF).
 
 ## Offene Fragen / Annahmen
 
@@ -65,23 +65,24 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Gleitender Median über 150 Hz (`toneMedianWidthHz`) wird nur an jedem ~6. Bin exakt berechnet und dazwischen linear interpoliert (sonst zu langsam bei 2679 Bins pro Zeile).
+- Spurverkettung: nächster Spitzenwert innerhalb `toneMaxJumpHz` = 15 Hz pro Rahmen (8-kHz-Ton bei 50 km/h/4 m ändert sich um ca. 12 Hz pro Rahmen); Lücken bis `toneMaxGapS` = 0,1 s werden überbrückt (ohne das zerfielen schwächere Harmonische in Stücke). "Überdeckt t0" = Spur reicht mindestens 0,2 s vor und nach dem Empfangszeitpunkt der größten Annäherung.
+- Regression nicht linearisiert: Gauss-Newton auf ln f = ln f0_k − ln(1 + v/c·u), Achsenabschnitt je Spur; σ_D aus der Reststreuung, aufgeblasen mit Fenster/Vorschub (= 8) wegen überlappender Rahmen. Zusätzlich wird bereits die Regression mit g·(t − t0) gerechnet (`speedWithAcceleration`) für Task_11.
+- Anteil Ereignisse mit nutzbarem Ton auf echten Daten → Task_20. In der Simulation haben ca. 80 % der Verbrenner und die E-Autos mit Warnton einen Ton.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `DopplerEstimator` (`lib/core/pipeline/doppler.dart`): Spektrogramm des Summensignals, Median-Normierung, Spitzen ≥ 8 dB mit Parabelinterpolation, Spurverkettung (`trackTones`), Auswahl (`selectTracks`), gemeinsame Ausgleichsrechnung mit Versatzsuche ±0,3 s. `DopplerResult` (speed, sigma, toneCount, offsetS, speedWithAcceleration). In `EventPipeline` eingehängt: `v_doppler`, `sigma_doppler`, `n_toene` werden gefüllt, Klasse bleibt (Task_11). Neuer Konfigurationswert `toneMaxGapS`.
+- **Learnings & Stolpersteine:** Schwache Harmonische liegen knapp an der 8-dB-Schwelle; ohne Lückentoleranz entstehen nur kurze Bruchstücke, die die 0,5-s-Regel verwerfen.
+- **Wichtige Entscheidungen und ihre Gründe:** u(t) kommt immer aus der angepassten Modellkurve (`fitter.tdoaAt`), nie aus den Einzelmaxima (PDF 5.4). Der Versatz δ verschiebt das Argument von u: u(t + δ), positives δ = Tonquelle fährt voraus.
+- **Auswirkungen auf Folge-Tasks:** Task_11 nutzt `DopplerResult.speedWithAcceleration` für die Beschleunigungsprüfung (|v − v_g| > 2 km/h) und `speed/sigma` für Abstandsprüfung und Fusion; dafür `EventPipeline.evaluate` erweitern. Task_17 (Variante 2) ergänzt den Fall "kein Ton".
+- **Hinweise zu Tests und Befehlen:** `tests/core/pipeline/doppler_test.dart`, `tests/data/event_pipeline_test.dart`.
