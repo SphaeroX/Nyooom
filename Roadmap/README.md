@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_18 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_19 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -35,8 +35,8 @@ Stand: 2026-11-16 – Task_18 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 15 | GPS-Referenzfahrten | erledigt (Feldtest → 20) |
 | 16 | Validierung und Abnahme | erledigt (echte Abnahme → 20) |
 | 17 | Doppler Variante 2: Entzerrung | erledigt |
-| 18 | Selbstkalibrierung | läuft |
-| 19 | Gemeinsame Ausgleichsrechnung | offen |
+| 18 | Selbstkalibrierung | erledigt |
+| 19 | Gemeinsame Ausgleichsrechnung | läuft |
 | 20 | Geräte- und Feldtest | offen |
 
 Status ist `offen`, `läuft` (Datei trägt das Präfix `RUN_`) oder `erledigt` (Datei liegt in `Archiv/`). Die Tabelle wird beim Archivieren eines Tasks aktualisiert.
@@ -141,6 +141,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_17:**
 
 - Doppler Variante 2 (`SharpnessEstimator`) läuft nur ohne Ton in Variante 1 (Schalter `dopplerVariant2`). Zwei dokumentierte Abweichungen vom PDF-Schärfemaß (Rauschschwelle, Median außerhalb des Maximums). Kostet ca. 1,5 s pro Ereignis am PC. (Task_17)
+
+**Aus Task_18:**
+
+- Selbstkalibrierung pro Standort: `repo.learnedSetup(seriesId, config)` liefert das `AnalysisSetup` mit gelerntem Spurabstand (ab 30 Klasse-A-Werten) und den Lernstand je Spur; Warnung ab 20 % Abweichung. (Task_18)
 
 ## Auffälligkeiten & Details
 

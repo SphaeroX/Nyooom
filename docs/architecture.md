@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_17)
+## Projektstruktur (Stand Task_18)
 
 ```
 lib/
@@ -51,6 +51,7 @@ lib/
   core/sim/scenarios.dart           Fixture-Fabrik: Verbrenner, Elektroauto, Standard-Setups
   core/sim/traffic.dart             TrafficGenerator: deterministischer Mischverkehr für die Simulationsquelle
   core/calibration/device_checks.dart  Eignungsprüfung 4.4 und Kalibrierung 7.1 (reine Logik)
+  core/calibration/self_calibration.dart  Selbstkalibrierung der Spurabstände (technik.pdf 7.4)
   core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
   core/events/event_detector.dart   Ereigniserkennung blockweise (technik.pdf 5.1)
   core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung

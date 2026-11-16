@@ -49,8 +49,8 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Die Anzeige zeigt für eine echte Messreihe Maßband- und gelernten Abstand pro Spur.
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] (mit simulierter Messreihe; echte → Task_20) Die Anzeige zeigt für eine echte Messreihe Maßband- und gelernten Abstand pro Spur.
 
 ## Offene Fragen / Annahmen
 
@@ -60,23 +60,24 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Bezug: **Standort** (alle Messreihen eines Standorts), weil der Spurabstand zum Standort gehört. Aktualisierung bei jeder Auswertung (offline und beim Start einer Live-Messreihe) aus allen bis dahin gespeicherten Klasse-A-Datensätzen; bestehende Datensätze werden nur auf Knopfdruck neu berechnet ("Mit gelerntem Abstand neu berechnen").
+- Kennzeichnung: `distance_used` (Spalte `distanceUsedM`, existiert seit Schema 1) enthält den tatsächlich verwendeten Abstand; keine Migration nötig, bestehende Datensätze bleiben lesbar (Migrationstests aus Task_09/16 decken das ab).
+- Neuberechnung: v_T = |κ|·d_neu, σκ aus dem gespeicherten σ_T und dem alten Abstand zurückgerechnet, Fusion erneut (Abstandsprüfung mit neuem d). Ein gespeichertes Urteil "Beschleunigung" bleibt, weil die zweite Regression nicht gespeichert ist.
+- Systematischer Fehler der ausgedehnten Quelle am gewählten Abstand: offen, braucht echte Daten (Task_20).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/calibration/self_calibration.dart` (`learnLaneDistances`, `LaneLearning` mit aktiv/Abweichung/Warnung, `withLearnedDistances`, `recomputeWithDistance`). Repository `learnedSetup`, `recomputeSiteWithLearning`. Offline-Auswertung und Live-Start nutzen den gelernten Abstand. UI-Karte in der Auswertung (Maßband, gelernt, Anzahl A, Warnung, Neuberechnen).
+- **Learnings & Stolpersteine:** Der Median aus 30 Werten hat selbst ca. 1 % Unsicherheit; "systematischer Fehler verschwindet weitgehend" heißt deshalb Restfehler unter 2 %.
+- **Wichtige Entscheidungen und ihre Gründe:** Standort statt Messreihe als Bezug (mehr Klasse-A-Daten, Abstand ist eine Standorteigenschaft).
+- **Auswirkungen auf Folge-Tasks:** Task_19 kann den gelernten Abstand als d_Spur im Prior der gemeinsamen Ausgleichsrechnung verwenden (kommt automatisch über `AnalysisSetup`).
+- **Hinweise zu Tests und Befehlen:** `tests/core/calibration/self_calibration_test.dart`, `tests/data/learned_setup_test.dart`.

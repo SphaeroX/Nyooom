@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../core/calibration/self_calibration.dart';
+import '../core/config/nyooom_config.dart';
 import '../core/model/acoustics.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
@@ -308,6 +310,50 @@ class NyooomRepository {
     query.orderBy([OrderingTerm.asc(db.passes.zeit)]);
     final rows = await query.get();
     return [for (final r in rows) passFromRow(r.readTable(db.passes))];
+  }
+
+  /// Analysis setup with the self-calibrated lane distances of the site
+  /// (technik.pdf 7.4) and the learning state per lane.
+  Future<({AnalysisSetup setup, List<LaneLearning> learning})?> learnedSetup(
+    int seriesId,
+    NyooomConfig config,
+  ) async {
+    final setup = await analysisSetup(seriesId);
+    final series = await this.series(seriesId);
+    if (setup == null || series == null) return null;
+    final learning = learnLaneDistances(
+      await passesForSite(series.site.id),
+      lanes: setup.lanes,
+      config: config,
+    );
+    return (setup: withLearnedDistances(setup, learning), learning: learning);
+  }
+
+  /// Recomputes all records of all series of [siteId] with the effective
+  /// lane distances; returns the number of changed records.
+  Future<int> recomputeSiteWithLearning(int siteId, NyooomConfig config) async {
+    final seriesRows = await (db.select(
+      db.measurementSeries,
+    )..where((s) => s.siteId.equals(siteId))).get();
+    if (seriesRows.isEmpty) return 0;
+    final learned = (await learnedSetup(seriesRows.first.id, config))!;
+    var changed = 0;
+    for (final row in seriesRows) {
+      final records = await passes(row.id);
+      final updated = [
+        for (final r in records)
+          () {
+            final lane = learned.setup.lanes
+                .where((l) => l.index == r.laneIndex)
+                .firstOrNull;
+            if (lane == null || r.distanceUsedM == lane.slantDistance) return r;
+            changed++;
+            return recomputeWithDistance(r, lane.slantDistance, config);
+          }(),
+      ];
+      await replacePasses(row.id, updated);
+    }
+    return changed;
   }
 
   /// Stores a reference drive; returns its id.

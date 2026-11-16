@@ -195,7 +195,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
           : null;
       _recorder = recorder;
       if (ref.read(liveEvaluationProvider)) {
-        final setup = (await repo.analysisSetup(id))!;
+        final setup = (await repo.learnedSetup(id, config))!.setup;
         final live = LivePipeline(config: config, setup: setup);
         _live = live;
         _liveSub = live.records.listen((record) {

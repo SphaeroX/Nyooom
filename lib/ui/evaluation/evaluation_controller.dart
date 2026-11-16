@@ -45,7 +45,10 @@ class EvaluationController extends Notifier<EvaluationState> {
     state = const EvaluationState(running: true, phase: 'Start');
     try {
       final repo = ref.read(repositoryProvider);
-      final setup = await repo.analysisSetup(seriesId);
+      final setup = (await repo.learnedSetup(
+        seriesId,
+        ref.read(configProvider),
+      ))?.setup;
       final storage = await ref.read(seriesStorageProvider.future);
       final wav = storage.wavFile(seriesId);
       if (setup == null || !await wav.exists()) {

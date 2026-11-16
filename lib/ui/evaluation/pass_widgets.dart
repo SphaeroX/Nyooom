@@ -10,6 +10,7 @@ import '../export/export_buttons.dart';
 import '../stats/statistics_screen.dart';
 import '../validation/validation_screen.dart';
 import 'evaluation_controller.dart';
+import 'self_calibration_card.dart';
 
 String formatTime(int utcMs) {
   final t = DateTime.fromMillisecondsSinceEpoch(utcMs).toLocal();
@@ -136,6 +137,8 @@ class EvaluationSection extends ConsumerWidget {
           icon: const Icon(Icons.bar_chart),
           label: const Text('Statistik'),
         ),
+        const SizedBox(height: 8),
+        SelfCalibrationCard(series: series),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () => Navigator.of(context).push(
