@@ -6,6 +6,7 @@ import '../../core/pipeline/pass_record.dart';
 import '../../data/repository.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
+import '../export/export_buttons.dart';
 import '../stats/statistics_screen.dart';
 import 'evaluation_controller.dart';
 
@@ -134,6 +135,8 @@ class EvaluationSection extends ConsumerWidget {
           icon: const Icon(Icons.bar_chart),
           label: const Text('Statistik'),
         ),
+        const SizedBox(height: 8),
+        ExportButtons(seriesId: series.id),
         passes.when(
           loading: () => const SizedBox.shrink(),
           error: (e, _) => Text('Fehler: $e'),

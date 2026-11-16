@@ -49,8 +49,8 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Ein Export einer echten Messreihe lässt sich am PC öffnen und enthält alle Datensätze (manuell geprüft).
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20) Ein Export einer echten Messreihe lässt sich am PC öffnen und enthält alle Datensätze (manuell geprüft).
 
 ## Offene Fragen / Annahmen
 
@@ -60,23 +60,24 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- CSV: Trennzeichen Semikolon, Dezimalpunkt, UTF-8, leere Felder für fehlende Werte, Spaltenköpfe exakt die 14 Felder aus 9.1 (`zeit` als ISO 8601 UTC). Einheiten in `einheiten.txt` und im JSON (`units`). In deutschem Excel: Daten → Aus Text/CSV, Trennzeichen Semikolon, Gebietsschema Englisch (wegen Dezimalpunkt). Gegebenenfalls mit dem Nutzer abstimmen (Task_20).
+- JSON: `format: nyooom-series`, `version: 1`, Abschnitte `series`, `setup` (b, Δ0, Kanaltausch, c, Spuren), `config`, `statistics` (Kurzfassung), `records` (9.1-Namen plus `zeit_ms`, `offset_s`, `grund_code`, `spur`, `abstand`, `sigma_laufzeit`, `sigma_doppler`).
+- ZIP: eigener Writer ohne Kompression (WAV komprimiert kaum), gestreamt mit CRC-Vorlauf, damit lange WAVs nicht in den Speicher müssen. `archive` nur als Dev-Abhängigkeit zum Prüfen im Test.
+- Teilen über `share_plus` (Android-Teilen-Dialog), Dateien im temporären App-Ordner.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/export/` (`passesToCsv`, `csvField`, `unitsText`, `SeriesExport` mit JSON-Roundtrip, `ZipWriter`/`Crc32`), `lib/data/series_export.dart` (`exportSeries`, `writeZipFile` gestreamt), UI `ExportButtons` in der Auswertung der Messreihe ("CSV + JSON teilen", "ZIP mit Rohaudio").
+- **Learnings & Stolpersteine:** share_plus 13: `SharePlus.instance.share(ShareParams(files: [XFile(path)]))`.
+- **Wichtige Entscheidungen und ihre Gründe:** Kein `archive` zur Laufzeit (eigener 100-Zeilen-ZIP-Writer genügt), Semikolon/Punkt für eindeutige Maschinenlesbarkeit.
+- **Auswirkungen auf Folge-Tasks:** Task_16 exportiert Validierungsergebnisse mit `csvField` und demselben Format. `fileSharerProvider` ist in Tests überschreibbar.
+- **Hinweise zu Tests und Befehlen:** `tests/core/export/`, `tests/data/series_export_test.dart`.

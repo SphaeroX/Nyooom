@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_14 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_15 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -31,8 +31,8 @@ Stand: 2026-11-16 – Task_14 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 11 | Beschleunigungsprüfung, Fusion, Klasse A | erledigt |
 | 12 | Live-Auswertung | erledigt (Gerätemessung → 20) |
 | 13 | Statistik | erledigt |
-| 14 | Export | läuft |
-| 15 | GPS-Referenzfahrten | offen |
+| 14 | Export | erledigt |
+| 15 | GPS-Referenzfahrten | läuft |
 | 16 | Validierung und Abnahme | offen |
 | 17 | Doppler Variante 2: Entzerrung | offen |
 | 18 | Selbstkalibrierung | offen |
@@ -125,6 +125,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_13:**
 
 - Statistik: `StatisticsReport.from(records, limitKmh:)` (A/B/A+B, Richtung, Spur, Stunde, C mit Gründen), Perzentil Typ 7, Anteil über Limit = v > Limit. (Task_13)
+
+**Aus Task_14:**
+
+- Exportformate: CSV (`;`, Dezimalpunkt, Spalten = 9.1, Einheiten in `einheiten.txt`), JSON `nyooom-series` v1, ZIP (ungepackt, mit `audio.wav` und `metadata.json`). Code: `lib/core/export/`, `exportSeries` in `lib/data/series_export.dart`. (Task_14)
 
 ## Auffälligkeiten & Details
 
