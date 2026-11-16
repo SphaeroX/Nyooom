@@ -11,6 +11,8 @@
   "eventThresholdDb": 10.0,
   "eventWindowS": 4.0,
   "overlapThresholdDb": 10.0,
+  "overlapMinDipDb": 1.0,
+  "eventDurationFraction": 0.5,
   "gccBlockLength": 2048,
   "gccHop": 512,
   "gccBandLowHz": 300.0,

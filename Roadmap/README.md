@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_07 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_08 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -24,8 +24,8 @@ Stand: 2026-11-16 – Task_07 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 04 | Messreihe anlegen und aufnehmen | erledigt |
 | 05 | Geräteeignung und Kalibrierung | erledigt (Gerätetest → 20) |
 | 06 | Sichtprüfung: Korrelogramm und Spektrogramm | erledigt (Entscheidung → 20) |
-| 07 | Ereigniserkennung | läuft |
-| 08 | Anpassung des Bewegungsmodells | offen |
+| 07 | Ereigniserkennung | erledigt |
+| 08 | Anpassung des Bewegungsmodells | läuft |
 | 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | offen |
 | 10 | Doppler Variante 1: Linienverfolgung | offen |
 | 11 | Beschleunigungsprüfung, Fusion, Klasse A | offen |
@@ -97,6 +97,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 
 - Spektrogramm: `Spectrogram.compute(mono, config:, from:, to:)`, Zeiten = Fenstermitten relativ zu `from`. Auswertekonstanten einer Messreihe: `repo.analysisSetup(id)` → `AnalysisSetup` (b, Δ0, swapChannels, c, Spuren). WAV-Ausschnitte: `readWavStereoRange(file, startS:, durationS:)`. (Task_06)
 - Die Entscheidung interne vs. externe Mikrofone (PDF 10, erster Entscheidungspunkt) steht noch aus und fällt in Task_20. (Task_06)
+
+**Aus Task_07:**
+
+- Ereignisse: `EventDetector(config:).add(block)` / `finish()`, `detectEvents(signal, config:)` → `PassEvent` (Zeiten relativ zum Stream-Anfang). Meldung 4 s nach dem Maximum. (Task_07)
 
 ## Auffälligkeiten & Details
 

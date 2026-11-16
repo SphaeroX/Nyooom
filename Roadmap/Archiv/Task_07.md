@@ -54,9 +54,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Alle Schwellen und Zeiten kommen aus der Konfiguration.
-- [ ] Auf einer echten Aufnahme werden die visuell erkennbaren Einzelvorbeifahrten gefunden (Ergebnis in den Notizen).
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] Alle Schwellen und Zeiten kommen aus der Konfiguration.
+- [ ] (→ Task_20) Auf einer echten Aufnahme werden die visuell erkennbaren Einzelvorbeifahrten gefunden (Ergebnis in den Notizen).
 
 ## Offene Fragen / Annahmen
 
@@ -66,23 +66,26 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Filter: Hochpass 100 Hz und Ereignisband 500–4000 Hz jeweils als Butterworth 2. Ordnung (RBJ-Biquads, `BiquadChain`), angewandt auf das Summensignal (L+R)/2. Der Hochpass für die Laufzeitspur ist nicht nötig, weil GCC-PHAT ohnehin nur 300 Hz–8 kHz nutzt.
+- Glättung: gleitender Mittelwert der quadrierten Werte über 6 Schritte (0,3 s); der Zeitpunkt eines Pegelwerts ist die Mitte seines Glättungsfensters.
+- Grundpegel am Aufnahmebeginn: 20. Perzentil der bis dahin vorhandenen Historie (unter 60 s).
+- Überlappung: zweites lokales Maximum im Fenster, höchstens 10 dB unter dem ersten, und zwischen beiden fällt der Pegel um mindestens `overlapMinDipDb` = 1 dB (sonst wäre es dieselbe Pegelkuppe). Bei sehr langsamen, nahen Fahrzeugpaaren verschmelzen die Kuppen; solche Fälle fängt die Reststreuung in Task_08/09 ab.
+- `dauer`: Zeit, in der der Pegel über Grund + 0,5·(Maximum − Grund) liegt (`eventDurationFraction`), "halber Maximalpegel" also als halber Pegelüberschuss in dB interpretiert.
+- Ränder: Fenster werden auf die Aufnahme beschnitten, `truncated` markiert das; `finish()` wertet die Maxima der letzten 4 s aus.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `EventDetector` (`lib/core/events/event_detector.dart`) mit `add(StereoBlock)` → Ereignisse und `finish()`; `detectEvents(signal, config:)` für ganze Dateien. `PassEvent` mit `peakTimeS`, `levelAboveFloorDb` (pegel), `durationS` (dauer), Fenstergrenzen, `overlap`, `truncated`. Zwei neue Konfigurationswerte: `overlapMinDipDb`, `eventDurationFraction`. Simulator überspringt Abtastwerte lange nach dem Ausblenden eines Fahrzeugs (Tests mit 30 s laufen schnell).
+- **Learnings & Stolpersteine:** Gleiche Ereignisse in Streaming- und Dateimodus erfordern, dass alle Entscheidungen nur von Schritt-Indizes abhängen (Grundpegel zum Auswertezeitpunkt = Schritt c + Fenster). Windows: `build/unit_test_assets` ist manchmal gesperrt; löschen und neu starten.
+- **Wichtige Entscheidungen und ihre Gründe:** Ereignis wird erst gemeldet, wenn das ganze Fenster vorliegt (Latenz 4 s, wie PDF). Das Maximum muss im Fenster eindeutig sein (frühere Werte strikt kleiner), damit Plateaus nur ein Ereignis ergeben.
+- **Auswirkungen auf Folge-Tasks:** Task_08/09 werten das Fenster `[windowStartS, windowEndS]` aus und verwenden `peakTimeS` als Mittelpunkt der t0-Grobsuche. Overlap → Klasse C, Grund "Überlappung". Task_12 nutzt `EventDetector` direkt im Streaming.
+- **Hinweise zu Tests und Befehlen:** `tests/core/events/`. Simulierte Fahrzeuge mit `audibleSpanS` rendern, sonst dauern lange Szenarien.

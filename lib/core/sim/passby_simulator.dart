@@ -300,6 +300,10 @@ class PassBySimulator {
     final toneSource = _ShiftedPass(pass, pass.toneLeadS);
     for (var i = 0; i < out.length; i++) {
       final t = startTime + i / fs - channelDelay;
+      // Skip samples long after the vehicle faded out (the margin covers
+      // the sound travel time).
+      final span = pass.audibleSpanS;
+      if (span != null && (t - pass.t0).abs() > span + 2) continue;
       var sample = 0.0;
       if (noise != null) {
         teNoise = _solve(

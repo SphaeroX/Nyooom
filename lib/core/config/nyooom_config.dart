@@ -20,6 +20,8 @@ class NyooomConfig {
     this.eventThresholdDb = 10,
     this.eventWindowS = 4,
     this.overlapThresholdDb = 10,
+    this.overlapMinDipDb = 1,
+    this.eventDurationFraction = 0.5,
     this.gccBlockLength = 2048,
     this.gccHop = 512,
     this.gccBandLowHz = 300,
@@ -88,6 +90,14 @@ class NyooomConfig {
 
   /// A second maximum less than this below the first is an overlap (5.1).
   final double overlapThresholdDb;
+
+  /// A second maximum only counts as a separate vehicle if the level dips
+  /// at least this much between the two maxima (Task_07).
+  final double overlapMinDipDb;
+
+  /// `dauer` (9.1) is the time the level stays above this fraction of the
+  /// peak excess over the noise floor ("halber Maximalpegel", Task_07).
+  final double eventDurationFraction;
 
   /// GCC-PHAT block length and hop in samples (5.2).
   final int gccBlockLength;
@@ -201,6 +211,11 @@ class NyooomConfig {
       eventThresholdDb: f('eventThresholdDb', d.eventThresholdDb),
       eventWindowS: f('eventWindowS', d.eventWindowS),
       overlapThresholdDb: f('overlapThresholdDb', d.overlapThresholdDb),
+      overlapMinDipDb: f('overlapMinDipDb', d.overlapMinDipDb),
+      eventDurationFraction: f(
+        'eventDurationFraction',
+        d.eventDurationFraction,
+      ),
       gccBlockLength: i('gccBlockLength', d.gccBlockLength),
       gccHop: i('gccHop', d.gccHop),
       gccBandLowHz: f('gccBandLowHz', d.gccBandLowHz),
@@ -269,6 +284,8 @@ class NyooomConfig {
     'eventThresholdDb': eventThresholdDb,
     'eventWindowS': eventWindowS,
     'overlapThresholdDb': overlapThresholdDb,
+    'overlapMinDipDb': overlapMinDipDb,
+    'eventDurationFraction': eventDurationFraction,
     'gccBlockLength': gccBlockLength,
     'gccHop': gccHop,
     'gccBandLowHz': gccBandLowHz,
