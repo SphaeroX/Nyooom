@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_16 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_17 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -33,8 +33,8 @@ Stand: 2026-11-16 – Task_16 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 13 | Statistik | erledigt |
 | 14 | Export | erledigt |
 | 15 | GPS-Referenzfahrten | erledigt (Feldtest → 20) |
-| 16 | Validierung und Abnahme | läuft |
-| 17 | Doppler Variante 2: Entzerrung | offen |
+| 16 | Validierung und Abnahme | erledigt (echte Abnahme → 20) |
+| 17 | Doppler Variante 2: Entzerrung | läuft |
 | 18 | Selbstkalibrierung | offen |
 | 19 | Gemeinsame Ausgleichsrechnung | offen |
 | 20 | Geräte- und Feldtest | offen |
@@ -133,6 +133,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_15:**
 
 - Referenzfahrten: `ReferenceTrack` (`lib/core/reference/`), Import GPX/CSV, Logger über `geolocator`; DB-Schema 3 (`reference_tracks`, `reference_points`). (Task_15)
+
+**Aus Task_16:**
+
+- Validierung: `closestApproaches` → `matchReferences` → `ValidationReport.acceptance(config)` (`lib/core/validation/`). Standort braucht Breite/Länge und für die Richtungsprüfung die Kompassrichtung von +x. DB-Schema 4. **Offener Punkt:** echte Abnahme mit Referenzfahrten (Task_20). (Task_16)
 
 ## Auffälligkeiten & Details
 

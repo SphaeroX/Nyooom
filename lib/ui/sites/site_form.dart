@@ -13,9 +13,13 @@ class SiteForm extends StatefulWidget {
     this.initial,
     required this.onSubmit,
     this.header,
+    this.onLocate,
   });
 
   final SiteSpec? initial;
+
+  /// Returns the current GPS position (lat, lon) for the position fields.
+  final Future<(double, double)?> Function()? onLocate;
 
   /// Optional widget above the form (e.g. a statistics button).
   final Widget? header;
@@ -37,6 +41,7 @@ class _SiteFormState extends State<SiteForm> {
   late final TextEditingController _micHeight;
   late final TextEditingController _speedLimit;
   late final List<_LaneControllers> _lanes;
+  late final TextEditingController _lat, _lon, _bearing;
   bool _triedSave = false;
 
   @override
@@ -46,6 +51,10 @@ class _SiteFormState extends State<SiteForm> {
     _name = TextEditingController(text: s?.name ?? '');
     _micHeight = TextEditingController(text: '${s?.micHeight ?? 1.2}');
     _speedLimit = TextEditingController(text: '${s?.speedLimitKmh ?? 50.0}');
+    String opt(double? v) => v == null ? '' : '$v';
+    _lat = TextEditingController(text: opt(s?.latitude));
+    _lon = TextEditingController(text: opt(s?.longitude));
+    _bearing = TextEditingController(text: opt(s?.plusXBearingDeg));
     _lanes = [
       for (final l
           in s?.lanes ?? const [LaneSpec(horizontalDistance: 4, direction: 1)])
@@ -58,6 +67,9 @@ class _SiteFormState extends State<SiteForm> {
     _name.dispose();
     _micHeight.dispose();
     _speedLimit.dispose();
+    _lat.dispose();
+    _lon.dispose();
+    _bearing.dispose();
     for (final l in _lanes) {
       l.distance.dispose();
     }
@@ -75,9 +87,14 @@ class _SiteFormState extends State<SiteForm> {
     ],
     micHeight: parseDecimal(_micHeight.text) ?? double.nan,
     speedLimitKmh: parseDecimal(_speedLimit.text) ?? double.nan,
-    latitude: widget.initial?.latitude,
-    longitude: widget.initial?.longitude,
+    latitude: _optional(_lat.text),
+    longitude: _optional(_lon.text),
+    plusXBearingDeg: _optional(_bearing.text),
   );
+
+  /// Empty = not given; unparsable = NaN (reported by the validation).
+  static double? _optional(String text) =>
+      text.trim().isEmpty ? null : (parseDecimal(text) ?? double.nan);
 
   void _save() {
     final spec = _spec;
@@ -175,6 +192,63 @@ class _SiteFormState extends State<SiteForm> {
                 ),
               ),
             ),
+          const SizedBox(height: 20),
+          Text(
+            'Position (optional, für GPS-Referenzfahrten)',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('site-lat'),
+                  controller: _lat,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Breite (°)'),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  key: const Key('site-lon'),
+                  controller: _lon,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Länge (°)'),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              if (widget.onLocate != null)
+                IconButton(
+                  tooltip: 'Aktuelle Position übernehmen',
+                  icon: const Icon(Icons.my_location),
+                  onPressed: () async {
+                    final p = await widget.onLocate!();
+                    if (p == null || !mounted) return;
+                    setState(() {
+                      _lat.text = p.$1.toStringAsFixed(6);
+                      _lon.text = p.$2.toStringAsFixed(6);
+                    });
+                  },
+                ),
+            ],
+          ),
+          TextField(
+            key: const Key('site-bearing'),
+            controller: _bearing,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Kompassrichtung von → in Grad (0 = Nord, 90 = Ost)',
+              helperText: 'Wohin fahren Fahrzeuge der Richtung →?',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
           const SizedBox(height: 16),
           FilledButton(
             key: const Key('save-site'),

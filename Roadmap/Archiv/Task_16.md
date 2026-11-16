@@ -51,8 +51,8 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Mit echten Referenzfahrten ist das Validierungsergebnis (alle Kennzahlen, Ampel) erstellt und in `Roadmap/README.md` festgehalten.
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20; Funktion mit synthetischen Daten Ende zu Ende belegt) Mit echten Referenzfahrten ist das Validierungsergebnis (alle Kennzahlen, Ampel) erstellt und in `Roadmap/README.md` festgehalten.
 
 ## Offene Fragen / Annahmen
 
@@ -63,23 +63,26 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Standortkoordinate: neue optionale Felder Breite/Länge (mit "Aktuelle Position übernehmen") und **Kompassrichtung von +x** (wohin Fahrzeuge der Richtung → fahren). Ohne Richtung ist die Fahrtrichtungsprüfung "nicht bestimmbar" (graue Ampel). Schema 4: `sites.plus_x_bearing_deg` (Migration prüft per `PRAGMA table_info`, ob die Spalte schon existiert).
+- Zuordnung: lokale Minima des Abstands Spur–Standort unter 50 m, verfeinert auf den beiden Nachbarsegmenten (lineare Bewegung), Referenzgeschwindigkeit = Mittel der GPS-Geschwindigkeit ±2 s, Zuordnung zum zeitlich nächsten Datensatz innerhalb ±2 s. Alle Werte in der Konfiguration (`matchToleranceS`, `referenceAverageS`, `approachMaxDistanceM`).
+- Trendprüfung: Steigung der Regression Fehler über Referenzgeschwindigkeit; |Steigung| ≤ 0,05 km/h pro km/h (= 1,5 km/h über 20–50 km/h) gilt als kein Trend (`acceptTrendSlope`). Stufen = Referenz auf 10 km/h gerundet.
+- Standardabweichungen mit n − 1; Anteil C über alle zugeordneten Referenzvorbeifahrten; Richtung richtig über die gültigen (A/B).
+- Fahrzeugart wird nicht getrennt (keine Angabe in den Referenzdaten); bei Bedarf Namen der Referenzfahrt nutzen (Task_20).
+- Synthetischer Nachweis: `tests/data/validation_end_to_end_test.dart` (6 simulierte Verbrenner, GPS-Spuren aus der Wahrheit, alle prüfbaren Kriterien bestanden). Echte Abnahme → Task_20.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/validation/validation.dart` (`closestApproaches`, `matchReferences`, `ValidationReport` mit Fehlern gesamt/Klasse/Richtung/Stufe, Trend, Anteil C, Richtungsquote, `acceptance()` gegen PDF 8), `validation_csv.dart`. Site-Felder Position und +x-Kompassrichtung (Schema 4). UI `ValidationScreen` (Ampel, Streudiagramm, Kennzahlen, CSV teilen) aus der Auswertung einer Messreihe. Zwölf neue Konfigurationswerte für Zuordnung und Abnahmeschwellen.
+- **Learnings & Stolpersteine:** Lange Shell-Heredocs mit Python-Code scheitern unter Git-Bash gelegentlich am Quoting; Änderungsskripte besser als Datei ablegen. drift-Migrationen idempotent schreiben (Spalte prüfen), damit Tests mit "künstlich alten" Datenbanken funktionieren.
+- **Wichtige Entscheidungen und ihre Gründe:** Fahrtrichtung der Referenz aus dem GPS-Kurs und der Kompassrichtung von +x am Standort (einzige eindeutige Verbindung zwischen Karte und Mikrofonachse).
+- **Auswirkungen auf Folge-Tasks:** Task_19 vergleicht Fusion und gemeinsame Ausgleichsrechnung mit `ValidationReport` auf synthetischen Daten (Muster: `validation_end_to_end_test.dart`).
+- **Hinweise zu Tests und Befehlen:** `tests/core/validation/`, `tests/ui/validation/`, `tests/data/validation_end_to_end_test.dart`.

@@ -51,6 +51,17 @@
   "residualLimitS": 0.00003,
   "monotonicMinFraction": 0.8,
   "sourceHeightM": 0.3,
+  "matchToleranceS": 2.0,
+  "referenceAverageS": 2.0,
+  "approachMaxDistanceM": 50.0,
+  "speedStepKmh": 10.0,
+  "acceptMeanErrorKmh": 1.0,
+  "acceptStepErrorKmh": 2.0,
+  "acceptTrendSlope": 0.05,
+  "acceptSdAKmh": 3.0,
+  "acceptSdBKmh": 5.0,
+  "acceptMaxShareC": 0.3,
+  "acceptMinDirectionShare": 0.99,
   "selfCalibrationMinCount": 30,
   "selfCalibrationWarnFraction": 0.2
 }

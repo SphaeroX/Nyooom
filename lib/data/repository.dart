@@ -60,6 +60,7 @@ class NyooomRepository {
             speedLimitKmh: spec.speedLimitKmh,
             latitude: Value(spec.latitude),
             longitude: Value(spec.longitude),
+            plusXBearingDeg: Value(spec.plusXBearingDeg),
           ),
         );
     await _insertLanes(id, spec.lanes);
@@ -74,6 +75,7 @@ class NyooomRepository {
         speedLimitKmh: Value(spec.speedLimitKmh),
         latitude: Value(spec.latitude),
         longitude: Value(spec.longitude),
+        plusXBearingDeg: Value(spec.plusXBearingDeg),
       ),
     );
     await (db.delete(db.lanes)..where((l) => l.siteId.equals(id))).go();
@@ -130,6 +132,7 @@ class NyooomRepository {
         speedLimitKmh: row.speedLimitKmh,
         latitude: row.latitude,
         longitude: row.longitude,
+        plusXBearingDeg: row.plusXBearingDeg,
       ),
     );
   }

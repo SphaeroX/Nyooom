@@ -60,6 +60,17 @@ class NyooomConfig {
     this.residualLimitS = 30e-6,
     this.monotonicMinFraction = 0.8,
     this.sourceHeightM = 0.3,
+    this.matchToleranceS = 2,
+    this.referenceAverageS = 2,
+    this.approachMaxDistanceM = 50,
+    this.speedStepKmh = 10,
+    this.acceptMeanErrorKmh = 1,
+    this.acceptStepErrorKmh = 2,
+    this.acceptTrendSlope = 0.05,
+    this.acceptSdAKmh = 3,
+    this.acceptSdBKmh = 5,
+    this.acceptMaxShareC = 0.3,
+    this.acceptMinDirectionShare = 0.99,
     this.selfCalibrationMinCount = 30,
     this.selfCalibrationWarnFraction = 0.2,
   });
@@ -198,6 +209,39 @@ class NyooomConfig {
   /// Height of the sound source above the road (7.2).
   final double sourceHeightM;
 
+  /// Reference passage and record match within this time (Task_16).
+  final double matchToleranceS;
+
+  /// GPS speed is averaged over this time on both sides of the passage (Task_16).
+  final double referenceAverageS;
+
+  /// A reference track counts as passing the site closer than this (Task_16).
+  final double approachMaxDistanceM;
+
+  /// Reference speeds are grouped into steps of this width (8.1).
+  final double speedStepKmh;
+
+  /// Acceptance: mean deviation over all reference drives (8).
+  final double acceptMeanErrorKmh;
+
+  /// Acceptance: mean deviation per speed step (8).
+  final double acceptStepErrorKmh;
+
+  /// Acceptance: largest slope of the error over the reference speed (km/h per km/h) that still counts as no trend (Task_16).
+  final double acceptTrendSlope;
+
+  /// Acceptance: standard deviation of the error, class A (8).
+  final double acceptSdAKmh;
+
+  /// Acceptance: standard deviation of the error, class B (8).
+  final double acceptSdBKmh;
+
+  /// Acceptance: largest share of class C for single vehicles (8).
+  final double acceptMaxShareC;
+
+  /// Acceptance: smallest share of correctly recognised directions (8).
+  final double acceptMinDirectionShare;
+
   /// Self-calibration: class-A count per lane and warning limit (7.4).
   final int selfCalibrationMinCount;
   final double selfCalibrationWarnFraction;
@@ -275,6 +319,20 @@ class NyooomConfig {
       residualLimitS: f('residualLimitS', d.residualLimitS),
       monotonicMinFraction: f('monotonicMinFraction', d.monotonicMinFraction),
       sourceHeightM: f('sourceHeightM', d.sourceHeightM),
+      matchToleranceS: f('matchToleranceS', d.matchToleranceS),
+      referenceAverageS: f('referenceAverageS', d.referenceAverageS),
+      approachMaxDistanceM: f('approachMaxDistanceM', d.approachMaxDistanceM),
+      speedStepKmh: f('speedStepKmh', d.speedStepKmh),
+      acceptMeanErrorKmh: f('acceptMeanErrorKmh', d.acceptMeanErrorKmh),
+      acceptStepErrorKmh: f('acceptStepErrorKmh', d.acceptStepErrorKmh),
+      acceptTrendSlope: f('acceptTrendSlope', d.acceptTrendSlope),
+      acceptSdAKmh: f('acceptSdAKmh', d.acceptSdAKmh),
+      acceptSdBKmh: f('acceptSdBKmh', d.acceptSdBKmh),
+      acceptMaxShareC: f('acceptMaxShareC', d.acceptMaxShareC),
+      acceptMinDirectionShare: f(
+        'acceptMinDirectionShare',
+        d.acceptMinDirectionShare,
+      ),
       selfCalibrationMinCount: i(
         'selfCalibrationMinCount',
         d.selfCalibrationMinCount,
@@ -339,6 +397,17 @@ class NyooomConfig {
     'residualLimitS': residualLimitS,
     'monotonicMinFraction': monotonicMinFraction,
     'sourceHeightM': sourceHeightM,
+    'matchToleranceS': matchToleranceS,
+    'referenceAverageS': referenceAverageS,
+    'approachMaxDistanceM': approachMaxDistanceM,
+    'speedStepKmh': speedStepKmh,
+    'acceptMeanErrorKmh': acceptMeanErrorKmh,
+    'acceptStepErrorKmh': acceptStepErrorKmh,
+    'acceptTrendSlope': acceptTrendSlope,
+    'acceptSdAKmh': acceptSdAKmh,
+    'acceptSdBKmh': acceptSdBKmh,
+    'acceptMaxShareC': acceptMaxShareC,
+    'acceptMinDirectionShare': acceptMinDirectionShare,
     'selfCalibrationMinCount': selfCalibrationMinCount,
     'selfCalibrationWarnFraction': selfCalibrationWarnFraction,
   };

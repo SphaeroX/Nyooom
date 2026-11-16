@@ -861,6 +861,17 @@ class $SitesTable extends Sites with TableInfo<$SitesTable, SiteRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _plusXBearingDegMeta = const VerificationMeta(
+    'plusXBearingDeg',
+  );
+  @override
+  late final GeneratedColumn<double> plusXBearingDeg = GeneratedColumn<double>(
+    'plus_x_bearing_deg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -869,6 +880,7 @@ class $SitesTable extends Sites with TableInfo<$SitesTable, SiteRow> {
     speedLimitKmh,
     latitude,
     longitude,
+    plusXBearingDeg,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -927,6 +939,15 @@ class $SitesTable extends Sites with TableInfo<$SitesTable, SiteRow> {
         longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
       );
     }
+    if (data.containsKey('plus_x_bearing_deg')) {
+      context.handle(
+        _plusXBearingDegMeta,
+        plusXBearingDeg.isAcceptableOrUnknown(
+          data['plus_x_bearing_deg']!,
+          _plusXBearingDegMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -960,6 +981,10 @@ class $SitesTable extends Sites with TableInfo<$SitesTable, SiteRow> {
         DriftSqlType.double,
         data['${effectivePrefix}longitude'],
       ),
+      plusXBearingDeg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}plus_x_bearing_deg'],
+      ),
     );
   }
 
@@ -976,6 +1001,9 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
   final double speedLimitKmh;
   final double? latitude;
   final double? longitude;
+
+  /// Compass bearing of the +x direction in degrees (schema 4).
+  final double? plusXBearingDeg;
   const SiteRow({
     required this.id,
     required this.name,
@@ -983,6 +1011,7 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
     required this.speedLimitKmh,
     this.latitude,
     this.longitude,
+    this.plusXBearingDeg,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -996,6 +1025,9 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
     }
     if (!nullToAbsent || longitude != null) {
       map['longitude'] = Variable<double>(longitude);
+    }
+    if (!nullToAbsent || plusXBearingDeg != null) {
+      map['plus_x_bearing_deg'] = Variable<double>(plusXBearingDeg);
     }
     return map;
   }
@@ -1012,6 +1044,9 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
       longitude: longitude == null && nullToAbsent
           ? const Value.absent()
           : Value(longitude),
+      plusXBearingDeg: plusXBearingDeg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plusXBearingDeg),
     );
   }
 
@@ -1027,6 +1062,7 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
       speedLimitKmh: serializer.fromJson<double>(json['speedLimitKmh']),
       latitude: serializer.fromJson<double?>(json['latitude']),
       longitude: serializer.fromJson<double?>(json['longitude']),
+      plusXBearingDeg: serializer.fromJson<double?>(json['plusXBearingDeg']),
     );
   }
   @override
@@ -1039,6 +1075,7 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
       'speedLimitKmh': serializer.toJson<double>(speedLimitKmh),
       'latitude': serializer.toJson<double?>(latitude),
       'longitude': serializer.toJson<double?>(longitude),
+      'plusXBearingDeg': serializer.toJson<double?>(plusXBearingDeg),
     };
   }
 
@@ -1049,6 +1086,7 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
     double? speedLimitKmh,
     Value<double?> latitude = const Value.absent(),
     Value<double?> longitude = const Value.absent(),
+    Value<double?> plusXBearingDeg = const Value.absent(),
   }) => SiteRow(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1056,6 +1094,9 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
     speedLimitKmh: speedLimitKmh ?? this.speedLimitKmh,
     latitude: latitude.present ? latitude.value : this.latitude,
     longitude: longitude.present ? longitude.value : this.longitude,
+    plusXBearingDeg: plusXBearingDeg.present
+        ? plusXBearingDeg.value
+        : this.plusXBearingDeg,
   );
   SiteRow copyWithCompanion(SitesCompanion data) {
     return SiteRow(
@@ -1069,6 +1110,9 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
           : this.speedLimitKmh,
       latitude: data.latitude.present ? data.latitude.value : this.latitude,
       longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      plusXBearingDeg: data.plusXBearingDeg.present
+          ? data.plusXBearingDeg.value
+          : this.plusXBearingDeg,
     );
   }
 
@@ -1080,14 +1124,22 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
           ..write('micHeightM: $micHeightM, ')
           ..write('speedLimitKmh: $speedLimitKmh, ')
           ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude')
+          ..write('longitude: $longitude, ')
+          ..write('plusXBearingDeg: $plusXBearingDeg')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, micHeightM, speedLimitKmh, latitude, longitude);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    micHeightM,
+    speedLimitKmh,
+    latitude,
+    longitude,
+    plusXBearingDeg,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1097,7 +1149,8 @@ class SiteRow extends DataClass implements Insertable<SiteRow> {
           other.micHeightM == this.micHeightM &&
           other.speedLimitKmh == this.speedLimitKmh &&
           other.latitude == this.latitude &&
-          other.longitude == this.longitude);
+          other.longitude == this.longitude &&
+          other.plusXBearingDeg == this.plusXBearingDeg);
 }
 
 class SitesCompanion extends UpdateCompanion<SiteRow> {
@@ -1107,6 +1160,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
   final Value<double> speedLimitKmh;
   final Value<double?> latitude;
   final Value<double?> longitude;
+  final Value<double?> plusXBearingDeg;
   const SitesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1114,6 +1168,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
     this.speedLimitKmh = const Value.absent(),
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
+    this.plusXBearingDeg = const Value.absent(),
   });
   SitesCompanion.insert({
     this.id = const Value.absent(),
@@ -1122,6 +1177,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
     required double speedLimitKmh,
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
+    this.plusXBearingDeg = const Value.absent(),
   }) : name = Value(name),
        micHeightM = Value(micHeightM),
        speedLimitKmh = Value(speedLimitKmh);
@@ -1132,6 +1188,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
     Expression<double>? speedLimitKmh,
     Expression<double>? latitude,
     Expression<double>? longitude,
+    Expression<double>? plusXBearingDeg,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1140,6 +1197,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
       if (speedLimitKmh != null) 'speed_limit_kmh': speedLimitKmh,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      if (plusXBearingDeg != null) 'plus_x_bearing_deg': plusXBearingDeg,
     });
   }
 
@@ -1150,6 +1208,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
     Value<double>? speedLimitKmh,
     Value<double?>? latitude,
     Value<double?>? longitude,
+    Value<double?>? plusXBearingDeg,
   }) {
     return SitesCompanion(
       id: id ?? this.id,
@@ -1158,6 +1217,7 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
       speedLimitKmh: speedLimitKmh ?? this.speedLimitKmh,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      plusXBearingDeg: plusXBearingDeg ?? this.plusXBearingDeg,
     );
   }
 
@@ -1182,6 +1242,9 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
     if (longitude.present) {
       map['longitude'] = Variable<double>(longitude.value);
     }
+    if (plusXBearingDeg.present) {
+      map['plus_x_bearing_deg'] = Variable<double>(plusXBearingDeg.value);
+    }
     return map;
   }
 
@@ -1193,7 +1256,8 @@ class SitesCompanion extends UpdateCompanion<SiteRow> {
           ..write('micHeightM: $micHeightM, ')
           ..write('speedLimitKmh: $speedLimitKmh, ')
           ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude')
+          ..write('longitude: $longitude, ')
+          ..write('plusXBearingDeg: $plusXBearingDeg')
           ..write(')'))
         .toString();
   }
@@ -5406,6 +5470,7 @@ typedef $$SitesTableCreateCompanionBuilder = SitesCompanion Function({
   required double speedLimitKmh,
   Value<double?> latitude,
   Value<double?> longitude,
+  Value<double?> plusXBearingDeg,
 });
 typedef $$SitesTableUpdateCompanionBuilder = SitesCompanion Function({
   Value<int> id,
@@ -5414,6 +5479,7 @@ typedef $$SitesTableUpdateCompanionBuilder = SitesCompanion Function({
   Value<double> speedLimitKmh,
   Value<double?> latitude,
   Value<double?> longitude,
+  Value<double?> plusXBearingDeg,
 });
 
 final class $$SitesTableReferences
@@ -5518,6 +5584,11 @@ class $$SitesTableFilterComposer
 
   ColumnFilters<double> get longitude => $composableBuilder(
     column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get plusXBearingDeg => $composableBuilder(
+    column: $table.plusXBearingDeg,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5635,6 +5706,11 @@ class $$SitesTableOrderingComposer
     column: $table.longitude,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get plusXBearingDeg => $composableBuilder(
+    column: $table.plusXBearingDeg,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SitesTableAnnotationComposer
@@ -5667,6 +5743,11 @@ class $$SitesTableAnnotationComposer
 
   GeneratedColumn<double> get longitude =>
       $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<double> get plusXBearingDeg => $composableBuilder(
+    column: $table.plusXBearingDeg,
+    builder: (column) => column,
+  );
 
   Expression<T> lanesRefs<T extends Object>(
     Expression<T> Function($$LanesTableAnnotationComposer a) f,
@@ -5783,6 +5864,7 @@ class $$SitesTableTableManager
                 Value<double> speedLimitKmh = const Value.absent(),
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
+                Value<double?> plusXBearingDeg = const Value.absent(),
               }) => SitesCompanion(
                 id: id,
                 name: name,
@@ -5790,6 +5872,7 @@ class $$SitesTableTableManager
                 speedLimitKmh: speedLimitKmh,
                 latitude: latitude,
                 longitude: longitude,
+                plusXBearingDeg: plusXBearingDeg,
               ),
           createCompanionCallback:
               ({
@@ -5799,6 +5882,7 @@ class $$SitesTableTableManager
                 required double speedLimitKmh,
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
+                Value<double?> plusXBearingDeg = const Value.absent(),
               }) => SitesCompanion.insert(
                 id: id,
                 name: name,
@@ -5806,6 +5890,7 @@ class $$SitesTableTableManager
                 speedLimitKmh: speedLimitKmh,
                 latitude: latitude,
                 longitude: longitude,
+                plusXBearingDeg: plusXBearingDeg,
               ),
           withReferenceMapper: (p0) => p0
               .map(

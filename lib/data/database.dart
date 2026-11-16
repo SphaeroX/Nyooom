@@ -34,6 +34,10 @@ class Sites extends Table {
   RealColumn get speedLimitKmh => real()();
   RealColumn get latitude => real().nullable()();
   RealColumn get longitude => real().nullable()();
+
+  /// Compass bearing of the +x direction in degrees (schema 4).
+  RealColumn get plusXBearingDeg =>
+      real().named('plus_x_bearing_deg').nullable()();
 }
 
 @DataClassName('LaneRow')
@@ -158,9 +162,9 @@ class NyooomDatabase extends _$NyooomDatabase {
 
   /// Schema history: 1 = Task_04; 2 = Task_09 (passes.sigma_laufzeit,
   /// passes.sigma_doppler); 3 = Task_15 (reference_tracks,
-  /// reference_points).
+  /// reference_points); 4 = Task_16 (sites.plus_x_bearing_deg).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -174,9 +178,17 @@ class NyooomDatabase extends _$NyooomDatabase {
         await m.createTable(referenceTracks);
         await m.createTable(referencePoints);
       }
+      if (from < 4 && !await _hasColumn('sites', 'plus_x_bearing_deg')) {
+        await m.addColumn(sites, sites.plusXBearingDeg);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.any((r) => r.read<String>('name') == column);
+  }
 }

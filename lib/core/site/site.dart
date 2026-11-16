@@ -38,6 +38,7 @@ class SiteSpec {
     required this.speedLimitKmh,
     this.latitude,
     this.longitude,
+    this.plusXBearingDeg,
   });
 
   final String name;
@@ -51,6 +52,11 @@ class SiteSpec {
   /// Position of the phone (optional, used for GPS validation).
   final double? latitude;
   final double? longitude;
+
+  /// Compass bearing (degrees from north, clockwise) of the +x direction,
+  /// i.e. where vehicles of direction +1 drive to. Used to check the
+  /// recognised direction against GPS reference drives (Task_16).
+  final double? plusXBearingDeg;
 
   /// Slant distance of [lane] (technik.pdf 3.1, 7.2).
   double slantDistance(LaneSpec lane, {required double sourceHeight}) =>
@@ -68,7 +74,7 @@ class SiteSpec {
   }
 }
 
-enum SiteField { name, lanes, micHeight, speedLimit }
+enum SiteField { name, lanes, micHeight, speedLimit, position }
 
 /// A validation finding; errors block saving, warnings only inform.
 class SiteIssue {
@@ -152,6 +158,29 @@ List<SiteIssue> validateSite(SiteSpec site) {
       const SiteIssue(
         SiteField.speedLimit,
         'Tempolimit muss größer als 0 sein.',
+        isError: true,
+      ),
+    );
+  }
+  final lat = site.latitude, lon = site.longitude;
+  if ((lat == null) != (lon == null) ||
+      (lat != null && !(lat >= -90 && lat <= 90)) ||
+      (lon != null && !(lon >= -180 && lon <= 180))) {
+    issues.add(
+      const SiteIssue(
+        SiteField.position,
+        'Position: Breite (−90 bis 90) und Länge (−180 bis 180) zusammen '
+        'angeben.',
+        isError: true,
+      ),
+    );
+  }
+  final bearing = site.plusXBearingDeg;
+  if (bearing != null && !(bearing >= 0 && bearing < 360)) {
+    issues.add(
+      const SiteIssue(
+        SiteField.position,
+        'Kompassrichtung muss zwischen 0 und 360° liegen.',
         isError: true,
       ),
     );

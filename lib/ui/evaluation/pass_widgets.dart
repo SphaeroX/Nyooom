@@ -8,6 +8,7 @@ import '../inspection/inspection_screen.dart';
 import '../providers.dart';
 import '../export/export_buttons.dart';
 import '../stats/statistics_screen.dart';
+import '../validation/validation_screen.dart';
 import 'evaluation_controller.dart';
 
 String formatTime(int utcMs) {
@@ -134,6 +135,16 @@ class EvaluationSection extends ConsumerWidget {
           ),
           icon: const Icon(Icons.bar_chart),
           label: const Text('Statistik'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ValidationScreen(seriesId: series.id),
+            ),
+          ),
+          icon: const Icon(Icons.fact_check_outlined),
+          label: const Text('Validierung mit Referenzfahrten'),
         ),
         const SizedBox(height: 8),
         ExportButtons(seriesId: series.id),
