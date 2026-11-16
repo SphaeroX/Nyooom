@@ -55,6 +55,7 @@ Eine Aufgabe ist fertig, wenn mechanisch prüfbar gilt:
 - **Hilfsklassen:** `tests/helpers/` (z. B. `FakeStereoRecorder`, `sinePcm16`) für Tests, die einen Recorder ohne Plattform brauchen; per `stereoRecorderProvider.overrideWithValue(...)` einsetzen. Für Dateizugriffe `recordingsDirectoryProvider` auf ein Temp-Verzeichnis überschreiben.
 - **Datenbank:** drift mit In-Memory-Datenbank (`NativeDatabase.memory()`).
 - **Simulation:** Fahrzeuge für Tests mit `Scenarios.combustion/electric` bzw. `VehiclePass(..., audibleSpanS:)` erzeugen; `audibleSpanS` begrenzt die Rechenzeit langer Szenarien. Ganze Auswertungen: `evaluateSignalFull` (Offline-Referenz) oder `LivePipeline`.
+- **Mehrere Fahrzeuge:** `tests/data/multi_vehicle_test.dart` (Kolonne, Gegenverkehr, Spiegelspur, Zufallsverkehr mit `TrafficGenerator(minGapS:, meanExtraGapS:)`) prüft Zählung und Geschwindigkeit gegen `GroundTruth`. Erwartung dort: jedes Fahrzeug genau ein Datensatz, kein Datensatz ohne Fahrzeug. Bei Änderungen an Ereigniserkennung, `motion_fit.dart` oder `event_evaluator.dart` zusätzlich zu `tests/core/` auch `tests/data/` ausführen.
 - **Windows:** `build/unit_test_assets`, `.dart_tool/build/generated` und `build/app/intermediates` sind gelegentlich gesperrt. Ordner löschen (bei APK-Builds vorher `android/gradlew.bat --stop`) und den Befehl wiederholen.
 - **Testdaten:**
   - Synthetische Vorbeifahrten aus dem Generator in `lib/core/` (Roadmap Task_02) sind die Standard-Fixtures. Sie werden im Test erzeugt und nicht als Datei abgelegt.

@@ -78,6 +78,18 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 - [ ] Maßband- und gelernter Abstand pro Spur für eine echte Messreihe ansehen; systematischen Fehler der ausgedehnten Quelle notieren.
 - [ ] Einfache Fusion vs. gemeinsame Ausgleichsrechnung auf echten Referenzdaten vergleichen; Standardverfahren ggf. neu wählen.
 
+### Aus der Konzeptprüfung (nach Task_19): mehrere Fahrzeuge, Fenstersims
+
+Hintergrund in `docs/method-notes.md`.
+
+- [ ] Aufnahme mit Kolonnen und Gegenverkehr von Hand auszählen (Video oder Strichliste, mindestens 50 Fahrzeuge) und mit der Zahl der Datensätze vergleichen: fehlende und erfundene Fahrzeuge notieren.
+- [ ] Mittlere Korrelation echter Spuren ansehen (`MotionFit.strength`): passt `trackMinStrength` = 0,15, oder gibt es Geisterspuren bzw. verworfene echte Spuren?
+- [ ] Anteil der Datensätze mit Grund „Ton nicht zuordenbar" und „Beschleunigung" bei dichtem Verkehr notieren.
+- [ ] Grundpegel bei dichtem Verkehr: werden leise Fahrzeuge noch erkannt? Gegebenenfalls `noiseFloorPercentile` anpassen und hier festhalten.
+- [ ] Fenstersims: b und Δ0 in Einbaulage kalibrieren und mit der Kalibrierung am Stativ vergleichen. Im Korrelogramm prüfen, ob eine gespiegelte Spur (Laibung) zu sehen ist.
+- [ ] Fenstersims: langsame Fahrzeuge bei großem Schrägabstand, Anteil Klasse C „außerhalb des Suchbereichs" notieren (`kappaMin`).
+- [ ] Live-Betrieb bei dichtem Verkehr: bleibt `dropped` bei 0? Sonst zählt die Live-Liste zu wenig, die Auswertung der gespeicherten Aufnahme ist dann maßgeblich.
+
 ## Tests
 
 Automatische Tests entstehen hier nur, wenn echte Aufnahmen als Fixtures dazukommen (Regressionstests auf kurze echte Ausschnitte).

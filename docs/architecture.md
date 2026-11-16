@@ -34,7 +34,17 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_19)
+## Auswertung mehrerer Fahrzeuge
+
+Die App wertet nicht nach dem Buchstaben von `technik.pdf` 5.1 aus (ein Ergebnis pro Fenster, Überlappung gleich Klasse C), sondern mit Spurtrennung im Korrelogramm. Der Ablauf in allen drei Wegen (`LivePipeline`, `runSeriesAnalysis`, `evaluateSignalFull`) ist derselbe:
+
+1. `EventDetector(secondaryEvents: true)` meldet jedes ausgeprägte Pegelmaximum als Ereignis.
+2. `EventPipeline.evaluateAll` liefert pro Ereignis null bis zwei Datensätze (`EventEvaluator.analyseTracks`, danach Doppler und Fusion je Spur).
+3. `TrackDeduplicator` entfernt Wiederholungen desselben Fahrzeugs aus überlappenden Fenstern.
+
+`detectEvents`, `EventEvaluator.analyse` und `EventPipeline.evaluate` bilden weiter die PDF-Regel ab und dienen Tests und Vergleichen. Begründung und Grenzen: [method-notes.md](method-notes.md).
+
+## Projektstruktur (Stand Konzeptprüfung nach Task_19)
 
 ```
 lib/
@@ -53,12 +63,13 @@ lib/
   core/calibration/device_checks.dart  Eignungsprüfung 4.4 und Kalibrierung 7.1 (reine Logik)
   core/calibration/self_calibration.dart  Selbstkalibrierung der Spurabstände (technik.pdf 7.4)
   core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
-  core/events/event_detector.dart   Ereigniserkennung blockweise (technik.pdf 5.1)
+  core/events/event_detector.dart   Ereigniserkennung blockweise (technik.pdf 5.1), wahlweise mit Nebenmaxima als eigenen Ereignissen
   core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung
-  core/pipeline/motion_fit.dart     Grobsuche + robuste Feinanpassung von κ, t0 (technik.pdf 5.3)
+  core/pipeline/motion_fit.dart     Grobsuche + robuste Feinanpassung von κ, t0 (technik.pdf 5.3); Maxima neben der Kurve, Suche mit ausgeblendeten Spuren
   core/pipeline/reasons.dart        Gründe für Klasse B/C (Code + Text)
-  core/pipeline/event_evaluator.dart  Laufzeitauswertung eines Ereignisfensters (v_T, σ_T, Klasse B/C)
-  core/pipeline/doppler.dart        Doppler Variante 1: Tonspuren + Regression mit bekanntem u(t) (technik.pdf 5.4)
+  core/pipeline/event_evaluator.dart  Laufzeitauswertung eines Ereignisfensters (v_T, σ_T, Klasse B/C); `analyseTracks` trennt mehrere Fahrzeuge
+  core/pipeline/track_dedup.dart    TrackDeduplicator: dasselbe Fahrzeug aus zwei Fenstern nur einmal
+  core/pipeline/doppler.dart        Doppler Variante 1: Tonspuren + Regression mit bekanntem u(t) (technik.pdf 5.4), Abstandsprüfung je Tonspur (ToneGate)
   core/pipeline/doppler_sharpness.dart  Doppler Variante 2: Entzerrung und Schärfemaximum, Kombinationsregel
   core/pipeline/fusion.dart         Beschleunigungs-/Abstandsprüfung, gewichtete Fusion, Klassenlogik (5.4–5.6)
   core/pipeline/least_squares.dart  allgemeiner Levenberg-Marquardt-Löser mit Kovarianz
@@ -75,7 +86,7 @@ lib/
   audio/capture.dart                Aufnahme fester Dauer, CalibrationCapture (echt/simuliert)
   data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes, ReferenceTracks, ReferencePoints), Version 4
   data/repository.dart              NyooomRepository
-  data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live)
+  data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live), `evaluateAll` für alle Fahrzeuge des Fensters
   data/live_pipeline.dart           Live-Auswertung: Ringpuffer, Worker-Isolate, Warteschlange
   data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt
   data/series_export.dart           Export einer Messreihe in Dateien bzw. ZIP (gestreamt)

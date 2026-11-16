@@ -150,6 +150,15 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 
 - Gemeinsame Ausgleichsrechnung (`jointFit`, Kostenfunktion J) als Option `fusionMethod = 1`. Vergleich synthetisch: einfache Fusion 0,14 km/h, gemeinsam 0,13 km/h mittlerer Betragsfehler → Standard bleibt die einfache Fusion. Mit echten Daten wiederholen (Task_20). (Task_19)
 
+**Aus der Konzept- und Physikprüfung (2026-11-16, nach Task_19, kein eigener Task):**
+
+- Formeln und Zahlen aus `technik.pdf` 3 bis 8 sind nachgerechnet und stimmen. Ergebnis, Änderungen und Grenzen stehen in `docs/method-notes.md`; vor Änderungen an der Auswertung lesen.
+- Die App wertet jetzt mit **Spurtrennung** aus: `EventDetector(secondaryEvents: true)` → `EventPipeline.evaluateAll` (null bis zwei Datensätze pro Ereignis) → `TrackDeduplicator`. Zwei Fahrzeuge hintereinander und Gegenverkehr werden einzeln gemessen und gezählt. `detectEvents`, `EventEvaluator.analyse` und `EventPipeline.evaluate` bilden weiter die PDF-Regel ab (Überlappung = Klasse C) und sind nur noch für Tests und Vergleiche da.
+- `MotionFitter.fit` nimmt pro Block das lokale Maximum neben der Kurve und beurteilt die Spur nur um die eigene größte Annäherung (`MotionFit.strength`). Neue Parameter `track…`, `duplicateWindowS`, `mirror…` in `NyooomConfig`.
+- Doppler: `ToneGate` (Abstandsprüfung je Tonspur), `frequencyRises` (steigender Ton zählt wie Beschleunigung), neuer Grund `ton_mehrdeutig` (Klasse B, zwei Fahrzeuge gleichzeitig).
+- Simulation, Zufallsverkehr mit 4,5 s mittlerem Abstand: vorher 6 von 45 Fahrzeugen gemessen, jetzt 38, kein erfundenes Fahrzeug. Die neuen Schwellen sind Startwerte aus der Simulation und mit echten Aufnahmen zu prüfen (Task_20).
+- Nicht geändert, aber als Grenze dokumentiert: Grundpegel bei Dauerverkehr, Suchbereich κ bei großem Abstand, Selbstkalibrierung nur aus Klasse A, σd als horizontale Streuung.
+
 ## Auffälligkeiten & Details
 
 Dinge, die global noch zu beachten sind: Besonderheiten, bekannte Einschränkungen, kleinere Details. Wird laufend ergänzt.
@@ -157,4 +166,5 @@ Dinge, die global noch zu beachten sind: Besonderheiten, bekannte Einschränkung
 - Das Projekt-Setup (Git, `.gitignore`, `docs/`, Root-`AGENTS.md`, FVM) ist erledigt; die Root-`AGENTS.md` gilt zusätzlich (siehe `Roadmap/AGENTS.md`, Abschnitt 7). Das Flutter-Projekt wurde in Task_01 generiert; Struktur und Plattform-Schnittstelle stehen in `docs/architecture.md`.
 - Der FVM-Symlink `.fvm/versions/3.50.0` (für die IDE) ließ sich ohne Windows-Entwicklermodus nicht anlegen; `fvm flutter` funktioniert trotzdem.
 - Größtes Projektrisiko: Ob das Zielgerät zwei getrennte, unbearbeitete Mikrofonkanäle liefert, ist herstellerabhängig. Geklärt wird das in Task_01, Task_05 und Task_06. Ausweichlösung ist ein externes USB-Stereomikrofon.
+- Geplanter Einsatz: Gerät auf dem Fenstersims, Zählung und Geschwindigkeiten einer Straße. Hinweise zur Aufstellung (Höhe, Laibung, Kalibrierung in Einbaulage) in `docs/method-notes.md`.
 - Offene fachliche Punkte aus der PDF (Abschnitt 10): Anteil der Fahrzeuge mit auswertbarem Ton, systematischer Fehler durch die ausgedehnte Schallquelle, Frequenzabhängigkeit von b, Warnton von E-Autos.

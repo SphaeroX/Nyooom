@@ -75,12 +75,16 @@ FusionResult fuse({
   double? vD,
   double? sigmaD,
   double? vDWithAcceleration,
+  bool frequencyRises = false,
 }) {
   final hasTone = vD != null && sigmaD != null;
+  // A tone that rises against the model changed at the source: the same
+  // verdict as the acceleration regression (5.4).
   final acceleration =
       hasTone &&
-      vDWithAcceleration != null &&
-      (vDWithAcceleration - vD).abs() > config.accelerationCheckLimit;
+      (frequencyRises ||
+          (vDWithAcceleration != null &&
+              (vDWithAcceleration - vD).abs() > config.accelerationCheckLimit));
   final dEst = hasTone ? vD / kappa.abs() : null;
   final distanceOk =
       dEst != null &&

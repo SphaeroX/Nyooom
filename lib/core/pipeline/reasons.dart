@@ -13,7 +13,15 @@ enum DowngradeReason {
   // Class B: Doppler not usable.
   noTone('kein_ton', 'kein Ton', false),
   acceleration('beschleunigung', 'Beschleunigung', false),
-  distanceCheck('abstandspruefung', 'Abstandsprüfung', false);
+  distanceCheck('abstandspruefung', 'Abstandsprüfung', false),
+
+  /// Two vehicles pass at the same time: tones cannot be assigned to one of
+  /// them, so the Doppler step is skipped (track separation).
+  toneAmbiguous(
+    'ton_mehrdeutig',
+    'Ton nicht zuordenbar (zweites Fahrzeug)',
+    false,
+  );
 
   const DowngradeReason(this.code, this.text, this.isClassC);
 

@@ -69,5 +69,12 @@
   "sharpnessMinPeak": 4.0,
   "fusionMethod": 0,
   "selfCalibrationMinCount": 30,
-  "selfCalibrationWarnFraction": 0.2
+  "selfCalibrationWarnFraction": 0.2,
+  "trackCoreDirectionCosine": 0.9,
+  "trackMinStrength": 0.15,
+  "trackMaskWidthS": 0.00006,
+  "trackMinSeparationS": 1.0,
+  "duplicateWindowS": 0.5,
+  "mirrorKappaTolerance": 0.15,
+  "mirrorT0ToleranceS": 0.15
 }

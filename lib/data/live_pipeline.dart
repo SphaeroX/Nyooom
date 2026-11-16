@@ -8,6 +8,7 @@ import '../core/config/nyooom_config.dart';
 import '../core/events/event_detector.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
+import '../core/pipeline/track_dedup.dart';
 import '../core/signal/pcm.dart';
 import 'event_pipeline.dart';
 
@@ -30,12 +31,15 @@ class LivePipeline {
     LiveEvaluator? evaluator,
     this.maxPending = 4,
     double bufferS = 12,
-  }) : _detector = EventDetector(config: config),
+  }) : _detector = EventDetector(config: config, secondaryEvents: true),
+       _dedup = TrackDeduplicator(config: config),
        _capacity = (bufferS * config.sampleRate).round(),
        _left = Float64List((bufferS * config.sampleRate).round()),
        _right = Float64List((bufferS * config.sampleRate).round()) {
     if (evaluator != null) {
-      _evaluate = evaluator;
+      _evaluate = (window, event, startS) async => [
+        await evaluator(window, event, startS),
+      ];
     } else {
       final worker = _IsolateWorker(config, setup);
       _worker = worker;
@@ -47,7 +51,13 @@ class LivePipeline {
   final AnalysisSetup setup;
   final int maxPending;
   final EventDetector _detector;
-  late final LiveEvaluator _evaluate;
+  final TrackDeduplicator _dedup;
+  late final Future<List<PassRecord>> Function(
+    StereoBlock window,
+    PassEvent event,
+    double windowStartS,
+  )
+  _evaluate;
   _IsolateWorker? _worker;
 
   final int _capacity;
@@ -110,19 +120,21 @@ class LivePipeline {
     if (_busy || _queue.isEmpty) return;
     _busy = true;
     final job = _queue.removeFirst();
-    _evaluate(
-      job.window,
-      job.event,
-      job.windowStartS,
-    ).then(_records.add, onError: _records.addError).whenComplete(() {
-      _busy = false;
-      _pending--;
-      if (_pending == 0) {
-        _idle?.complete();
-        _idle = null;
-      }
-      _pump();
-    });
+    _evaluate(job.window, job.event, job.windowStartS)
+        .then((records) {
+          for (final record in records) {
+            if (_dedup.accept(record)) _records.add(record);
+          }
+        }, onError: _records.addError)
+        .whenComplete(() {
+          _busy = false;
+          _pending--;
+          if (_pending == 0) {
+            _idle?.complete();
+            _idle = null;
+          }
+          _pump();
+        });
   }
 
   /// Evaluates the events at the end of the signal and waits for all jobs.
@@ -159,7 +171,7 @@ class _IsolateWorker {
 
   late final Future<SendPort> _ready;
   final _results = ReceivePort();
-  final Map<int, Completer<PassRecord>> _open = {};
+  final Map<int, Completer<List<PassRecord>>> _open = {};
   Isolate? _isolate;
   int _nextId = 0;
 
@@ -169,7 +181,7 @@ class _IsolateWorker {
       if (message is SendPort) {
         portReady.complete(message);
       } else if (message is _Result) {
-        _open.remove(message.id)?.complete(message.record);
+        _open.remove(message.id)?.complete(message.records);
       } else if (message is _Failure) {
         _open.remove(message.id)?.completeError(message.error);
       }
@@ -182,14 +194,14 @@ class _IsolateWorker {
     return portReady.future;
   }
 
-  Future<PassRecord> evaluate(
+  Future<List<PassRecord>> evaluate(
     StereoBlock window,
     PassEvent event,
     double windowStartS,
   ) async {
     final port = await _ready;
     final id = _nextId++;
-    final completer = Completer<PassRecord>();
+    final completer = Completer<List<PassRecord>>();
     _open[id] = completer;
     port.send(_Request(id, window, event, windowStartS));
     return completer.future;
@@ -210,9 +222,9 @@ class _Request {
 }
 
 class _Result {
-  _Result(this.id, this.record);
+  _Result(this.id, this.records);
   final int id;
-  final PassRecord record;
+  final List<PassRecord> records;
 }
 
 class _Failure {
@@ -233,7 +245,7 @@ void _workerEntry(
       args.reply.send(
         _Result(
           r.id,
-          pipeline.evaluate(r.window, r.event, windowStartS: r.windowStartS),
+          pipeline.evaluateAll(r.window, r.event, windowStartS: r.windowStartS),
         ),
       );
     } catch (e) {
@@ -242,32 +254,31 @@ void _workerEntry(
   });
 }
 
-/// Offline reference of the live mode: all events of [signal] through the
-/// complete [EventPipeline].
+/// Offline reference of the live mode: all events of [signal] (including
+/// secondary maxima) through the complete [EventPipeline] with track
+/// separation; repeated reports of one vehicle are removed.
 List<PassRecord> evaluateSignalFull(
   StereoBlock signal, {
   required NyooomConfig config,
   required AnalysisSetup setup,
 }) {
   final pipeline = EventPipeline(config: config, setup: setup);
+  final detector = EventDetector(config: config, secondaryEvents: true);
+  final dedup = TrackDeduplicator(config: config);
   final fs = config.sampleRate;
-  return [
-    for (final e in detectEvents(signal, config: config))
-      pipeline.evaluate(
-        StereoBlock(
-          Float64List.sublistView(
-            signal.left,
-            (e.windowStartS * fs).round(),
-            math.min((e.windowEndS * fs).round(), signal.length),
-          ),
-          Float64List.sublistView(
-            signal.right,
-            (e.windowStartS * fs).round(),
-            math.min((e.windowEndS * fs).round(), signal.length),
-          ),
-        ),
-        e,
-        windowStartS: (e.windowStartS * fs).round() / fs,
+  final records = <PassRecord>[];
+  for (final e in [...detector.add(signal), ...detector.finish()]) {
+    final from = (e.windowStartS * fs).round();
+    final to = math.min((e.windowEndS * fs).round(), signal.length);
+    final found = pipeline.evaluateAll(
+      StereoBlock(
+        Float64List.sublistView(signal.left, from, to),
+        Float64List.sublistView(signal.right, from, to),
       ),
-  ];
+      e,
+      windowStartS: from / fs,
+    );
+    records.addAll(found.where(dedup.accept));
+  }
+  return records;
 }

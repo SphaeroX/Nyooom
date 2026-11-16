@@ -79,6 +79,13 @@ class NyooomConfig {
     this.fusionMethod = 0,
     this.selfCalibrationMinCount = 30,
     this.selfCalibrationWarnFraction = 0.2,
+    this.trackCoreDirectionCosine = 0.9,
+    this.trackMinStrength = 0.15,
+    this.trackMaskWidthS = 60e-6,
+    this.trackMinSeparationS = 1,
+    this.duplicateWindowS = 0.5,
+    this.mirrorKappaTolerance = 0.15,
+    this.mirrorT0ToleranceS = 0.15,
   });
 
   /// Recording sample rate in Hz (4.2, 9.2).
@@ -271,6 +278,33 @@ class NyooomConfig {
   final int selfCalibrationMinCount;
   final double selfCalibrationWarnFraction;
 
+  /// Track separation: a track is judged where |u| stays below this value,
+  /// i.e. around its own closest approach, where the vehicle is the nearest
+  /// source (review after Task_19).
+  final double trackCoreDirectionCosine;
+
+  /// Smallest mean correlation along the fitted curve in that range; also
+  /// the height a block maximum needs to count as "on the curve".
+  final double trackMinStrength;
+
+  /// Half width in s of the band a found track occupies in the correlogram
+  /// (main lobe of the correlation) when a further track is searched.
+  final double trackMaskWidthS;
+
+  /// Level maxima closer than this to the maximum of an event do not bound
+  /// its t0 search (ripples of the same vehicle), in s.
+  final double trackMinSeparationS;
+
+  /// Two tracks of the same direction closer than this in t0 are the same
+  /// vehicle seen from two windows (or a side lobe or reflection), in s.
+  final double duplicateWindowS;
+
+  /// A second track of the opposite direction with the same |κ| (relative
+  /// tolerance) and the same t0 (tolerance in s) is the mirror image of the
+  /// first one from a side wall, not a vehicle.
+  final double mirrorKappaTolerance;
+  final double mirrorT0ToleranceS;
+
   /// Acceleration check limit in m/s.
   double get accelerationCheckLimit => accelerationCheckLimitKmh / 3.6;
 
@@ -372,6 +406,16 @@ class NyooomConfig {
         'selfCalibrationWarnFraction',
         d.selfCalibrationWarnFraction,
       ),
+      trackCoreDirectionCosine: f(
+        'trackCoreDirectionCosine',
+        d.trackCoreDirectionCosine,
+      ),
+      trackMinStrength: f('trackMinStrength', d.trackMinStrength),
+      trackMaskWidthS: f('trackMaskWidthS', d.trackMaskWidthS),
+      trackMinSeparationS: f('trackMinSeparationS', d.trackMinSeparationS),
+      duplicateWindowS: f('duplicateWindowS', d.duplicateWindowS),
+      mirrorKappaTolerance: f('mirrorKappaTolerance', d.mirrorKappaTolerance),
+      mirrorT0ToleranceS: f('mirrorT0ToleranceS', d.mirrorT0ToleranceS),
     );
   }
 
@@ -447,5 +491,12 @@ class NyooomConfig {
     'fusionMethod': fusionMethod,
     'selfCalibrationMinCount': selfCalibrationMinCount,
     'selfCalibrationWarnFraction': selfCalibrationWarnFraction,
+    'trackCoreDirectionCosine': trackCoreDirectionCosine,
+    'trackMinStrength': trackMinStrength,
+    'trackMaskWidthS': trackMaskWidthS,
+    'trackMinSeparationS': trackMinSeparationS,
+    'duplicateWindowS': duplicateWindowS,
+    'mirrorKappaTolerance': mirrorKappaTolerance,
+    'mirrorT0ToleranceS': mirrorT0ToleranceS,
   };
 }

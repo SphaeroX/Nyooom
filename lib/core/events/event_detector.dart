@@ -15,6 +15,8 @@ class PassEvent {
     required this.windowEndS,
     required this.overlap,
     required this.truncated,
+    this.secondary = false,
+    this.neighbourPeakTimesS = const [],
   });
 
   /// Time of the level maximum, relative to the start of the stream.
@@ -36,6 +38,15 @@ class PassEvent {
   /// The window had to be clipped at the start or end of the recording.
   final bool truncated;
 
+  /// The maximum is not the largest of its window: a louder vehicle passes
+  /// within [NyooomConfig.eventWindowS] (only reported in secondary mode).
+  final bool secondary;
+
+  /// Times of the other prominent level maxima inside the window (further
+  /// vehicles, or ripples of the same one); the track separation uses them
+  /// to bound the search for t0.
+  final List<double> neighbourPeakTimesS;
+
   /// Level maximum above the noise floor (field `pegel`, 9.1).
   double get levelAboveFloorDb => peakLevelDb - floorDb;
 }
@@ -48,8 +59,14 @@ class PassEvent {
 /// An event is reported once the signal up to the end of its window is
 /// known, i.e. [NyooomConfig.eventWindowS] after the maximum. At the start
 /// of a recording the floor is taken from the history available so far.
+///
+/// technik.pdf 5.1 reports only the largest maximum of a window and marks
+/// it as overlap if a second one comes close. With [secondaryEvents] every
+/// prominent maximum above the threshold becomes an event of its own, so
+/// vehicles following each other within the window are evaluated (and
+/// counted) one by one; the track separation decides what they are.
 class EventDetector {
-  EventDetector({required this.config})
+  EventDetector({required this.config, this.secondaryEvents = false})
     : _filter = BiquadChain([
         Biquad.highPass(config.sampleRate.toDouble(), config.highPassHz),
         Biquad.highPass(config.sampleRate.toDouble(), config.eventBandLowHz),
@@ -65,6 +82,9 @@ class EventDetector {
           .round();
 
   final NyooomConfig config;
+
+  /// Report non-dominant maxima as events too (see class comment).
+  final bool secondaryEvents;
   final BiquadChain _filter;
   final int _stepSamples;
   final int _smoothSteps;
@@ -140,18 +160,60 @@ class EventDetector {
   /// Time of step [i]: centre of its smoothing window.
   double _timeOf(int i) => (i + 1) * _stepS - _smoothSteps * _stepS / 2;
 
+  /// Local maximum; of a plateau the first step counts.
+  bool _isLocalMax(int j, int from, int to) {
+    final v = _at(_level, j);
+    if (j > from && _at(_level, j - 1) >= v) return false;
+    if (j < to && _at(_level, j + 1) > v) return false;
+    return true;
+  }
+
+  /// Height of the maximum at [j] above the deepest point that separates
+  /// it from a higher maximum inside [from, to]; infinite without one.
+  double _prominence(int j, int from, int to) {
+    final v = _at(_level, j);
+    double? left, right;
+    var low = v;
+    for (var k = j - 1; k >= from; k--) {
+      final x = _at(_level, k);
+      if (x >= v) {
+        left = low;
+        break;
+      }
+      low = math.min(low, x);
+    }
+    low = v;
+    for (var k = j + 1; k <= to; k++) {
+      final x = _at(_level, k);
+      if (x > v) {
+        right = low;
+        break;
+      }
+      low = math.min(low, x);
+    }
+    if (left == null && right == null) return double.infinity;
+    return v - math.max(left ?? -double.infinity, right ?? -double.infinity);
+  }
+
   PassEvent? _evaluate(int c, int last, {required bool atEnd}) {
     final peak = _at(_level, c);
     final from = math.max(0, c - _windowSteps);
     final to = math.min(last, c + _windowSteps);
-    for (var j = from; j <= to; j++) {
-      if (j < c && _at(_level, j) >= peak) return null;
-      if (j > c && _at(_level, j) > peak) return null;
+    var dominant = true;
+    for (var j = from; j <= to && dominant; j++) {
+      if (j < c && _at(_level, j) >= peak) dominant = false;
+      if (j > c && _at(_level, j) > peak) dominant = false;
     }
+    if (!dominant && !secondaryEvents) return null;
     final floor = _at(_floor, last);
     if (peak - floor < config.eventThresholdDb) return null;
+    if (!dominant &&
+        (!_isLocalMax(c, from, to) ||
+            _prominence(c, from, to) < config.overlapMinDipDb)) {
+      return null;
+    }
 
-    var overlap = false;
+    var overlap = !dominant;
     for (var j = from + 1; j < to && !overlap; j++) {
       if (j == c) continue;
       final v = _at(_level, j);
@@ -162,6 +224,14 @@ class EventDetector {
         dip = math.min(dip, _at(_level, m));
       }
       if (dip <= v - config.overlapMinDipDb) overlap = true;
+    }
+
+    final neighbours = <double>[];
+    for (var j = from + 1; j < to; j++) {
+      if (j == c || !_isLocalMax(j, from, to)) continue;
+      if (_at(_level, j) - floor < config.eventThresholdDb) continue;
+      if (_prominence(j, from, to) < config.overlapMinDipDb) continue;
+      neighbours.add(_timeOf(j));
     }
 
     final half = floor + config.eventDurationFraction * (peak - floor);
@@ -186,6 +256,8 @@ class EventDetector {
       windowEndS: math.min(end, recorded),
       overlap: overlap,
       truncated: start < 0 || (atEnd && end > recorded),
+      secondary: !dominant,
+      neighbourPeakTimesS: neighbours,
     );
   }
 

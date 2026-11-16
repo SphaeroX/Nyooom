@@ -25,6 +25,7 @@ class DopplerResult {
     required this.residual,
     required this.tracks,
     required this.speedWithAcceleration,
+    this.frequencyRises = false,
   });
 
   const DopplerResult.noTone()
@@ -34,7 +35,14 @@ class DopplerResult {
       offsetS = 0,
       residual = null,
       tracks = const [],
-      speedWithAcceleration = null;
+      speedWithAcceleration = null,
+      frequencyRises = false;
+
+  /// The regression gives v with the sign opposite to the direction of
+  /// travel: the tones rise where a Doppler curve must fall (technik.pdf
+  /// 6.1). The source frequency itself changed (throttle, gear) or the tone
+  /// belongs to something else; [speed] is then not a speed.
+  final bool frequencyRises;
 
   /// |v_D| in m/s, null without tone.
   final double? speed;
@@ -72,6 +80,21 @@ List<ToneTrack> selectTracks(
   ];
 }
 
+/// Distance check of technik.pdf 5.5 applied to single tone tracks: a tone
+/// belongs to the vehicle only if the speed it gives alone, divided by |κ|,
+/// is compatible with the lane distance. Tones of other vehicles that are
+/// audible at the same time fail it, because against the u(t) of this
+/// vehicle they hardly move.
+class ToneGate {
+  const ToneGate({required this.kappa, required this.laneDistance});
+
+  /// κ of the vehicle from the TDOA fit in 1/s.
+  final double kappa;
+
+  /// Lane distance d_Spur in m.
+  final double laneDistance;
+}
+
 /// Doppler speed with known direction cosine u(t) (technik.pdf 5.4,
 /// variant 1): track tones in the spectrogram of the sum signal and fit
 /// ln f_k(t_j) = ln f0_k − ln(1 + v/c·u(t_j + δ)) with one v for all
@@ -89,6 +112,7 @@ class DopplerEstimator {
     required double windowStartS,
     required double receptionT0,
     required double Function(double t) directionCosine,
+    ToneGate? gate,
   }) {
     final sum = Float64List(window.length);
     for (var i = 0; i < sum.length; i++) {
@@ -98,25 +122,61 @@ class DopplerEstimator {
       return const DopplerResult.noTone();
     }
     final spectrogram = Spectrogram.compute(sum, config: config);
-    final tracks = selectTracks(
+    var tracks = selectTracks(
       trackTones(spectrogram, timeOffsetS: windowStartS),
       receptionT0: receptionT0,
       config: config,
     );
     if (tracks.isEmpty) return const DopplerResult.noTone();
 
-    _Fit? best;
-    var bestOffset = 0.0;
+    // u rises through 0 for travel in +x direction, so v·u is the radial
+    // speed only for v of the same sign (technik.pdf 3.3).
+    final direction =
+        directionCosine(receptionT0 + config.toneMinLengthS) >=
+            directionCosine(receptionT0 - config.toneMinLengthS)
+        ? 1
+        : -1;
     final steps = (config.toneOffsetRangeS / config.toneOffsetStepS).round();
-    for (var s = -steps; s <= steps; s++) {
-      final offset = s * config.toneOffsetStepS;
-      final fit = _fit(tracks, (t) => directionCosine(t + offset));
-      if (fit != null && (best == null || fit.residual < best.residual)) {
-        best = fit;
-        bestOffset = offset;
+    (_Fit, double)? bestOf(List<ToneTrack> tracks, {bool core = false}) {
+      _Fit? best;
+      var bestOffset = 0.0;
+      for (var s = -steps; s <= steps; s++) {
+        final offset = s * config.toneOffsetStepS;
+        final fit = _fit(
+          tracks,
+          (t) => directionCosine(t + offset),
+          maxDirectionCosine: core ? config.sharpnessMaxDirectionCosine : null,
+        );
+        if (fit != null && (best == null || fit.residual < best.residual)) {
+          best = fit;
+          bestOffset = offset;
+        }
       }
+      return best == null ? null : (best, bestOffset);
     }
-    if (best == null) return const DopplerResult.noTone();
+
+    if (gate != null) {
+      // Far before and after the pass a tone only shows its two limit
+      // frequencies, and those are the same for any vehicle of similar
+      // speed. Whose tone it is shows in the moment of the fall, so the
+      // single tracks are judged where u changes (as in variant 2).
+      final tolerance = config.distanceCheckTolerance * gate.laneDistance;
+      final own = [
+        for (final track in tracks)
+          if (bestOf([track], core: true) case (final fit, _)
+              when fit.v * direction > 0 &&
+                  (fit.v.abs() / gate.kappa.abs() - gate.laneDistance).abs() <=
+                      tolerance + 2 * fit.sigma / gate.kappa.abs())
+            track,
+      ];
+      // Without any compatible track all stay, so that the distance check
+      // of the fusion still sees the estimate.
+      if (own.isNotEmpty) tracks = own;
+    }
+
+    final joint = bestOf(tracks);
+    if (joint == null) return const DopplerResult.noTone();
+    final (best, bestOffset) = joint;
     final accel = _fit(
       tracks,
       (t) => directionCosine(t + bestOffset),
@@ -130,6 +190,7 @@ class DopplerEstimator {
       residual: best.residual,
       tracks: tracks,
       speedWithAcceleration: accel?.v.abs(),
+      frequencyRises: best.v * direction <= 0,
     );
   }
 
@@ -194,18 +255,24 @@ class DopplerEstimator {
   }
 
   /// Gauss–Newton fit of v (signed) with one intercept per track; with
-  /// [accelerationAt] an extra term g·(t − t0) is fitted as well.
+  /// [accelerationAt] an extra term g·(t − t0) is fitted as well. With
+  /// [maxDirectionCosine] only points with |u| up to that value count.
   _Fit? _fit(
     List<ToneTrack> tracks,
     double Function(double t) u, {
     double? accelerationAt,
+    double? maxDirectionCosine,
   }) {
     final c = speedOfSound;
     final ts = <double>[], us = <double>[], lf = <double>[], k = <int>[];
     for (var i = 0; i < tracks.length; i++) {
       for (final p in tracks[i].points) {
+        final value = u(p.t);
+        if (maxDirectionCosine != null && value.abs() > maxDirectionCosine) {
+          continue;
+        }
         ts.add(p.t);
-        us.add(u(p.t));
+        us.add(value);
         lf.add(math.log(p.f));
         k.add(i);
       }

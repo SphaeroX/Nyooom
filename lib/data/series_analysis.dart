@@ -8,6 +8,7 @@ import '../core/config/nyooom_config.dart';
 import '../core/events/event_detector.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
+import '../core/pipeline/track_dedup.dart';
 import 'event_pipeline.dart';
 
 /// Progress message of a running analysis.
@@ -32,7 +33,7 @@ Future<List<PassRecord>> runSeriesAnalysis({
 }) async {
   final file = File(wavPath);
   final info = await readWavInfo(file);
-  final detector = EventDetector(config: config);
+  final detector = EventDetector(config: config, secondaryEvents: true);
   final events = <PassEvent>[];
   const chunkS = 1.0;
   for (var start = 0.0; start < info.durationS; start += chunkS) {
@@ -49,6 +50,7 @@ Future<List<PassRecord>> runSeriesAnalysis({
   events.addAll(detector.finish());
 
   final pipeline = EventPipeline(config: config, setup: setup);
+  final dedup = TrackDeduplicator(config: config);
   final records = <PassRecord>[];
   for (var i = 0; i < events.length; i++) {
     final e = events[i];
@@ -58,7 +60,9 @@ Future<List<PassRecord>> runSeriesAnalysis({
       startS: from,
       durationS: e.windowEndS - from,
     );
-    records.add(pipeline.evaluate(window, e, windowStartS: from));
+    records.addAll(
+      pipeline.evaluateAll(window, e, windowStartS: from).where(dedup.accept),
+    );
     onProgress?.call(
       AnalysisProgress(
         0.5 + 0.5 * (i + 1) / events.length,

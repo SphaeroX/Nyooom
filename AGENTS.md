@@ -34,6 +34,7 @@ Lies nur die Dateien, die für deine aktuelle Aufgabe relevant sind:
 - [docs/code-style.md](docs/code-style.md) – Lies das vor dem Schreiben oder Formatieren von Code. Einheiten, Benennung physikalischer Größen, Formatierung.
 - [docs/conventions.md](docs/conventions.md) – Lies das bei Benennung, Dateiorganisation, drift-Migrationen oder Commits.
 - [docs/project-brief.md](docs/project-brief.md) – Lies das, wenn Ziel, Umfang oder Nicht-Ziele unklar sind.
+- [docs/method-notes.md](docs/method-notes.md) – Lies das, bevor du an Ereigniserkennung, Laufzeitanpassung, Doppler, Fusion oder Zählung etwas änderst. Prüfung des Konzepts, Spurtrennung bei mehreren Fahrzeugen, bekannte Grenzen, Aufstellung am Fenster.
 - `technik.pdf` – Lies den betreffenden Abschnitt, bevor du Formeln, Parameter oder Auswerteschritte umsetzt.
 
 ## Grenzen

@@ -10,6 +10,7 @@ import '../core/pipeline/event_evaluator.dart';
 import '../core/pipeline/fusion.dart';
 import '../core/pipeline/joint_fit.dart';
 import '../core/pipeline/pass_record.dart';
+import '../core/pipeline/reasons.dart';
 import '../core/signal/pcm.dart';
 
 /// Complete evaluation of one event window as used by the offline analysis
@@ -32,20 +33,41 @@ class EventPipeline {
   final DopplerEstimator _doppler;
   final SharpnessEstimator _sharpness;
 
+  /// One result per event by the letter of technik.pdf 5.1 (an overlap is
+  /// class C). The app uses [evaluateAll].
   PassRecord evaluate(
     StereoBlock window,
     PassEvent event, {
     required double windowStartS,
-  }) {
-    final analysis = _evaluator.analyse(
+  }) =>
+      _complete(_evaluator.analyse(window, event, windowStartS: windowStartS));
+
+  /// All vehicles of the event window (track separation, see
+  /// [EventEvaluator.analyseTracks]): none for a secondary event without a
+  /// track of its own, two for oncoming traffic at the same time.
+  List<PassRecord> evaluateAll(
+    StereoBlock window,
+    PassEvent event, {
+    required double windowStartS,
+  }) => [
+    for (final analysis in _evaluator.analyseTracks(
       window,
       event,
       windowStartS: windowStartS,
-    );
+    ))
+      _complete(analysis),
+  ];
+
+  /// Doppler and fusion for one track.
+  PassRecord _complete(EventAnalysis analysis) {
+    final windowStartS = analysis.windowStartS;
     final record = analysis.record;
     final fit = analysis.fit, fitter = analysis.fitter;
     if (record.klasse == QualityClass.c || fit == null || fitter == null) {
       return record;
+    }
+    if (analysis.ambiguousTones) {
+      return record.copyWith(reason: DowngradeReason.toneAmbiguous);
     }
     // u(t) always from the smooth model curve (technik.pdf 5.4).
     double u(double t) =>
@@ -56,6 +78,7 @@ class EventPipeline {
       windowStartS: windowStartS,
       receptionT0: fit.t0 + record.distanceUsedM! / setup.speedOfSound,
       directionCosine: u,
+      gate: ToneGate(kappa: fit.kappa, laneDistance: record.distanceUsedM!),
     );
     DopplerChoice? v1;
     if (doppler.hasTone) {
@@ -65,6 +88,7 @@ class EventPipeline {
         toneCount: doppler.toneCount,
         variant: 1,
         speedWithAcceleration: doppler.speedWithAcceleration,
+        frequencyRises: doppler.frequencyRises,
       );
     }
     DopplerChoice? v2;
@@ -104,6 +128,7 @@ class EventPipeline {
       vD: choice.speed,
       sigmaD: choice.sigma,
       vDWithAcceleration: choice.speedWithAcceleration,
+      frequencyRises: choice.frequencyRises,
     );
     var v = fusion.v, sigmaV = fusion.sigma;
     var dEst = fusion.dEst;

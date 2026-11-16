@@ -261,7 +261,12 @@ class DopplerChoice {
     required this.toneCount,
     required this.variant,
     this.speedWithAcceleration,
+    this.frequencyRises = false,
   });
+
+  /// Variant 1 only: the tones rise against the model (see
+  /// [DopplerResult.frequencyRises]).
+  final bool frequencyRises;
 
   final double speed;
   final double sigma;
