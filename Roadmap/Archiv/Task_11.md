@@ -53,9 +53,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Jeder Datensatz einer ausgewerteten Messreihe trägt Klasse und, bei B oder C, einen Grund.
-- [ ] Auf echten Daten ist der Anteil A/B/C ermittelt und in `Roadmap/README.md` notiert.
+- [x] `fvm flutter test tests/` läuft grün.
+- [x] Jeder Datensatz einer ausgewerteten Messreihe trägt Klasse und, bei B oder C, einen Grund.
+- [ ] (→ Task_20) Auf echten Daten ist der Anteil A/B/C ermittelt und in `Roadmap/README.md` notiert.
 
 ## Offene Fragen / Annahmen
 
@@ -65,23 +65,24 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Reihenfolge der Abstufungsgründe für B: kein Ton → Beschleunigung → Abstandsprüfung (erster zutreffender Grund wird gespeichert).
+- Beschleunigung: |v_D(mit g·(t−t0)) − v_D| > 2 km/h. In der Simulation (Motorton folgt der Geschwindigkeit) wird 0,5 m/s² bei 30 km/h sicher erkannt.
+- `d_est` wird gespeichert, sobald ein Ton vorliegt (auch bei B wegen Beschleunigung/Abstand), sonst leer.
+- Die Laufzeitstufe setzt bei gültiger Spur bereits "kein Ton" (Klasse B); die Pipeline hebt auf A an oder ersetzt den Grund. Dadurch bleiben die Tests aus Task_09 unverändert gültig.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `lib/core/pipeline/fusion.dart`: `classify` (zentrale Klassenlogik, Tabellen-Test über alle Kombinationen), `weightedFusion`, `fuse` (Beschleunigungs- und Abstandsprüfung, gewichtetes Mittel). `EventPipeline` ruft nach TDOA und Doppler `fuse` auf und füllt `v`, `sigma_v`, `v_doppler`, `d_est`, `klasse`, `grund`. UI: Klassen farbig (A grün, B blau, C grau), Einzelschätzungen in der Detailansicht; Neuauswertung über den vorhandenen Button.
+- **Learnings & Stolpersteine:** Für Klasse B ohne Ton den TDOA-Datensatz unverändert lassen (kein km/h→m/s→km/h-Roundtrip), sonst unterscheiden sich Ergebnisse in der letzten Stelle.
+- **Wichtige Entscheidungen und ihre Gründe:** Bei B wegen Beschleunigung/Abstand bleibt `v = v_laufzeit`, `v_doppler` und `d_est` werden trotzdem gespeichert (für Diagnose und Selbstkalibrierung nur A verwenden).
+- **Auswirkungen auf Folge-Tasks:** Task_13 trennt nach `klasse`; Task_18 nutzt `d_est` der Klasse-A-Datensätze. Task_17 ergänzt Variante 2 vor `fuse` (wenn Variante 1 keinen Ton findet).
+- **Hinweise zu Tests und Befehlen:** `tests/core/pipeline/fusion_test.dart`, `tests/data/event_pipeline_test.dart` (seitlicher Versatz → A mit kleinerem Fehler, Beschleunigung → B, falscher Sollabstand → B, E-Auto → B "kein Ton").

@@ -167,7 +167,8 @@ class EventEvaluator {
       restLaufzeitUs: fit.residualS * 1e6,
       pegel: event.levelAboveFloorDb,
       dauer: event.durationS,
-      reason: null,
+      // Class B until a Doppler estimate upgrades it (Task_10/11).
+      reason: DowngradeReason.noTone,
       laneIndex: lane.index,
       distanceUsedM: lane.slantDistance,
       sigmaLaufzeit: toKmh(sigmaT),

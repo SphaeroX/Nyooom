@@ -4,6 +4,7 @@ import '../core/model/acoustics.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/doppler.dart';
 import '../core/pipeline/event_evaluator.dart';
+import '../core/pipeline/fusion.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/signal/pcm.dart';
 
@@ -47,11 +48,28 @@ class EventPipeline {
       receptionT0: fit.t0 + record.distanceUsedM! / setup.speedOfSound,
       directionCosine: u,
     );
+    // Without tone the TDOA record (class B, "kein Ton") stays unchanged.
     if (!doppler.hasTone) return record;
+    final fusion = fuse(
+      config: config,
+      vT: fromKmh(record.vLaufzeit!),
+      sigmaT: fromKmh(record.sigmaLaufzeit!),
+      kappa: fit.kappa,
+      laneDistance: record.distanceUsedM!,
+      vD: doppler.speed,
+      sigmaD: doppler.sigma,
+      vDWithAcceleration: doppler.speedWithAcceleration,
+    );
     return record.copyWith(
+      klasse: fusion.klasse,
+      reason: fusion.reason,
+      clearReason: fusion.reason == null,
+      v: toKmh(fusion.v),
+      sigmaV: toKmh(fusion.sigma),
       vDoppler: toKmh(doppler.speed!),
       sigmaDoppler: toKmh(doppler.sigma!),
       nToene: doppler.toneCount,
+      dEst: fusion.dEst,
     );
   }
 }
