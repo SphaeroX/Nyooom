@@ -75,6 +75,26 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+**Stand 2026-11-16 (Agent):**
+
+- Erledigt und belegt: Flutter-Projekt (`de.nyooom.app`, minSdk 24, SDK `^3.14.0`, `test/` entfernt), Kotlin-Plugin `NyooomAudioPlugin`, `StereoRecorder`, De-Interleaving, Pegel, WAV-Writer/-Reader, UI mit zwei Pegelbalken, Quelle/Effektstatus, WAV-Speichern.
+- `fvm flutter test tests/`: 42 Tests grün. `fvm flutter analyze`: keine Probleme. `fvm dart format --output=none --set-exit-if-changed lib tests`: sauber. `fvm flutter build apk --debug`: erfolgreich.
+- **Offen: manuelle Geräte-Checkliste.** Beim Arbeiten war kein Android-Gerät per adb verbunden. Deshalb bleibt der Task als `RUN_` liegen, bis jemand die App auf einem Gerät geprüft hat.
+
+**Manuelle Geräte-Checkliste (auszufüllen):**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Gerätemodell / Android-Version | |
+| App startet, Berechtigung wird angefragt | |
+| Gemeldete Audioquelle (UNPROCESSED / Rückfall) | |
+| Effektstatus AGC / NS / AEC | |
+| Gemeldete Mikrofone (`getMicrophones`) | |
+| Pegel reagieren getrennt (oberes bzw. unteres Mikrofon zuhalten); welcher Kanal = welches Mikrofon | |
+| Gespeicherte WAV am PC: Stereo, 48 kHz, 16 Bit | |
+
+WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls files/recordings` bzw. `adb exec-out run-as de.nyooom.app cat files/recordings/<name>.wav > aufnahme.local.wav` (Pfad je nach `getApplicationDocumentsDirectory`, ggf. `app_flutter/recordings`).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".

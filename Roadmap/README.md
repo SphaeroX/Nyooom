@@ -14,11 +14,11 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Roadmap angelegt, noch kein Task begonnen.
+Stand: 2026-11-16 – Task_01 läuft: Code, Tests und Build fertig, manuelle Geräteprüfung steht aus.
 
 | Task | Titel | Status |
 |---|---|---|
-| 01 | Durchstich: Stereo-Rohaufnahme | offen |
+| 01 | Durchstich: Stereo-Rohaufnahme | läuft |
 | 02 | Signalmodell und synthetische Vorbeifahrten | offen |
 | 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | offen |
 | 04 | Messreihe anlegen und aufnehmen | offen |
@@ -55,11 +55,18 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 - **UI-Sprache:** Deutsch (Annahme).
 - **Fachliche Referenz:** `technik.pdf`. Formeln, Startwerte und Abschnittsnummern in den Tasks beziehen sich darauf.
 
+**Aus Task_01:**
+
+- Flutter 3.50 hat Material ausgelagert: Widgets aus `package:material_ui/material_ui.dart` importieren, nicht `package:flutter/material.dart`. (Task_01)
+- `NyooomConfig` (`lib/core/config/nyooom_config.dart`) existiert bereits mit `sampleRate` und `clipThreshold`; Task_02 erweitert genau dieses Objekt, statt ein zweites anzulegen. Der UI-Zugriff läuft über `configProvider`. (Task_01)
+- Kanonische Signaldarstellung: `StereoBlock` (`lib/core/signal/pcm.dart`) mit zwei `Float64List`, normiert auf [-1, 1]. WAV lesen über `decodeWav` (`lib/audio/wav.dart`). (Task_01)
+- `technik.pdf` lässt sich mit `pdftotext -layout technik.pdf -` (MSYS2, im Bash-PATH) als Text lesen. (Task_01)
+
 ## Auffälligkeiten & Details
 
 Dinge, die global noch zu beachten sind: Besonderheiten, bekannte Einschränkungen, kleinere Details. Wird laufend ergänzt.
 
-- Das Projekt-Setup (Git, `.gitignore`, `docs/`, Root-`AGENTS.md`, FVM) ist erledigt; die Root-`AGENTS.md` gilt zusätzlich (siehe `Roadmap/AGENTS.md`, Abschnitt 7). Das Flutter-Projekt selbst wird erst in Task_01 generiert.
+- Das Projekt-Setup (Git, `.gitignore`, `docs/`, Root-`AGENTS.md`, FVM) ist erledigt; die Root-`AGENTS.md` gilt zusätzlich (siehe `Roadmap/AGENTS.md`, Abschnitt 7). Das Flutter-Projekt wurde in Task_01 generiert; Struktur und Plattform-Schnittstelle stehen in `docs/architecture.md`.
 - Der FVM-Symlink `.fvm/versions/3.50.0` (für die IDE) ließ sich ohne Windows-Entwicklermodus nicht anlegen; `fvm flutter` funktioniert trotzdem.
 - Größtes Projektrisiko: Ob das Zielgerät zwei getrennte, unbearbeitete Mikrofonkanäle liefert, ist herstellerabhängig. Geklärt wird das in Task_01, Task_05 und Task_06. Ausweichlösung ist ein externes USB-Stereomikrofon.
 - Offene fachliche Punkte aus der PDF (Abschnitt 10): Anteil der Fahrzeuge mit auswertbarem Ton, systematischer Fehler durch die ausgedehnte Schallquelle, Frequenzabhängigkeit von b, Warnton von E-Autos.

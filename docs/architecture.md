@@ -32,15 +32,34 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Erster Implementierungsschritt
+## Projektstruktur (Stand Task_01)
 
-Das Flutter-Projekt ist noch nicht generiert. Das passiert in `Roadmap/Tasks/Task_01.md`:
-
-```bash
-fvm flutter create --org de.nyooom --project-name nyooom --platforms android,ios .
+```
+lib/
+  main.dart                         App-Einstieg (ProviderScope, MaterialApp)
+  core/config/nyooom_config.dart    Konfigurationsobjekt (JSON), wird in Task_02 um alle 9.2-Parameter erweitert
+  core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
+  core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
+  audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo)
+  audio/wav.dart                    WAV-Encoder/-Decoder (16 Bit PCM) und streamender WavFileWriter
+  ui/recorder/                      RecorderController (Riverpod Notifier) und RecorderScreen
+android/app/src/main/kotlin/de/nyooom/app/
+  MainActivity.kt                   registriert NyooomAudioPlugin
+  NyooomAudioPlugin.kt              AudioRecord-Aufnahme, Berechtigung, Effekte
 ```
 
-Danach `applicationId` und `namespace` in `android/app/build.gradle(.kts)` auf `de.nyooom.app` setzen (der Befehl erzeugt `de.nyooom.nyooom`), den erzeugten Ordner `test/` entfernen (Tests liegen in `tests/`), `flutter_lints` beibehalten und in `pubspec.yaml` die SDK-Constraint auf `^3.14.0` setzen.
+- Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
+- Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
+- Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), dev: `test`.
+
+## Plattform-Schnittstelle Aufnahme
+
+- MethodChannel `de.nyooom/audio`:
+  - `getCapabilities` → `{unprocessedSupported, agcAvailable, nsAvailable, aecAvailable, deviceModel, sdkInt, microphones: [String]}`
+  - `start {sampleRate}` → `{audioSource: "UNPROCESSED"|"VOICE_RECOGNITION", sampleRate, channels, effects: {agc, ns, aec: "unavailable"|"disabled"|"enabled"}, activeMicrophones: [String]}`; fragt bei Bedarf die Mikrofon-Berechtigung an. Fehlercodes: `PERMISSION_DENIED`, `INIT_FAILED`, `ALREADY_RUNNING`, `BUSY`.
+  - `stop`
+- EventChannel `de.nyooom/audio_stream`: `Uint8List`-Blöcke (ca. 20 ms), interleaved 16 Bit little-endian, L/R in der Reihenfolge von `CHANNEL_IN_STEREO`. Vor `start` abonnieren.
+- Rohaufnahmen landen als `nyooom_YYYYMMDD_HHMMSS.wav` in `<App-Dokumentordner>/recordings/`.
 
 ## Offene Entscheidungen
 

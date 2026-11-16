@@ -50,8 +50,9 @@ Eine Aufgabe ist fertig, wenn mechanisch prüfbar gilt:
 
 - **Ablage:** `tests/` spiegelt `lib/`: `lib/core/dsp/gcc_phat.dart` → `tests/core/dsp/gcc_phat_test.dart`. Dateien enden auf `_test.dart`.
 - **Unit-Tests** (`package:test`): gesamte `lib/core/`-Logik. Kein Flutter-Import nötig.
-- **Widget-Tests** (`flutter_test`): Screens und Formulare in `lib/ui/`, Provider per Riverpod-Overrides ersetzt.
+- **Widget-Tests** (`flutter_test`): Screens und Formulare in `lib/ui/`, Provider per Riverpod-Overrides ersetzt. Echte Datei-I/O in `testWidgets` vermeiden (FakeAsync); Controller-Logik mit Dateien besser als `test` mit `ProviderContainer` prüfen.
 - **Plattform-Channel:** Dart-Seite gegen gemockte MethodChannel/EventChannel testen (`TestDefaultBinaryMessengerBinding`). Das Kotlin-Plugin selbst wird über die manuelle Geräte-Checkliste geprüft.
+- **Hilfsklassen:** `tests/helpers/` (z. B. `FakeStereoRecorder`, `sinePcm16`) für Tests, die einen Recorder ohne Plattform brauchen; per `stereoRecorderProvider.overrideWithValue(...)` einsetzen. Für Dateizugriffe `recordingsDirectoryProvider` auf ein Temp-Verzeichnis überschreiben.
 - **Datenbank:** drift mit In-Memory-Datenbank (`NativeDatabase.memory()`).
 - **Testdaten:**
   - Synthetische Vorbeifahrten aus dem Generator in `lib/core/` (Roadmap Task_02) sind die Standard-Fixtures. Sie werden im Test erzeugt und nicht als Datei abgelegt.
