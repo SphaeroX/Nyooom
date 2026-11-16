@@ -10,7 +10,11 @@ import 'package:test/test.dart';
 
 const config = NyooomConfig();
 
-PassRecord evaluate(VehiclePass pass, {double laneDistance = 5}) {
+PassRecord evaluate(
+  VehiclePass pass, {
+  double laneDistance = 5,
+  NyooomConfig config = config,
+}) {
   final sim = Scenarios.setup(backgroundRms: 0.002);
   final rec = PassBySimulator(sim).render(12, [pass]);
   final setup = AnalysisSetup(
@@ -111,5 +115,16 @@ void main() {
     expect(r.klasse, QualityClass.a, reason: r.grund);
     expect(r.vDoppler, closeTo(40, 2));
     expect(r.nToene, 0); // variant 2 has no tone tracks
+  });
+
+  test('the joint fit can replace the weighted fusion for class A', () {
+    final pass = Scenarios.combustion(speedKmh: 40, distance: 5.4, t0: 6);
+    final simple = evaluate(pass);
+    final joint = evaluate(pass, config: const NyooomConfig(fusionMethod: 1));
+    expect(joint.klasse, QualityClass.a);
+    expect(joint.v, closeTo(40, 1.5));
+    expect(joint.v, isNot(simple.v));
+    expect(joint.dEst, closeTo(5.4, 0.3));
+    expect(joint.vLaufzeit, simple.vLaufzeit);
   });
 }

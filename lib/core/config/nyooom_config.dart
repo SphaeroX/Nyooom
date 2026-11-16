@@ -76,6 +76,7 @@ class NyooomConfig {
     this.sharpnessCoarseStep = 0.5,
     this.sharpnessFloorSigma = 3,
     this.sharpnessMinPeak = 4,
+    this.fusionMethod = 0,
     this.selfCalibrationMinCount = 30,
     this.selfCalibrationWarnFraction = 0.2,
   });
@@ -262,6 +263,10 @@ class NyooomConfig {
   /// Variant 2 needs a sharpness peak of at least this many dB squared besides the median criterion (Task_17).
   final double sharpnessMinPeak;
 
+  /// Class-A speed: 0 = weighted fusion (5.5, default after the comparison
+  /// in Task_19), 1 = joint least-squares fit (cost J of 5.5).
+  final int fusionMethod;
+
   /// Self-calibration: class-A count per lane and warning limit (7.4).
   final int selfCalibrationMinCount;
   final double selfCalibrationWarnFraction;
@@ -358,6 +363,7 @@ class NyooomConfig {
       sharpnessCoarseStep: f('sharpnessCoarseStep', d.sharpnessCoarseStep),
       sharpnessFloorSigma: f('sharpnessFloorSigma', d.sharpnessFloorSigma),
       sharpnessMinPeak: f('sharpnessMinPeak', d.sharpnessMinPeak),
+      fusionMethod: i('fusionMethod', d.fusionMethod),
       selfCalibrationMinCount: i(
         'selfCalibrationMinCount',
         d.selfCalibrationMinCount,
@@ -438,6 +444,7 @@ class NyooomConfig {
     'sharpnessCoarseStep': sharpnessCoarseStep,
     'sharpnessFloorSigma': sharpnessFloorSigma,
     'sharpnessMinPeak': sharpnessMinPeak,
+    'fusionMethod': fusionMethod,
     'selfCalibrationMinCount': selfCalibrationMinCount,
     'selfCalibrationWarnFraction': selfCalibrationWarnFraction,
   };

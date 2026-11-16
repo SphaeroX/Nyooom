@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_19 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – **Entwicklung abgeschlossen (Task_01 bis Task_19).** Offen ist nur Task_20 (Geräte- und Feldtest mit echtem Smartphone, echten Vorbeifahrten und Referenzfahrten). Die App ist bis dahin vollständig gegen synthetische Daten getestet und lässt sich mit der Simulationsquelle ohne Gerät bedienen.
 
 | Task | Titel | Status |
 |---|---|---|
@@ -36,7 +36,7 @@ Stand: 2026-11-16 – Task_19 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 16 | Validierung und Abnahme | erledigt (echte Abnahme → 20) |
 | 17 | Doppler Variante 2: Entzerrung | erledigt |
 | 18 | Selbstkalibrierung | erledigt |
-| 19 | Gemeinsame Ausgleichsrechnung | läuft |
+| 19 | Gemeinsame Ausgleichsrechnung | erledigt |
 | 20 | Geräte- und Feldtest | offen |
 
 Status ist `offen`, `läuft` (Datei trägt das Präfix `RUN_`) oder `erledigt` (Datei liegt in `Archiv/`). Die Tabelle wird beim Archivieren eines Tasks aktualisiert.
@@ -145,6 +145,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_18:**
 
 - Selbstkalibrierung pro Standort: `repo.learnedSetup(seriesId, config)` liefert das `AnalysisSetup` mit gelerntem Spurabstand (ab 30 Klasse-A-Werten) und den Lernstand je Spur; Warnung ab 20 % Abweichung. (Task_18)
+
+**Aus Task_19:**
+
+- Gemeinsame Ausgleichsrechnung (`jointFit`, Kostenfunktion J) als Option `fusionMethod = 1`. Vergleich synthetisch: einfache Fusion 0,14 km/h, gemeinsam 0,13 km/h mittlerer Betragsfehler → Standard bleibt die einfache Fusion. Mit echten Daten wiederholen (Task_20). (Task_19)
 
 ## Auffälligkeiten & Details
 

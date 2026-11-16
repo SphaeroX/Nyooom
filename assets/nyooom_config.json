@@ -67,6 +67,7 @@
   "sharpnessCoarseStep": 0.5,
   "sharpnessFloorSigma": 3.0,
   "sharpnessMinPeak": 4.0,
+  "fusionMethod": 0,
   "selfCalibrationMinCount": 30,
   "selfCalibrationWarnFraction": 0.2
 }

@@ -34,6 +34,7 @@ class EventAnalysis {
     required this.windowStartS,
     this.fit,
     this.fitter,
+    this.correlogram,
   });
 
   final PassRecord record;
@@ -43,6 +44,7 @@ class EventAnalysis {
   final double windowStartS;
   final MotionFit? fit;
   final MotionFitter? fitter;
+  final Correlogram? correlogram;
 }
 
 /// Evaluates one detected event by TDOA alone: correlogram, motion model,
@@ -132,6 +134,7 @@ class EventEvaluator {
         windowStartS: windowStartS,
         fit: fit,
         fitter: fitter,
+        correlogram: correlogram,
       );
     }
     final lane = setup.laneFor(fit.direction);
@@ -142,6 +145,7 @@ class EventEvaluator {
         windowStartS: windowStartS,
         fit: fit,
         fitter: fitter,
+        correlogram: correlogram,
       );
     }
     final vT = fit.kappa.abs() * lane.slantDistance;
@@ -179,6 +183,7 @@ class EventEvaluator {
       windowStartS: windowStartS,
       fit: fit,
       fitter: fitter,
+      correlogram: correlogram,
     );
   }
 

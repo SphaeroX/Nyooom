@@ -8,6 +8,7 @@ import '../core/pipeline/doppler.dart';
 import '../core/pipeline/doppler_sharpness.dart';
 import '../core/pipeline/event_evaluator.dart';
 import '../core/pipeline/fusion.dart';
+import '../core/pipeline/joint_fit.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/signal/pcm.dart';
 
@@ -104,16 +105,36 @@ class EventPipeline {
       sigmaD: choice.sigma,
       vDWithAcceleration: choice.speedWithAcceleration,
     );
+    var v = fusion.v, sigmaV = fusion.sigma;
+    var dEst = fusion.dEst;
+    // Optional joint least-squares fit for class A with tone tracks
+    // (Task_19); falls back to the weighted fusion if it fails.
+    if (config.fusionMethod == 1 &&
+        fusion.klasse == QualityClass.a &&
+        choice.variant == 1) {
+      final joint = jointFit(
+        analysis: analysis,
+        doppler: doppler,
+        setup: setup,
+        config: config,
+        startSpeed: fusion.v,
+      );
+      if (joint != null && joint.converged && joint.sigmaSpeed.isFinite) {
+        v = joint.speed.abs();
+        sigmaV = joint.sigmaSpeed;
+        dEst = joint.distance;
+      }
+    }
     return record.copyWith(
       klasse: fusion.klasse,
       reason: fusion.reason,
       clearReason: fusion.reason == null,
-      v: toKmh(fusion.v),
-      sigmaV: toKmh(fusion.sigma),
+      v: toKmh(v),
+      sigmaV: toKmh(sigmaV),
       vDoppler: toKmh(choice.speed),
       sigmaDoppler: toKmh(choice.sigma),
       nToene: choice.toneCount,
-      dEst: fusion.dEst,
+      dEst: dEst,
     );
   }
 }

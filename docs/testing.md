@@ -54,6 +54,8 @@ Eine Aufgabe ist fertig, wenn mechanisch prüfbar gilt:
 - **Plattform-Channel:** Dart-Seite gegen gemockte MethodChannel/EventChannel testen (`TestDefaultBinaryMessengerBinding`). Das Kotlin-Plugin selbst wird über die manuelle Geräte-Checkliste geprüft.
 - **Hilfsklassen:** `tests/helpers/` (z. B. `FakeStereoRecorder`, `sinePcm16`) für Tests, die einen Recorder ohne Plattform brauchen; per `stereoRecorderProvider.overrideWithValue(...)` einsetzen. Für Dateizugriffe `recordingsDirectoryProvider` auf ein Temp-Verzeichnis überschreiben.
 - **Datenbank:** drift mit In-Memory-Datenbank (`NativeDatabase.memory()`).
+- **Simulation:** Fahrzeuge für Tests mit `Scenarios.combustion/electric` bzw. `VehiclePass(..., audibleSpanS:)` erzeugen; `audibleSpanS` begrenzt die Rechenzeit langer Szenarien. Ganze Auswertungen: `evaluateSignalFull` (Offline-Referenz) oder `LivePipeline`.
+- **Windows:** `build/unit_test_assets`, `.dart_tool/build/generated` und `build/app/intermediates` sind gelegentlich gesperrt. Ordner löschen (bei APK-Builds vorher `android/gradlew.bat --stop`) und den Befehl wiederholen.
 - **Testdaten:**
   - Synthetische Vorbeifahrten aus dem Generator in `lib/core/` (Roadmap Task_02) sind die Standard-Fixtures. Sie werden im Test erzeugt und nicht als Datei abgelegt.
   - Echte Aufnahmen nur als kurze Ausschnitte (wenige Sekunden) unter `tests/fixtures/`. Große Rohaufnahmen werden nicht versioniert.

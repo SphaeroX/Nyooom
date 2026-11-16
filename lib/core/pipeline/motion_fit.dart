@@ -5,6 +5,28 @@ import '../config/nyooom_config.dart';
 import '../dsp/gcc_phat.dart';
 import 'reasons.dart';
 
+/// u at reception time offset s = t − t0 for κ and distance d, with the
+/// sound travel time solved in closed form: t − t0 = τ + √(d² + v²τ²)/c
+/// (technik.pdf 3.1). An infinite [speedOfSound] ignores the travel time.
+double directionCosineAt(
+  double s, {
+  required double kappa,
+  required double distance,
+  required double speedOfSound,
+}) {
+  double tau;
+  if (speedOfSound.isFinite) {
+    final c = speedOfSound, v = kappa * distance, d = distance;
+    final c2 = c * c, v2 = v * v;
+    final disc = c2 * (d * d + v2 * s * s) - v2 * d * d;
+    tau = (c2 * s - math.sqrt(disc)) / (c2 - v2);
+  } else {
+    tau = s;
+  }
+  final k = kappa * tau;
+  return k / math.sqrt(1 + k * k);
+}
+
 /// Result of fitting the motion model to one event (technik.pdf 5.3).
 class MotionFit {
   const MotionFit({
@@ -80,19 +102,13 @@ class MotionFitter {
     return maxTdoa * _directionCosine(t - t0, kappa, d) + channelOffset;
   }
 
-  double _directionCosine(double s, double kappa, double d) {
-    double tau;
-    if (includePropagation) {
-      final c = speedOfSound, v = kappa * d;
-      final c2 = c * c, v2 = v * v;
-      final disc = c2 * (d * d + v2 * s * s) - v2 * d * d;
-      tau = (c2 * s - math.sqrt(disc)) / (c2 - v2);
-    } else {
-      tau = s;
-    }
-    final k = kappa * tau;
-    return k / math.sqrt(1 + k * k);
-  }
+  double _directionCosine(double s, double kappa, double d) =>
+      directionCosineAt(
+        s,
+        kappa: kappa,
+        distance: d,
+        speedOfSound: includePropagation ? speedOfSound : double.infinity,
+      );
 
   MotionFit fit(
     Correlogram correlogram, {
