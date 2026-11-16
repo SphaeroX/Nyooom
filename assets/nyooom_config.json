@@ -62,6 +62,11 @@
   "acceptSdBKmh": 5.0,
   "acceptMaxShareC": 0.3,
   "acceptMinDirectionShare": 0.99,
+  "dopplerVariant2": 1,
+  "sharpnessFftSize": 8192,
+  "sharpnessCoarseStep": 0.5,
+  "sharpnessFloorSigma": 3.0,
+  "sharpnessMinPeak": 4.0,
   "selfCalibrationMinCount": 30,
   "selfCalibrationWarnFraction": 0.2
 }

@@ -71,6 +71,11 @@ class NyooomConfig {
     this.acceptSdBKmh = 5,
     this.acceptMaxShareC = 0.3,
     this.acceptMinDirectionShare = 0.99,
+    this.dopplerVariant2 = 1,
+    this.sharpnessFftSize = 8192,
+    this.sharpnessCoarseStep = 0.5,
+    this.sharpnessFloorSigma = 3,
+    this.sharpnessMinPeak = 4,
     this.selfCalibrationMinCount = 30,
     this.selfCalibrationWarnFraction = 0.2,
   });
@@ -242,6 +247,21 @@ class NyooomConfig {
   /// Acceptance: smallest share of correctly recognised directions (8).
   final double acceptMinDirectionShare;
 
+  /// Doppler variant 2 (dewarping, 5.4) when variant 1 finds no tone: 1 = on, 0 = off (Task_17).
+  final int dopplerVariant2;
+
+  /// FFT size of the averaged spectrum of variant 2 (Task_17).
+  final int sharpnessFftSize;
+
+  /// Coarse speed step of the variant-2 search in m/s before refining with dopplerSpeedStep (Task_17).
+  final double sharpnessCoarseStep;
+
+  /// Variant 2 counts only excesses above this many robust standard deviations of the averaged noise spectrum (Task_17).
+  final double sharpnessFloorSigma;
+
+  /// Variant 2 needs a sharpness peak of at least this many dB squared besides the median criterion (Task_17).
+  final double sharpnessMinPeak;
+
   /// Self-calibration: class-A count per lane and warning limit (7.4).
   final int selfCalibrationMinCount;
   final double selfCalibrationWarnFraction;
@@ -333,6 +353,11 @@ class NyooomConfig {
         'acceptMinDirectionShare',
         d.acceptMinDirectionShare,
       ),
+      dopplerVariant2: i('dopplerVariant2', d.dopplerVariant2),
+      sharpnessFftSize: i('sharpnessFftSize', d.sharpnessFftSize),
+      sharpnessCoarseStep: f('sharpnessCoarseStep', d.sharpnessCoarseStep),
+      sharpnessFloorSigma: f('sharpnessFloorSigma', d.sharpnessFloorSigma),
+      sharpnessMinPeak: f('sharpnessMinPeak', d.sharpnessMinPeak),
       selfCalibrationMinCount: i(
         'selfCalibrationMinCount',
         d.selfCalibrationMinCount,
@@ -408,6 +433,11 @@ class NyooomConfig {
     'acceptSdBKmh': acceptSdBKmh,
     'acceptMaxShareC': acceptMaxShareC,
     'acceptMinDirectionShare': acceptMinDirectionShare,
+    'dopplerVariant2': dopplerVariant2,
+    'sharpnessFftSize': sharpnessFftSize,
+    'sharpnessCoarseStep': sharpnessCoarseStep,
+    'sharpnessFloorSigma': sharpnessFloorSigma,
+    'sharpnessMinPeak': sharpnessMinPeak,
     'selfCalibrationMinCount': selfCalibrationMinCount,
     'selfCalibrationWarnFraction': selfCalibrationWarnFraction,
   };

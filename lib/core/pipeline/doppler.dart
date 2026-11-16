@@ -149,7 +149,7 @@ class DopplerEstimator {
     final done = <ToneTrack>[];
     for (var r = 0; r < s.rowCount; r++) {
       final row = s.row(r);
-      final median = _runningMedian(row, halfWidth, decimation);
+      final median = runningMedian(row, halfWidth, decimation);
       final t = timeOffsetS + s.times[r];
       final peaks = <double>[];
       for (var k = 1; k < row.length - 1; k++) {
@@ -289,7 +289,7 @@ class DopplerEstimator {
     return _Fit(v, sigma, math.sqrt(rss / n));
   }
 
-  static Float64List _runningMedian(
+  static Float64List runningMedian(
     Float64List row,
     int halfWidth,
     int decimation,

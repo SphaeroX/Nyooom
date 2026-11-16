@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_17 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_18 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -34,8 +34,8 @@ Stand: 2026-11-16 – Task_17 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 14 | Export | erledigt |
 | 15 | GPS-Referenzfahrten | erledigt (Feldtest → 20) |
 | 16 | Validierung und Abnahme | erledigt (echte Abnahme → 20) |
-| 17 | Doppler Variante 2: Entzerrung | läuft |
-| 18 | Selbstkalibrierung | offen |
+| 17 | Doppler Variante 2: Entzerrung | erledigt |
+| 18 | Selbstkalibrierung | läuft |
 | 19 | Gemeinsame Ausgleichsrechnung | offen |
 | 20 | Geräte- und Feldtest | offen |
 
@@ -137,6 +137,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_16:**
 
 - Validierung: `closestApproaches` → `matchReferences` → `ValidationReport.acceptance(config)` (`lib/core/validation/`). Standort braucht Breite/Länge und für die Richtungsprüfung die Kompassrichtung von +x. DB-Schema 4. **Offener Punkt:** echte Abnahme mit Referenzfahrten (Task_20). (Task_16)
+
+**Aus Task_17:**
+
+- Doppler Variante 2 (`SharpnessEstimator`) läuft nur ohne Ton in Variante 1 (Schalter `dopplerVariant2`). Zwei dokumentierte Abweichungen vom PDF-Schärfemaß (Rauschschwelle, Median außerhalb des Maximums). Kostet ca. 1,5 s pro Ereignis am PC. (Task_17)
 
 ## Auffälligkeiten & Details
 

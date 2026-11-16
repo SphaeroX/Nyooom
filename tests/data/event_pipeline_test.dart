@@ -94,4 +94,22 @@ void main() {
     expect(r.reason, DowngradeReason.noTone);
     expect(r.grund, 'kein Ton');
   });
+
+  test('a weak tone reaches class A through Doppler variant 2', () {
+    final watch = Stopwatch()..start();
+    final r = evaluate(
+      VehiclePass(
+        speed: 40 / 3.6,
+        distance: 5,
+        t0: 6,
+        noiseRms: 0.15,
+        tones: const [ToneSpec(1800, 0.015)],
+      ),
+    );
+    // ignore: avoid_print
+    print('Event with variant 2: ${watch.elapsedMilliseconds} ms');
+    expect(r.klasse, QualityClass.a, reason: r.grund);
+    expect(r.vDoppler, closeTo(40, 2));
+    expect(r.nToene, 0); // variant 2 has no tone tracks
+  });
 }

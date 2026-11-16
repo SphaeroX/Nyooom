@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_16)
+## Projektstruktur (Stand Task_17)
 
 ```
 lib/
@@ -58,6 +58,7 @@ lib/
   core/pipeline/reasons.dart        Gründe für Klasse B/C (Code + Text)
   core/pipeline/event_evaluator.dart  Laufzeitauswertung eines Ereignisfensters (v_T, σ_T, Klasse B/C)
   core/pipeline/doppler.dart        Doppler Variante 1: Tonspuren + Regression mit bekanntem u(t) (technik.pdf 5.4)
+  core/pipeline/doppler_sharpness.dart  Doppler Variante 2: Entzerrung und Schärfemaximum, Kombinationsregel
   core/pipeline/fusion.dart         Beschleunigungs-/Abstandsprüfung, gewichtete Fusion, Klassenlogik (5.4–5.6)
   core/pipeline/pass_record.dart    Datensatz nach technik.pdf 9.1
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)

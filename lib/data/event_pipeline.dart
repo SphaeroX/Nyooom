@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import '../core/config/nyooom_config.dart';
 import '../core/events/event_detector.dart';
 import '../core/model/acoustics.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/doppler.dart';
+import '../core/pipeline/doppler_sharpness.dart';
 import '../core/pipeline/event_evaluator.dart';
 import '../core/pipeline/fusion.dart';
 import '../core/pipeline/pass_record.dart';
@@ -16,12 +19,17 @@ class EventPipeline {
       _doppler = DopplerEstimator(
         config: config,
         speedOfSound: setup.speedOfSound,
+      ),
+      _sharpness = SharpnessEstimator(
+        config: config,
+        speedOfSound: setup.speedOfSound,
       );
 
   final NyooomConfig config;
   final AnalysisSetup setup;
   final EventEvaluator _evaluator;
   final DopplerEstimator _doppler;
+  final SharpnessEstimator _sharpness;
 
   PassRecord evaluate(
     StereoBlock window,
@@ -48,17 +56,53 @@ class EventPipeline {
       receptionT0: fit.t0 + record.distanceUsedM! / setup.speedOfSound,
       directionCosine: u,
     );
+    DopplerChoice? v1;
+    if (doppler.hasTone) {
+      v1 = DopplerChoice(
+        speed: doppler.speed!,
+        sigma: doppler.sigma!,
+        toneCount: doppler.toneCount,
+        variant: 1,
+        speedWithAcceleration: doppler.speedWithAcceleration,
+      );
+    }
+    DopplerChoice? v2;
+    if (v1 == null && config.dopplerVariant2 != 0) {
+      final sum = Float64List(analysis.signal.length);
+      for (var i = 0; i < sum.length; i++) {
+        sum[i] = 0.5 * (analysis.signal.left[i] + analysis.signal.right[i]);
+      }
+      final sharp = _sharpness.estimate(
+        sum,
+        windowStartS: windowStartS,
+        kappa: fit.kappa,
+        t0: fit.t0,
+      );
+      if (sharp.hasTone) {
+        v2 = DopplerChoice(
+          speed: sharp.speed!,
+          sigma: sharp.sigma!,
+          toneCount: 0,
+          variant: 2,
+        );
+      }
+    }
+    final choice = chooseDoppler(
+      v1: v1,
+      v2: v2,
+      variant2Enabled: config.dopplerVariant2 != 0,
+    );
     // Without tone the TDOA record (class B, "kein Ton") stays unchanged.
-    if (!doppler.hasTone) return record;
+    if (choice == null) return record;
     final fusion = fuse(
       config: config,
       vT: fromKmh(record.vLaufzeit!),
       sigmaT: fromKmh(record.sigmaLaufzeit!),
       kappa: fit.kappa,
       laneDistance: record.distanceUsedM!,
-      vD: doppler.speed,
-      sigmaD: doppler.sigma,
-      vDWithAcceleration: doppler.speedWithAcceleration,
+      vD: choice.speed,
+      sigmaD: choice.sigma,
+      vDWithAcceleration: choice.speedWithAcceleration,
     );
     return record.copyWith(
       klasse: fusion.klasse,
@@ -66,9 +110,9 @@ class EventPipeline {
       clearReason: fusion.reason == null,
       v: toKmh(fusion.v),
       sigmaV: toKmh(fusion.sigma),
-      vDoppler: toKmh(doppler.speed!),
-      sigmaDoppler: toKmh(doppler.sigma!),
-      nToene: doppler.toneCount,
+      vDoppler: toKmh(choice.speed),
+      sigmaDoppler: toKmh(choice.sigma),
+      nToene: choice.toneCount,
       dEst: fusion.dEst,
     );
   }
