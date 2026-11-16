@@ -1,0 +1,62 @@
+# Testing-Strategie
+
+> Wann lesen: bevor du Tests schreibst, Test-Fixtures anlegst oder die Test-Konfiguration änderst.
+
+## Testing-Suite
+
+`flutter_test` für Widget- und Integrationsnahe Tests, `package:test` für reine Dart-Logik aus `lib/core/`. Das ist der Standard im Flutter-Ökosystem; die DSP-Logik lässt sich ohne Gerät gegen synthetische Signale mit bekannter Wahrheit testen.
+
+## TDD-Ablauf (verbindlich)
+
+1. Red: Test schreiben, ausführen, Fehlschlag prüfen.
+2. Green: minimalen Code schreiben, bis der Test besteht.
+3. Refactor: aufräumen, Tests bleiben grün.
+
+## Befehle
+
+Tests liegen in `tests/` (nicht im Flutter-Standardordner `test/`), deshalb den Pfad immer angeben.
+
+```bash
+fvm flutter test tests/                                   # alle Tests
+fvm flutter test tests/core/dsp/gcc_phat_test.dart        # einzelne Datei
+fvm flutter test tests/core/dsp/gcc_phat_test.dart --plain-name "findet konstante Verzögerung"   # einzelner Test
+fvm flutter test tests/ --coverage                        # mit Coverage (coverage/lcov.info)
+```
+
+## Welche Tests wann ausführen
+
+- Änderung in `lib/core/<bereich>/` → `fvm flutter test tests/core/<bereich>/`
+- Änderung in `lib/audio/`, `lib/data/`, `lib/ui/` → jeweils `tests/audio/`, `tests/data/`, `tests/ui/`
+- Änderung an Konfiguration, Signalmodell oder synthetischem Generator (gemeinsam genutzt) → komplette Suite.
+
+## Fertig-Kriterien
+
+Eine Aufgabe ist fertig, wenn mechanisch prüfbar gilt:
+
+1. Tests des betroffenen Bereichs laufen grün, vor Abschluss eines Roadmap-Tasks die komplette Suite: `fvm flutter test tests/`
+2. `fvm flutter analyze` meldet keine Fehler und keine Warnungen.
+3. `fvm dart format --output=none --set-exit-if-changed lib tests` endet mit Exit-Code 0.
+4. Kein bestehender Test wurde geändert, gelöscht oder abgeschwächt (außer ausdrücklich beauftragt).
+5. Nur auf dem Gerät prüfbares Verhalten ist per manueller Geräte-Checkliste im Roadmap-Task belegt, Ergebnis dort notiert.
+
+## Harte Regeln
+
+- Bei fehlschlagendem Test wird die Implementierung korrigiert, nicht der Test.
+- Höchstens 3 Reparaturversuche pro fehlschlagendem Test; danach anhalten und berichten.
+- Muss ein bestehender Test geändert werden: Grund nennen und Freigabe abwarten.
+- Numerische Toleranzen in Tests stammen aus `technik.pdf` oder werden im Test begründet; nie nachträglich lockern, um Grün zu erreichen.
+
+## Teststruktur
+
+- **Ablage:** `tests/` spiegelt `lib/`: `lib/core/dsp/gcc_phat.dart` → `tests/core/dsp/gcc_phat_test.dart`. Dateien enden auf `_test.dart`.
+- **Unit-Tests** (`package:test`): gesamte `lib/core/`-Logik. Kein Flutter-Import nötig.
+- **Widget-Tests** (`flutter_test`): Screens und Formulare in `lib/ui/`, Provider per Riverpod-Overrides ersetzt.
+- **Plattform-Channel:** Dart-Seite gegen gemockte MethodChannel/EventChannel testen (`TestDefaultBinaryMessengerBinding`). Das Kotlin-Plugin selbst wird über die manuelle Geräte-Checkliste geprüft.
+- **Datenbank:** drift mit In-Memory-Datenbank (`NativeDatabase.memory()`).
+- **Testdaten:**
+  - Synthetische Vorbeifahrten aus dem Generator in `lib/core/` (Roadmap Task_02) sind die Standard-Fixtures. Sie werden im Test erzeugt und nicht als Datei abgelegt.
+  - Echte Aufnahmen nur als kurze Ausschnitte (wenige Sekunden) unter `tests/fixtures/`. Große Rohaufnahmen werden nicht versioniert.
+  - Rechenintensive Tests: kurze Szenarien wählen, damit die Suite schnell bleibt.
+
+---
+Pflege: Bei Änderungen an Testing-Suite oder -Strategie diese Datei sofort aktualisieren.

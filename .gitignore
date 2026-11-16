@@ -1,0 +1,58 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
+*.g.dart.tmp
+
+# FVM (lokaler SDK-Link; .fvmrc wird versioniert)
+.fvm/
+
+# Android / Gradle / Kotlin
+android/.gradle/
+android/.kotlin/
+android/captures/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/android/**/GeneratedPluginRegistrant.java
+*.jks
+*.keystore
+.gradle/
+.kotlin/
+.cxx/
+.externalNativeBuild/
+
+# iOS / macOS (später; generierte Dateien)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+**/xcuserdata/
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Lokale Umgebung und Agent-Dateien
+.env
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Lokale Messdaten (große Rohaufnahmen nicht versionieren; kleine Test-Fixtures liegen unter tests/)
+recordings/
+*.local.wav
