@@ -36,7 +36,21 @@ class SimulatedStereoRecorder implements StereoRecorder {
   static const deviceModel = 'Simulation';
 
   final TrafficGenerator traffic;
-  final SimulationSetup setup;
+  SimulationSetup setup;
+
+  /// Sets the air temperature of the simulation (before [start]), so that
+  /// c matches the temperature entered for the series.
+  void setTemperature(double temperatureC) {
+    setup = Scenarios.setup(
+      micSpacing: setup.micSpacing,
+      temperatureC: temperatureC,
+      channelOffset: setup.channelOffset,
+      backgroundRms: setup.backgroundRms,
+      seed: setup.seed,
+      sampleRate: setup.sampleRate,
+    );
+  }
+
   final bool realTime;
   final double chunkS;
   final int blockFrames;

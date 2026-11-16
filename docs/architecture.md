@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_11)
+## Projektstruktur (Stand Task_12)
 
 ```
 lib/
@@ -68,6 +68,7 @@ lib/
   data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes), Version 2
   data/repository.dart              NyooomRepository
   data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live)
+  data/live_pipeline.dart           Live-Auswertung: Ringpuffer, Worker-Isolate, Warteschlange
   data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
   ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
@@ -107,7 +108,7 @@ android/app/src/main/kotlin/de/nyooom/app/
 ## Offene Entscheidungen
 
 - Zielgerätemodell (Roadmap Task_01/05).
-- Ob reines Dart für die Live-Auswertung schnell genug ist (Roadmap Task_12). Eine neue Sprache (C++/FFI) nur nach Rückfrage.
+- Ob reines Dart auf dem Zielgerät schnell genug ist: am PC ca. 1 s pro Ereignis, Messung auf dem Gerät in Roadmap Task_20. Eine neue Sprache (C++/FFI) nur nach Rückfrage.
 
 ---
 Pflege: Bei Änderungen an Stack oder Architektur diese Datei sofort aktualisieren.

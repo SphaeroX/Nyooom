@@ -7,6 +7,7 @@ import '../../data/repository.dart';
 import '../providers.dart';
 import '../sites/site_form.dart';
 import '../sites/site_screens.dart';
+import '../evaluation/live_panel.dart';
 import 'series_detail_screen.dart';
 import 'series_recording_controller.dart';
 
@@ -240,7 +241,10 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
 /// Extra content of the recording screen (live results, Task_12).
 typedef RecordingExtras = Widget Function(BuildContext context);
 
-final recordingExtrasProvider = Provider<RecordingExtras?>((ref) => null);
+final recordingExtrasProvider = Provider<RecordingExtras?>(
+  (ref) =>
+      (context) => const LiveResultsPanel(),
+);
 
 /// Running recording: elapsed time, levels, stop.
 class SeriesRecordingScreen extends ConsumerStatefulWidget {

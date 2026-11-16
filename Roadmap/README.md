@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_12 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_13 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -29,8 +29,8 @@ Stand: 2026-11-16 – Task_12 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | erledigt |
 | 10 | Doppler Variante 1: Linienverfolgung | erledigt |
 | 11 | Beschleunigungsprüfung, Fusion, Klasse A | erledigt |
-| 12 | Live-Auswertung | läuft |
-| 13 | Statistik | offen |
+| 12 | Live-Auswertung | erledigt (Gerätemessung → 20) |
+| 13 | Statistik | läuft |
 | 14 | Export | offen |
 | 15 | GPS-Referenzfahrten | offen |
 | 16 | Validierung und Abnahme | offen |
@@ -117,6 +117,10 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 **Aus Task_11:**
 
 - Vollständige Auswertung pro Ereignis: `EventPipeline.evaluate` (TDOA → Doppler → `fuse` → Klasse A/B/C mit Grund). Klassenlogik zentral in `classify` (`lib/core/pipeline/fusion.dart`). (Task_11)
+
+**Aus Task_12:**
+
+- Live: `LivePipeline(config:, setup:)` mit `add(block)`, `records`, `finish()`; in `SeriesRecordingController` integriert. Rechenzeit am PC ca. 1 s pro Ereignis. (Task_12)
 
 ## Auffälligkeiten & Details
 

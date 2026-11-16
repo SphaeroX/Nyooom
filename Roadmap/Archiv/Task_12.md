@@ -54,9 +54,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Auf dem Zielgerät erscheint ein Ergebnis spätestens 10 s nach der Vorbeifahrt (gemessen, in den Notizen).
-- [ ] Live- und Offline-Auswertung derselben Aufnahme stimmen überein (Test).
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20) Auf dem Zielgerät erscheint ein Ergebnis spätestens 10 s nach der Vorbeifahrt (gemessen, in den Notizen).
+- [x] Live- und Offline-Auswertung derselben Aufnahme stimmen überein (Test).
 
 ## Offene Fragen / Annahmen
 
@@ -67,23 +67,26 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Laufzeitbudget am PC: ca. 0,8–1,2 s pro Ereignis (Korrelogramm, Modellanpassung, Spektrogramm, Doppler). Bei einem Fahrzeug alle ~6 s reicht das auch bei 3–5-fach langsamerem Telefon. Messung im Release-Build auf dem Gerät → Task_20; keine Optimierung nötig, solange die Warteschlange nicht wächst.
+- Ringpuffer 12 s (Fenster 8 s + Meldelatenz 4 s). Fenster, deren Anfang schon überschrieben ist, werden als verloren gezählt.
+- Warteschlange: höchstens 4 Ereignisse laufend/wartend, weitere werden verworfen und gezählt (`liveDropped`).
+- Rohaudio-Schalter: gibt es seit Task_04 beim Start einer Messreihe; ohne Rohaudio werden nur die Live-Datensätze gespeichert.
+- Hintergrundbetrieb: Entscheidung aus Task_04 übernommen (kein Foreground-Service); Prüfung auf dem Gerät → Task_20.
+- Die Simulation nimmt jetzt die eingegebene Temperatur (c passt zur Messreihe).
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `LivePipeline` (`lib/data/live_pipeline.dart`): Ringpuffer, `EventDetector` im Streaming, langlebiger Worker-Isolate mit `EventPipeline`, Warteschlange mit Verlustzähler, `finish()` wertet Ereignisse am Aufnahmeende aus. `evaluateSignalFull` als Offline-Referenz. Integration in `SeriesRecordingController` (Datensätze per `repo.addPass` während der Aufnahme, Zustand `liveRecords/livePending/liveDropped`), Live-Bereich `LiveResultsPanel` auf dem Aufnahmebildschirm; in der Simulation zusätzlich die wahren Werte der vorbeigefahrenen Fahrzeuge zum Vergleich. Schalter `liveEvaluationProvider` (Standard an).
+- **Learnings & Stolpersteine:** Worker-Isolate per `Isolate.spawn` mit Top-Level-Einstieg; Anfragen und Ergebnisse als einfache Klassen über `SendPort` (gleiche Isolate-Gruppe). Fenstergrenzen live wie offline über `round(t·fs)` bilden, sonst weichen die Ergebnisse ab.
+- **Wichtige Entscheidungen und ihre Gründe:** Reines Dart bleibt (keine native Optimierung nötig nach PC-Messung). Live-Datensätze werden nicht ersetzt, sondern ergänzt; eine spätere Offline-Neuauswertung ersetzt sie (`replacePasses`).
+- **Auswirkungen auf Folge-Tasks:** Statistik (Task_13) kann während und nach der Aufnahme `repo.passes(seriesId)` lesen. Task_17 (Variante 2) erhöht die Rechenzeit; Live-Budget im Blick behalten.
+- **Hinweise zu Tests und Befehlen:** `tests/data/live_pipeline_test.dart` (Live = Offline, Ränder, volle Warteschlange), `tests/ui/series/series_live_test.dart` (ohne Rohaudio).
