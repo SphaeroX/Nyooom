@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../core/signal/pcm.dart';
+
 const int _headerLength = 44;
 
 /// Decoded content of a 16-bit PCM WAV file.
@@ -117,6 +119,96 @@ WavData decodeWav(Uint8List bytes) {
 
 /// Streams 16-bit PCM blocks into a WAV file; the header is completed on
 /// [close].
+/// Header information of a 16-bit PCM WAV file.
+class WavInfo {
+  const WavInfo({
+    required this.channels,
+    required this.sampleRate,
+    required this.dataOffset,
+    required this.dataLength,
+  });
+
+  final int channels;
+  final int sampleRate;
+
+  /// Byte offset of the first sample.
+  final int dataOffset;
+  final int dataLength;
+
+  int get frameCount => dataLength ~/ (channels * 2);
+  double get durationS => frameCount / sampleRate;
+}
+
+/// Reads only the header chunks of [file].
+Future<WavInfo> readWavInfo(File file) async {
+  final raf = await file.open();
+  try {
+    final length = await raf.length();
+    final head = await raf.read(12);
+    if (head.length < 12 ||
+        String.fromCharCodes(head.sublist(0, 4)) != 'RIFF' ||
+        String.fromCharCodes(head.sublist(8, 12)) != 'WAVE') {
+      throw const FormatException('Not a RIFF/WAVE file');
+    }
+    int? channels, sampleRate;
+    var offset = 12;
+    while (offset + 8 <= length) {
+      await raf.setPosition(offset);
+      final chunk = await raf.read(8);
+      final id = String.fromCharCodes(chunk.sublist(0, 4));
+      final size = ByteData.sublistView(chunk).getUint32(4, Endian.little);
+      if (id == 'fmt ') {
+        final fmt = ByteData.sublistView(await raf.read(16));
+        if (fmt.getUint16(0, Endian.little) != 1 ||
+            fmt.getUint16(14, Endian.little) != 16) {
+          throw const FormatException('Only 16-bit PCM is supported');
+        }
+        channels = fmt.getUint16(2, Endian.little);
+        sampleRate = fmt.getUint32(4, Endian.little);
+      } else if (id == 'data') {
+        if (channels == null || sampleRate == null) {
+          throw const FormatException('data chunk before fmt chunk');
+        }
+        final available = length - offset - 8;
+        return WavInfo(
+          channels: channels,
+          sampleRate: sampleRate,
+          dataOffset: offset + 8,
+          dataLength: size < available ? size : available,
+        );
+      }
+      offset += 8 + size + (size.isOdd ? 1 : 0);
+    }
+    throw const FormatException('No data chunk found');
+  } finally {
+    await raf.close();
+  }
+}
+
+/// Reads [durationS] seconds from [startS] of a stereo WAV file (clipped to
+/// the file), without loading the rest.
+Future<StereoBlock> readWavStereoRange(
+  File file, {
+  required double startS,
+  required double durationS,
+}) async {
+  final info = await readWavInfo(file);
+  if (info.channels != 2) throw const FormatException('Stereo WAV expected');
+  final first = (startS * info.sampleRate).round().clamp(0, info.frameCount);
+  final count = ((durationS * info.sampleRate).round()).clamp(
+    0,
+    info.frameCount - first,
+  );
+  final raf = await file.open();
+  try {
+    await raf.setPosition(info.dataOffset + first * 4);
+    final bytes = await raf.read(count * 4);
+    return deinterleavePcm16Bytes(bytes);
+  } finally {
+    await raf.close();
+  }
+}
+
 class WavFileWriter {
   WavFileWriter._(this._file, this.channels, this.sampleRate);
 

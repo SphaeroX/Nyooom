@@ -34,7 +34,7 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_05)
+## Projektstruktur (Stand Task_06)
 
 ```
 lib/
@@ -44,6 +44,7 @@ lib/
   core/model/passby_model.dart      PassByModel: u, r, t = te + r/c, Δ(t), Doppler (technik.pdf 3.1–3.4)
   core/dsp/fft.dart                 radix-2-FFT, Hann-Fenster, Blockzerlegung
   core/dsp/gcc_phat.dart            GCC-PHAT, Correlogram, singleTdoa (technik.pdf 5.2)
+  core/dsp/spectrogram.dart         Spektrogramm (technik.pdf 5.4), Spitzenfrequenz mit Parabelinterpolation
   core/dsp/biquad.dart              IIR-Filter (Butterworth Hoch-/Tiefpass, Bandpass-Kette)
   core/dsp/fractional_delay.dart    Kaiser-gefensterter Sinc-Interpolator für Bruchteil-Verzögerungen
   core/sim/passby_simulator.dart    Generator synthetischer Vorbeifahrten mit GroundTruth
@@ -51,6 +52,8 @@ lib/
   core/sim/traffic.dart             TrafficGenerator: deterministischer Mischverkehr für die Simulationsquelle
   core/calibration/device_checks.dart  Eignungsprüfung 4.4 und Kalibrierung 7.1 (reine Logik)
   core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
+  core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung
+  core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
   core/site/site.dart               SiteSpec/LaneSpec, Schrägabstand je Spur, Validierung (technik.pdf 4.1)
   core/series/series_metadata.dart  Inhalt von metadata.json einer Messreihe
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
@@ -61,8 +64,10 @@ lib/
   ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/sites/                         Standortliste und -formular
+  ui/inspection/                    Sichtprüfung (Korrelogramm, Spektrogramm, Modellkurve)
+  ui/common/                        RgbaImageView
   ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)
-  ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController)
+  ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController), Detailansicht
   core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
   core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
   audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo)

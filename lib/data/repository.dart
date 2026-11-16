@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../core/model/acoustics.dart';
+import '../core/pipeline/analysis_setup.dart';
 import '../core/site/site.dart';
 import 'database.dart';
 
@@ -239,4 +240,29 @@ class NyooomRepository {
       db.into(db.calibrations).insert(calibration);
 
   Future<List<DeviceRow>> devices() => db.select(db.devices).get();
+
+  /// Constants for evaluating series [id]: calibration (or defaults), c and
+  /// lane geometry.
+  Future<AnalysisSetup?> analysisSetup(int id) async {
+    final series = await this.series(id);
+    if (series == null) return null;
+    final calId = series.row.calibrationId;
+    final cal = calId == null ? null : await calibration(calId);
+    return AnalysisSetup(
+      micSpacing: cal?.micSpacingM ?? AnalysisSetup.defaultMicSpacing,
+      channelOffset: cal?.channelOffsetS ?? 0,
+      swapChannels: cal?.swapChannels ?? false,
+      speedOfSound: series.speedOfSound,
+      speedLimitKmh: series.site.spec.speedLimitKmh,
+      startedAtUtcMs: series.startedAtUtcMs,
+      lanes: [
+        for (var i = 0; i < series.site.spec.lanes.length; i++)
+          LaneGeometry(
+            index: i,
+            direction: series.site.spec.lanes[i].direction,
+            slantDistance: series.slantDistances[i],
+          ),
+      ],
+    );
+  }
 }

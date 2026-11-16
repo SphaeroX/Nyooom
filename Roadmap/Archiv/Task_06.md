@@ -50,9 +50,9 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün.
-- [ ] Für eine echte Aufnahme mit Vorbeifahrten sind Korrelogramm und Spektrogramm in der App sichtbar (Screenshot in den Notizen beschrieben oder abgelegt).
-- [ ] Die Entscheidung interne vs. externe Mikrofone ist vom Nutzer getroffen und in `Roadmap/README.md` festgehalten.
+- [x] `fvm flutter test tests/` läuft grün.
+- [ ] (→ Task_20; mit simulierter Messreihe geprüft) Für eine echte Aufnahme mit Vorbeifahrten sind Korrelogramm und Spektrogramm in der App sichtbar (Screenshot in den Notizen beschrieben oder abgelegt).
+- [ ] (→ Task_20) Die Entscheidung interne vs. externe Mikrofone ist vom Nutzer getroffen und in `Roadmap/README.md` festgehalten.
 
 ## Offene Fragen / Annahmen
 
@@ -63,23 +63,21 @@ Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder ei
 
 Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergreifendes gehört in `Roadmap/README.md`.
 
+- Erster Entscheidungspunkt der PDF (interne vs. externe Mikrofone) braucht echte Aufnahmen und liegt jetzt in Task_20. Mit simulierten Messreihen zeigt der Viewer die S-Spur und die Doppler-Linien wie erwartet.
+
 ## Abschluss-Checkliste
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle automatisch prüfbaren Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `Spectrogram.compute` (`lib/core/dsp/spectrogram.dart`, 4096/512/16384, Band 150 Hz–8 kHz, `peakFrequency` mit Parabelinterpolation, `parabolicOffset`). `heatmapRgba` + `colorScale` (`lib/core/inspection/heatmap.dart`), `computeInspection` (Pegel 50 ms, Korrelogramm, Spektrogramm). WAV-Ausschnitte ohne Volllast: `readWavInfo`, `readWavStereoRange`. UI: `SeriesDetailScreen` (Tippen auf eine Messreihe) mit Button zur `InspectionScreen` (Zeitausschnitt 4/8/16 s per Slider, Modellkurve Δ(t) für manuelles κ/t0 als Overlay). Berechnung per `Isolate.run`.
+- **Learnings & Stolpersteine:** Widget-Tests mit Isolates und Datei-I/O brauchen `tester.runAsync` und eine Pump-Schleife. `decodeImageFromPixels` funktioniert im Test.
+- **Wichtige Entscheidungen und ihre Gründe:** Bildrenderer liefert RGBA-Bytes aus reinem Dart (testbar), die Umwandlung in `ui.Image` macht nur `RgbaImageView`. Korrelogramm-Farbskala fest 0..1 (R ist normiert), Spektrogramm 60 dB Dynamik ab Maximum.
+- **Auswirkungen auf Folge-Tasks:** Task_10 nutzt `Spectrogram.compute(sum, from:, to:)` und `peakFrequency`/`parabolicOffset`. `AnalysisSetup` (`lib/core/pipeline/analysis_setup.dart`) und `repo.analysisSetup(seriesId)` liefern b, Δ0, Tausch, c und Spurgeometrie für jede Auswertung. `StereoBlock.swapped` tauscht Kanäle. Weitere Abschnitte der Detailansicht über `seriesSectionsProvider`.
+- **Hinweise zu Tests und Befehlen:** `tests/core/dsp/spectrogram_test.dart`, `tests/core/inspection/`, `tests/ui/inspection/`.

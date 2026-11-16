@@ -15,6 +15,9 @@ class StereoBlock {
 
   /// Number of frames (samples per channel).
   int get length => left.length;
+
+  /// The same block with left and right exchanged (channel check, Task_05).
+  StereoBlock get swapped => StereoBlock(right, left);
 }
 
 const double _pcm16FullScale = 32768.0;

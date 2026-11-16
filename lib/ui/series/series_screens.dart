@@ -7,6 +7,7 @@ import '../../data/repository.dart';
 import '../providers.dart';
 import '../sites/site_form.dart';
 import '../sites/site_screens.dart';
+import 'series_detail_screen.dart';
 import 'series_recording_controller.dart';
 
 String formatDuration(double? seconds) {
@@ -32,7 +33,14 @@ String formatDate(int utcMs) {
 /// Opens the detail screen of a series; replaced by later tasks.
 typedef SeriesOpener = void Function(BuildContext context, StoredSeries s);
 
-final seriesOpenerProvider = Provider<SeriesOpener?>((ref) => null);
+final seriesOpenerProvider = Provider<SeriesOpener?>(
+  (ref) =>
+      (context, s) => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SeriesDetailScreen(seriesId: s.id),
+        ),
+      ),
+);
 
 /// List of measurement series with duration and size.
 class SeriesListScreen extends ConsumerWidget {

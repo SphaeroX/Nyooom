@@ -14,7 +14,7 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_06 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_07 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
@@ -23,8 +23,8 @@ Stand: 2026-11-16 – Task_06 läuft. Gerätetests sind gesammelt nach Task_20 v
 | 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | erledigt |
 | 04 | Messreihe anlegen und aufnehmen | erledigt |
 | 05 | Geräteeignung und Kalibrierung | erledigt (Gerätetest → 20) |
-| 06 | Sichtprüfung: Korrelogramm und Spektrogramm | läuft |
-| 07 | Ereigniserkennung | offen |
+| 06 | Sichtprüfung: Korrelogramm und Spektrogramm | erledigt (Entscheidung → 20) |
+| 07 | Ereigniserkennung | läuft |
 | 08 | Anpassung des Bewegungsmodells | offen |
 | 09 | Laufzeitmessung Ende zu Ende (Klasse B/C) | offen |
 | 10 | Doppler Variante 1: Linienverfolgung | offen |
@@ -92,6 +92,11 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 
 - Kalibrierung: neueste Zeile in `Calibrations` je Gerät (`repo.latestCalibration(deviceId)`), Felder `micSpacingM`, `channelOffsetS`, `swapChannels`. Messreihen speichern `calibrationId` und die Werte in `metadata.json`. Ohne Kalibrierung gelten b = 0,15 m und Δ0 = 0. Bei `swapChannels` die Kanäle vor jeder Auswertung tauschen. (Task_05)
 - Vorzeichenkonvention am Standort: Richtung +1 = "nach rechts" (Blick vom Gerät zur Straße) = +x = Seite des rechten Mikrofons. (Task_05)
+
+**Aus Task_06:**
+
+- Spektrogramm: `Spectrogram.compute(mono, config:, from:, to:)`, Zeiten = Fenstermitten relativ zu `from`. Auswertekonstanten einer Messreihe: `repo.analysisSetup(id)` → `AnalysisSetup` (b, Δ0, swapChannels, c, Spuren). WAV-Ausschnitte: `readWavStereoRange(file, startS:, durationS:)`. (Task_06)
+- Die Entscheidung interne vs. externe Mikrofone (PDF 10, erster Entscheidungspunkt) steht noch aus und fällt in Task_20. (Task_06)
 
 ## Auffälligkeiten & Details
 
