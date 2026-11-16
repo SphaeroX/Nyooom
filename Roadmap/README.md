@@ -14,13 +14,13 @@ Nyooom ist eine Android-App (Flutter, iOS später möglich), die die Geschwindig
 
 ## Aktueller Status
 
-Stand: 2026-11-16 – Task_02 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
+Stand: 2026-11-16 – Task_03 läuft. Gerätetests sind gesammelt nach Task_20 verschoben (siehe unten).
 
 | Task | Titel | Status |
 |---|---|---|
 | 01 | Durchstich: Stereo-Rohaufnahme | erledigt (Gerätetest → 20) |
-| 02 | Signalmodell und synthetische Vorbeifahrten | läuft |
-| 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | offen |
+| 02 | Signalmodell und synthetische Vorbeifahrten | erledigt |
+| 03 | DSP-Kern und GCC-PHAT-Laufzeitspur | läuft |
 | 04 | Messreihe anlegen und aufnehmen | offen |
 | 05 | Geräteeignung und Kalibrierung | offen |
 | 06 | Sichtprüfung: Korrelogramm und Spektrogramm | offen |
@@ -68,6 +68,14 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 - `NyooomConfig` (`lib/core/config/nyooom_config.dart`) existiert bereits mit `sampleRate` und `clipThreshold`; Task_02 erweitert genau dieses Objekt, statt ein zweites anzulegen. Der UI-Zugriff läuft über `configProvider`. (Task_01)
 - Kanonische Signaldarstellung: `StereoBlock` (`lib/core/signal/pcm.dart`) mit zwei `Float64List`, normiert auf [-1, 1]. WAV lesen über `decodeWav` (`lib/audio/wav.dart`). (Task_01)
 - `technik.pdf` lässt sich mit `pdftotext -layout technik.pdf -` (MSYS2, im Bash-PATH) als Text lesen. (Task_01)
+
+**Aus Task_02:**
+
+- Alle Parameter: `NyooomConfig` (`lib/core/config/`), Defaults = PDF 9.2 plus abgeleitete Grenzen (5.1–5.6, 7.4). Neue Parameter dort ergänzen, `tool/write_default_config.dart` neu laufen lassen. (Task_02)
+- Signalmodell: `PassByModel` (`lib/core/model/passby_model.dart`) mit `directionCosine(t)`, `tdoa(t)`, `dopplerFrequency(f0, t)`, `emissionTime(t)`; Zeiten ohne Suffix sind Empfangszeiten, `t0` ist Abstrahlzeit. `solveEmissionTime` löst t = te + r/c per Newton (schneller und genauer als Raster + Interpolation). (Task_02)
+- Kanalkonvention: links = Mikrofon bei −b/2, rechts bei +b/2, Δ = Ankunft links − rechts = +b/c·u + Δ0. GCC-PHAT mit X_links·X_rechts* liefert genau dieses Δ. (Task_02)
+- **Generator-API** (`lib/core/sim/`): `Scenarios.combustion(speedKmh:, distance:, direction:, t0:, tone:, acceleration:, toneLeadS:)`, `Scenarios.electric(..., warningTone:)`, `Scenarios.render(pass, durationS:, snrDb:, channelOffset:, micSpacing:, temperatureC:, seed:)` → `SimulatedRecording{signal: StereoBlock, truths: [GroundTruth]}`. Mehrere Fahrzeuge: `PassBySimulator(Scenarios.setup(...)).render(durationS, [pass1, pass2])`. `GroundTruth.model`/`toneModel` liefern das wahre `PassByModel`, `receptionT0` den Empfangszeitpunkt der größten Annäherung. Rechenzeit: ca. 0,1 s pro Sekunde Signal; in Tests kurze Fenster nehmen. (Task_02)
+- Hilfsbausteine: `fractionalSample` (Sinc-Interpolation), `Biquad`/`BiquadChain` (Hochpass, Tiefpass, Bandpass) in `lib/core/dsp/`. (Task_02)
 
 ## Auffälligkeiten & Details
 

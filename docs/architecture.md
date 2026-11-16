@@ -22,7 +22,9 @@ Schichten mit einer festen Abhängigkeitsrichtung: `ui` → `data`/`audio` → `
 - `lib/ui/`: Screens, Widgets, Riverpod-Provider.
 - `android/`: Flutter-Host und Kotlin-Plugin-Code.
 
-Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (JSON-serialisierbar), nicht als Literale im Code.
+Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (JSON-serialisierbar), nicht als Literale im Code. Die ausgelieferte Datei `assets/nyooom_config.json` wird mit `fvm dart run tool/write_default_config.dart` aus den Defaults erzeugt; ein Test hält beide gleich.
+
+**Kanal- und Vorzeichenkonvention:** linker Kanal = Mikrofon bei x = −b/2, rechter Kanal = Mikrofon bei x = +b/2. Δ ist Ankunft links minus Ankunft rechts, also Δ = +b/c·u + Δ0; positive Geschwindigkeit bedeutet Fahrt in +x-Richtung (von links nach rechts).
 
 ## Umgebung
 
@@ -32,12 +34,18 @@ Alle Parameter aus `technik.pdf` 9.2 liegen in **einem** Konfigurationsobjekt (J
 - Abhängigkeiten nur über `fvm flutter pub add`, keine anderen Paketmanager.
 - Keine externen Dienste, keine Secrets, deshalb keine `.env`.
 
-## Projektstruktur (Stand Task_01)
+## Projektstruktur (Stand Task_02)
 
 ```
 lib/
   main.dart                         App-Einstieg (ProviderScope, MaterialApp)
-  core/config/nyooom_config.dart    Konfigurationsobjekt (JSON), wird in Task_02 um alle 9.2-Parameter erweitert
+  core/config/nyooom_config.dart    Konfigurationsobjekt mit allen 9.2-Parametern (JSON); Kopie in assets/nyooom_config.json
+  core/model/acoustics.dart         c(T), Schrägabstand, km/h-Umrechnung
+  core/model/passby_model.dart      PassByModel: u, r, t = te + r/c, Δ(t), Doppler (technik.pdf 3.1–3.4)
+  core/dsp/biquad.dart              IIR-Filter (Butterworth Hoch-/Tiefpass, Bandpass-Kette)
+  core/dsp/fractional_delay.dart    Kaiser-gefensterter Sinc-Interpolator für Bruchteil-Verzögerungen
+  core/sim/passby_simulator.dart    Generator synthetischer Vorbeifahrten mit GroundTruth
+  core/sim/scenarios.dart           Fixture-Fabrik: Verbrenner, Elektroauto, Standard-Setups
   core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
   core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
   audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo)

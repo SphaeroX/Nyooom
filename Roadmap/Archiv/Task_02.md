@@ -56,10 +56,10 @@ Alle Tests dieses Tasks werden permanent in `tests/` im Hauptverzeichnis des Pro
 
 Der Task gilt erst als fertig, wenn alle Punkte erfüllt und durch Tests oder einen konkreten Befehl belegt sind:
 
-- [ ] `fvm flutter test tests/` läuft grün, inklusive aller oben genannten Tests.
-- [ ] Alle Parameter aus PDF 9.2 sind in der Konfiguration vorhanden und kein Zahlenwert davon ist an anderer Stelle im Code hart kodiert.
-- [ ] Fixture-Fabrik liefert mindestens die Szenarien 30 km/h/5 m und 50 km/h/4 m in beiden Richtungen, mit und ohne Ton.
-- [ ] Die Generator-API ist in `Roadmap/README.md` kurz beschrieben, damit Folge-Tasks sie finden.
+- [x] `fvm flutter test tests/` läuft grün, inklusive aller oben genannten Tests.
+- [x] Alle Parameter aus PDF 9.2 sind in der Konfiguration vorhanden und kein Zahlenwert davon ist an anderer Stelle im Code hart kodiert.
+- [x] Fixture-Fabrik liefert mindestens die Szenarien 30 km/h/5 m und 50 km/h/4 m in beiden Richtungen, mit und ohne Ton.
+- [x] Die Generator-API ist in `Roadmap/README.md` kurz beschrieben, damit Folge-Tasks sie finden.
 
 ## Offene Fragen / Annahmen
 
@@ -74,19 +74,15 @@ Taskspezifische Informationen während der Arbeit hier festhalten. Taskübergrei
 
 Reihenfolge und Details stehen in `AGENTS.md`, Abschnitt "Abschluss- und Archivierungs-Workflow".
 
-- [ ] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
-- [ ] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
-- [ ] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
-- [ ] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
+- [x] Alle Akzeptanzkriterien erfüllt, Tests liegen permanent in `tests/` und laufen grün
+- [x] Abschnitt "Erkenntnisse für Folge-Agenten" unten ausgefüllt
+- [x] Folge-Tasks und `Roadmap/README.md` geprüft und bei Bedarf angepasst
+- [x] Datei ohne `RUN_` nach `Roadmap/Archiv/` verschoben
 
 ## Erkenntnisse für Folge-Agenten
 
-<!-- ERKENNTNISSE-OFFEN: Vor der Archivierung ausfüllen und diese Zeile löschen. -->
-
-Vor der Archivierung vom Agenten auszufüllen. Schreibe so, dass ein Agent, der diesen Task nie gesehen hat, davon bei späteren Tasks profitiert:
-
-- **Umgesetzt (und Abweichungen vom Plan):**
-- **Learnings & Stolpersteine:**
-- **Wichtige Entscheidungen und ihre Gründe:**
-- **Auswirkungen auf Folge-Tasks:**
-- **Hinweise zu Tests und Befehlen:**
+- **Umgesetzt (und Abweichungen vom Plan):** `NyooomConfig` mit allen 9.2-Parametern und abgeleiteten Grenzen, Asset `assets/nyooom_config.json` plus Generator-Skript `tool/write_default_config.dart`. `acoustics.dart` (c(T), Schrägabstand), `PassByModel` (u, r, t(te), te(t), Δ, Doppler, Frequenzsprung), `interpolateEmissionGrid`. Generator `PassBySimulator` mit Beschleunigung, Tonversatz, Δ0, mehreren Fahrzeugen, Hintergrundrauschen; Fahrzeugprofile Verbrenner und Elektroauto in `Scenarios`. Abweichung: Emissionszeit wird per Newton direkt gelöst statt über ein te-Raster (genauer, einfacher); die Raster-Interpolation existiert trotzdem für Tests/Plots. WAV-Ausgabe nicht im Generator (core darf `lib/audio` nicht importieren), stattdessen `interleavePcm16` + `encodeWavPcm16`.
+- **Learnings & Stolpersteine:** Rauschen muss für beide Kanäle aus demselben Puffer kommen (gleiche Länge, gleicher Start), sonst ist es unkorreliert. Rauschen wird auf 0,2·fs tiefpassgefiltert, damit der Sinc-Interpolator (Kaiser, ±16 Abtastwerte) exakt bleibt.
+- **Wichtige Entscheidungen und ihre Gründe:** Töne werden analytisch über die Phase erzeugt (kein Resampling-Fehler, Doppler exakt). Motor-Tonhöhe folgt standardmäßig der Geschwindigkeit (fester Gang), damit Beschleunigung den Ton wie in PDF 6.1 verändert. Vorzeichen: links = −b/2.
+- **Auswirkungen auf Folge-Tasks:** Task_03 testet GCC-PHAT gegen `Scenarios.render`; Task_07 nutzt `BiquadChain` für Hochpass und Ereignisband; Task_17 kann `fractionalSample` für die Entzerrung nutzen.
+- **Hinweise zu Tests und Befehlen:** Tests unter `tests/core/{config,model,dsp,sim}`. Generator-Tests brauchen einige Sekunden; neue Tests mit 2–4 s Fenstern arbeiten.
