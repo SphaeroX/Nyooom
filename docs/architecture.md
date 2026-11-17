@@ -91,8 +91,10 @@ lib/
   data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt
   data/series_export.dart           Export einer Messreihe in Dateien bzw. ZIP (gestreamt)
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
+  data/onboarding_store.dart        Merker-Datei <Dokumente>/onboarding_done (Einführung gesehen)
   ui/providers.dart                 zentrale Riverpod-Provider (DB, Repository, Ablage, Recorder-Fabrik)
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
+  ui/help/                          Einführung beim ersten Start (OnboardingGate in main.dart), Tab "Hilfe" mit Schritt-für-Schritt-Anleitung
   ui/sites/                         Standortliste und -formular
   ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt
   ui/reference/                     Tab "Referenz": Logger, Import, Verlauf

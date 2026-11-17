@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../calibration/calibration_screen.dart';
+import '../help/help_screen.dart';
 import '../reference/reference_screens.dart';
 import '../series/series_screens.dart';
 import '../sites/site_screens.dart';
@@ -21,6 +22,7 @@ final homeTabsProvider = Provider<List<HomeTab>>(
     HomeTab('Standorte', Icons.place_outlined, (_) => const SiteListScreen()),
     HomeTab('Referenz', Icons.gps_fixed, (_) => const ReferenceListScreen()),
     HomeTab('Gerät', Icons.mic_none, (_) => const DeviceScreen()),
+    HomeTab('Hilfe', Icons.help_outline, (_) => const HelpScreen()),
   ],
 );
 

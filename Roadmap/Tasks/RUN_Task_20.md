@@ -35,6 +35,11 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 - [ ] 10-minütige Aufnahme ohne wachsenden Speicherverbrauch (Android Studio Profiler oder `adb shell dumpsys meminfo de.nyooom.app`).
 - [ ] Verhalten bei App-Wechsel und Bildschirm aus wie in Task_04 entschieden.
 
+### Einführung und Hilfe (2026-11-17)
+
+- [ ] Einführung erscheint nach frischer Installation, nach „Überspringen“ bzw. „Los geht’s“ beim nächsten Start nicht mehr.
+- [ ] Tab „Hilfe“: Texte auf dem Gerät gut lesbar, Schritte passen zum tatsächlichen Ablauf.
+
 ### Aus Task_05: Eignung und Kalibrierung
 
 - [ ] Assistent vollständig durchlaufen; Ergebnis der vier Prüfungen notieren.
