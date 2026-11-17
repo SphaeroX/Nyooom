@@ -160,7 +160,9 @@ class _SiteFormState extends State<SiteForm> {
           Text('Fahrspuren', style: Theme.of(context).textTheme.titleMedium),
           const Text(
             'Horizontaler Abstand vom Smartphone zur Spurmitte und die '
-            'Fahrtrichtung auf dieser Spur (Blick vom Gerät zur Straße).',
+            'Fahrtrichtung auf dieser Spur (Blick vom Gerät zur Straße). '
+            '⇄ für eine schmale Gasse, die in beide Richtungen auf derselben '
+            'Spur befahren wird.',
           ),
           for (var i = 0; i < _lanes.length; i++) _laneRow(i),
           Align(
@@ -292,6 +294,11 @@ class _SiteFormState extends State<SiteForm> {
                 value: -1,
                 label: Text('←'),
                 tooltip: 'nach links (−x)',
+              ),
+              ButtonSegment(
+                value: LaneSpec.twoWay,
+                label: Text('⇄'),
+                tooltip: 'beidseitig befahren (z. B. Seitengasse)',
               ),
             ],
             selected: {lane.direction},

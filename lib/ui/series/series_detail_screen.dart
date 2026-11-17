@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/site/site.dart' show laneDirectionLabel;
 import '../../data/repository.dart';
 import '../evaluation/pass_widgets.dart';
 import '../inspection/inspection_screen.dart';
@@ -48,7 +49,7 @@ class SeriesDetailScreen extends ConsumerWidget {
                   ),
                   for (var i = 0; i < s.site.spec.lanes.length; i++)
                     Text(
-                      'Spur ${s.site.spec.lanes[i].direction > 0 ? '→' : '←'}: '
+                      'Spur ${laneDirectionLabel(s.site.spec.lanes[i].direction)}: '
                       'd = ${s.slantDistances[i].toStringAsFixed(2)} m',
                     ),
                   const SizedBox(height: 12),

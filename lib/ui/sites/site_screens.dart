@@ -68,7 +68,7 @@ String _laneSummary(SiteSpec s) {
   final lanes = s.lanes
       .map(
         (l) =>
-            '${l.direction > 0 ? '→' : '←'} '
+            '${laneDirectionLabel(l.direction)} '
             '${l.horizontalDistance.toStringAsFixed(1)} m',
       )
       .join(', ');

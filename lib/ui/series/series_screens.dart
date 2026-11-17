@@ -201,7 +201,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
           if (site != null)
             for (final lane in site.spec.lanes)
               Text(
-                'Spur ${lane.direction > 0 ? '→' : '←'}: Schrägabstand '
+                'Spur ${laneDirectionLabel(lane.direction)}: Schrägabstand '
                 '${site.spec.slantDistance(lane, sourceHeight: config.sourceHeightM).toStringAsFixed(2)} m',
               ),
           const SizedBox(height: 12),

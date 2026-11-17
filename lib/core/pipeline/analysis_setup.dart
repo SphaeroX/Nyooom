@@ -7,6 +7,8 @@ class LaneGeometry {
   });
 
   final int index;
+
+  /// +1, −1, or 0 for a lane used in both directions.
   final int direction;
 
   /// Slant distance d_Spur in m (technik.pdf 7.2).
@@ -39,10 +41,11 @@ class AnalysisSetup {
   /// b/c in s.
   double get maxTdoa => micSpacing / speedOfSound;
 
-  /// The lane vehicles with [direction] use (technik.pdf 5.3), or null.
+  /// The lane vehicles with [direction] use (technik.pdf 5.3), or null;
+  /// a two-way lane (direction 0) serves both directions.
   LaneGeometry? laneFor(int direction) {
     for (final l in lanes) {
-      if (l.direction == direction) return l;
+      if (l.direction == direction || l.direction == 0) return l;
     }
     return null;
   }

@@ -45,6 +45,10 @@ Eine Quelle mit fester Richtung (Maschine, Gespräch) ergibt keine Spur mehr: Im
 
 Eine Wand quer zur Fahrbahn (Fensterlaibung) spiegelt die Quelle so, dass sie scheinbar in die Gegenrichtung fährt, mit gleichem |κ| und gleichem t0. Eine zweite Spur mit diesen Eigenschaften (`mirrorKappaTolerance`, `mirrorT0ToleranceS`) wird nicht als Fahrzeug gezählt. Reflexionen an Boden und an Wänden parallel zur Fahrbahn verfälschen Δ in erster Näherung nicht, ihre Spur läuft in Fahrtrichtung und fällt unter die Dublettenregel.
 
+### 5. Beidseitig befahrene Spur (Seitengasse)
+
+In einer schmalen Gasse fahren beide Richtungen auf derselben Spur, also im selben Abstand zum Gerät. Eine Spur kann dafür die Richtung `LaneSpec.twoWay` (0, Anzeige ⇄) bekommen. `SiteSpec.laneForDirection` und `AnalysisSetup.laneFor` liefern sie für +1 und −1; die Richtung des Datensatzes kommt weiter aus dem Vorzeichen von κ. Eine beidseitige Spur muss die einzige Spur des Standorts sein, sonst wäre die Zuordnung Richtung → Spur mehrdeutig (`validateSite` meldet einen Fehler). Die Selbstkalibrierung (7.4) lernt den Abstand aus beiden Richtungen, weil sie nach `laneIndex` gruppiert. In der Datenbank steht 0 in `lanes.direction`, eine Migration ist nicht nötig.
+
 ## Wirkung in der Simulation
 
 Zufallsverkehr auf zwei Spuren, 2 Minuten, seitliche Streuung 0,4 m, 10 % beschleunigend:

@@ -16,8 +16,18 @@ class LaneSpec {
   /// Horizontal distance from the phone to the lane centre in m.
   final double horizontalDistance;
 
-  /// Direction of travel on this lane: +1 (towards +x) or −1.
+  /// Direction of travel on this lane: +1 (towards +x), −1, or
+  /// [twoWay] (0) for a lane used in both directions, e.g. a narrow side
+  /// street without separate lanes.
   final int direction;
+
+  /// [direction] of a lane used in both directions.
+  static const int twoWay = 0;
+
+  bool get isTwoWay => direction == twoWay;
+
+  /// Whether vehicles travelling in [travelDirection] (+1/−1) use this lane.
+  bool serves(int travelDirection) => isTwoWay || direction == travelDirection;
 
   @override
   bool operator ==(Object other) =>
@@ -65,10 +75,11 @@ class SiteSpec {
         micHeight - sourceHeight,
       );
 
-  /// The lane vehicles with [direction] drive on, or null.
+  /// The lane vehicles with [direction] drive on, or null; a two-way
+  /// lane serves both directions.
   LaneSpec? laneForDirection(int direction) {
     for (final lane in lanes) {
-      if (lane.direction == direction) return lane;
+      if (lane.serves(direction)) return lane;
     }
     return null;
   }
@@ -87,6 +98,13 @@ SiteSpec quickTestSite() => const SiteSpec(
   micHeight: 1.5,
   speedLimitKmh: 50,
 );
+
+/// Short label of a lane direction: → (+1), ← (−1), ⇄ (both).
+String laneDirectionLabel(int direction) => direction > 0
+    ? '→'
+    : direction < 0
+    ? '←'
+    : '⇄';
 
 enum SiteField { name, lanes, micHeight, speedLimit, position }
 
@@ -140,15 +158,33 @@ List<SiteIssue> validateSite(SiteSpec site) {
       );
     }
   }
-  final directions = site.lanes.map((l) => l.direction).toList();
-  if (directions.toSet().length != directions.length) {
+  if (site.lanes.any((l) => l.direction.abs() > 1)) {
     issues.add(
       const SiteIssue(
         SiteField.lanes,
-        'Jede Fahrtrichtung darf nur einer Spur zugeordnet sein.',
+        'Ungültige Fahrtrichtung.',
         isError: true,
       ),
     );
+  } else if (site.lanes.any((l) => l.isTwoWay) && site.lanes.length > 1) {
+    issues.add(
+      const SiteIssue(
+        SiteField.lanes,
+        'Eine beidseitig befahrene Spur muss die einzige Spur sein.',
+        isError: true,
+      ),
+    );
+  } else {
+    final directions = site.lanes.map((l) => l.direction).toList();
+    if (directions.toSet().length != directions.length) {
+      issues.add(
+        const SiteIssue(
+          SiteField.lanes,
+          'Jede Fahrtrichtung darf nur einer Spur zugeordnet sein.',
+          isError: true,
+        ),
+      );
+    }
   }
   if (!(site.micHeight > 0)) {
     issues.add(

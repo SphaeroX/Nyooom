@@ -29,6 +29,8 @@ const helpSteps = [
     'Standort anlegen',
     'Tab „Standorte“ → neuer Standort. Miss für jede Fahrspur den Abstand '
         'vom Handy zur Spurmitte und trage Mikrofonhöhe und Tempolimit ein. '
+        'Eine schmale Gasse ohne getrennte Spuren ist eine einzige Spur mit ⇄ '
+        '(beidseitig befahren). '
         'Für einen ersten Versuch genügt der Schnelltest-Standort.',
   ),
   HelpStep(

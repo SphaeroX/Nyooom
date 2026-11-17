@@ -9,7 +9,7 @@ Nyooom schätzt die Geschwindigkeit einzeln vorbeifahrender Fahrzeuge allein aus
 ## Kernfunktionen
 
 - Eignungsprüfung eines Geräts (echtes Stereo, keine Vorverarbeitung, Übersteuerung, Kanalzuordnung) und Kalibrierung von Mikrofonabstand b und Kanalversatz Δ0.
-- Messreihen mit Standortdaten (Spurabstände, Höhe, Temperatur, Richtung → Spur) anlegen und als Stereo-WAV plus Metadaten aufnehmen.
+- Messreihen mit Standortdaten (Spurabstände, Höhe, Temperatur, Richtung → Spur, auch eine beidseitig befahrene Spur für Seitengassen) anlegen und als Stereo-WAV plus Metadaten aufnehmen.
 - Live-Auswertung: Vorbeifahrten erkennen, Geschwindigkeit, Unsicherheit und Klasse pro Fahrzeug.
 - Statistik getrennt nach Klasse A/B und Richtung, Anteil C, Korrektur der Messunsicherheit.
 - Export als CSV/JSON.

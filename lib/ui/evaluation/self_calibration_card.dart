@@ -5,7 +5,7 @@ import '../../core/calibration/self_calibration.dart';
 import '../../data/repository.dart';
 import '../providers.dart';
 import 'evaluation_controller.dart';
-import 'pass_widgets.dart' show arrow;
+import '../../core/site/site.dart' show laneDirectionLabel;
 
 final laneLearningProvider = FutureProvider.family<List<LaneLearning>, int>((
   ref,
@@ -92,7 +92,7 @@ class _LaneRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Spur ${arrow(direction)}: Maßband '
+            'Spur ${laneDirectionLabel(direction)}: Maßband '
             '${l.measuredDistance.toStringAsFixed(2)} m · gelernt $learned '
             '(${l.countA} × Klasse A${l.active ? ', aktiv' : ', ab $minCount aktiv'})',
           ),
