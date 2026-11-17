@@ -1792,6 +1792,17 @@ class $MeasurementSeriesTable extends MeasurementSeries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _segmentsJsonMeta = const VerificationMeta(
+    'segmentsJson',
+  );
+  @override
+  late final GeneratedColumn<String> segmentsJson = GeneratedColumn<String>(
+    'segments_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1807,6 +1818,7 @@ class $MeasurementSeriesTable extends MeasurementSeries
     saveRawAudio,
     simulated,
     configJson,
+    segmentsJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1930,6 +1942,15 @@ class $MeasurementSeriesTable extends MeasurementSeries
     } else if (isInserting) {
       context.missing(_configJsonMeta);
     }
+    if (data.containsKey('segments_json')) {
+      context.handle(
+        _segmentsJsonMeta,
+        segmentsJson.isAcceptableOrUnknown(
+          data['segments_json']!,
+          _segmentsJsonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1991,6 +2012,10 @@ class $MeasurementSeriesTable extends MeasurementSeries
         DriftSqlType.string,
         data['${effectivePrefix}config_json'],
       )!,
+      segmentsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}segments_json'],
+      ),
     );
   }
 
@@ -2014,6 +2039,10 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
   final bool saveRawAudio;
   final bool simulated;
   final String configJson;
+
+  /// Recording parts of a continued series as JSON (schema 5); null for
+  /// one continuous recording.
+  final String? segmentsJson;
   const SeriesRow({
     required this.id,
     required this.siteId,
@@ -2028,6 +2057,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     required this.saveRawAudio,
     required this.simulated,
     required this.configJson,
+    this.segmentsJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2051,6 +2081,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     map['save_raw_audio'] = Variable<bool>(saveRawAudio);
     map['simulated'] = Variable<bool>(simulated);
     map['config_json'] = Variable<String>(configJson);
+    if (!nullToAbsent || segmentsJson != null) {
+      map['segments_json'] = Variable<String>(segmentsJson);
+    }
     return map;
   }
 
@@ -2075,6 +2108,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       saveRawAudio: Value(saveRawAudio),
       simulated: Value(simulated),
       configJson: Value(configJson),
+      segmentsJson: segmentsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(segmentsJson),
     );
   }
 
@@ -2097,6 +2133,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       saveRawAudio: serializer.fromJson<bool>(json['saveRawAudio']),
       simulated: serializer.fromJson<bool>(json['simulated']),
       configJson: serializer.fromJson<String>(json['configJson']),
+      segmentsJson: serializer.fromJson<String?>(json['segmentsJson']),
     );
   }
   @override
@@ -2116,6 +2153,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       'saveRawAudio': serializer.toJson<bool>(saveRawAudio),
       'simulated': serializer.toJson<bool>(simulated),
       'configJson': serializer.toJson<String>(configJson),
+      'segmentsJson': serializer.toJson<String?>(segmentsJson),
     };
   }
 
@@ -2133,6 +2171,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     bool? saveRawAudio,
     bool? simulated,
     String? configJson,
+    Value<String?> segmentsJson = const Value.absent(),
   }) => SeriesRow(
     id: id ?? this.id,
     siteId: siteId ?? this.siteId,
@@ -2149,6 +2188,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     saveRawAudio: saveRawAudio ?? this.saveRawAudio,
     simulated: simulated ?? this.simulated,
     configJson: configJson ?? this.configJson,
+    segmentsJson: segmentsJson.present ? segmentsJson.value : this.segmentsJson,
   );
   SeriesRow copyWithCompanion(MeasurementSeriesCompanion data) {
     return SeriesRow(
@@ -2181,6 +2221,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       configJson: data.configJson.present
           ? data.configJson.value
           : this.configJson,
+      segmentsJson: data.segmentsJson.present
+          ? data.segmentsJson.value
+          : this.segmentsJson,
     );
   }
 
@@ -2199,7 +2242,8 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           ..write('directory: $directory, ')
           ..write('saveRawAudio: $saveRawAudio, ')
           ..write('simulated: $simulated, ')
-          ..write('configJson: $configJson')
+          ..write('configJson: $configJson, ')
+          ..write('segmentsJson: $segmentsJson')
           ..write(')'))
         .toString();
   }
@@ -2219,6 +2263,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     saveRawAudio,
     simulated,
     configJson,
+    segmentsJson,
   );
   @override
   bool operator ==(Object other) =>
@@ -2236,7 +2281,8 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           other.directory == this.directory &&
           other.saveRawAudio == this.saveRawAudio &&
           other.simulated == this.simulated &&
-          other.configJson == this.configJson);
+          other.configJson == this.configJson &&
+          other.segmentsJson == this.segmentsJson);
 }
 
 class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
@@ -2253,6 +2299,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
   final Value<bool> saveRawAudio;
   final Value<bool> simulated;
   final Value<String> configJson;
+  final Value<String?> segmentsJson;
   const MeasurementSeriesCompanion({
     this.id = const Value.absent(),
     this.siteId = const Value.absent(),
@@ -2267,6 +2314,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.saveRawAudio = const Value.absent(),
     this.simulated = const Value.absent(),
     this.configJson = const Value.absent(),
+    this.segmentsJson = const Value.absent(),
   });
   MeasurementSeriesCompanion.insert({
     this.id = const Value.absent(),
@@ -2282,6 +2330,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.saveRawAudio = const Value.absent(),
     this.simulated = const Value.absent(),
     required String configJson,
+    this.segmentsJson = const Value.absent(),
   }) : siteId = Value(siteId),
        temperatureC = Value(temperatureC),
        speedOfSound = Value(speedOfSound),
@@ -2303,6 +2352,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Expression<bool>? saveRawAudio,
     Expression<bool>? simulated,
     Expression<String>? configJson,
+    Expression<String>? segmentsJson,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2318,6 +2368,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       if (saveRawAudio != null) 'save_raw_audio': saveRawAudio,
       if (simulated != null) 'simulated': simulated,
       if (configJson != null) 'config_json': configJson,
+      if (segmentsJson != null) 'segments_json': segmentsJson,
     });
   }
 
@@ -2335,6 +2386,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Value<bool>? saveRawAudio,
     Value<bool>? simulated,
     Value<String>? configJson,
+    Value<String?>? segmentsJson,
   }) {
     return MeasurementSeriesCompanion(
       id: id ?? this.id,
@@ -2350,6 +2402,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       saveRawAudio: saveRawAudio ?? this.saveRawAudio,
       simulated: simulated ?? this.simulated,
       configJson: configJson ?? this.configJson,
+      segmentsJson: segmentsJson ?? this.segmentsJson,
     );
   }
 
@@ -2395,6 +2448,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     if (configJson.present) {
       map['config_json'] = Variable<String>(configJson.value);
     }
+    if (segmentsJson.present) {
+      map['segments_json'] = Variable<String>(segmentsJson.value);
+    }
     return map;
   }
 
@@ -2413,7 +2469,8 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
           ..write('directory: $directory, ')
           ..write('saveRawAudio: $saveRawAudio, ')
           ..write('simulated: $simulated, ')
-          ..write('configJson: $configJson')
+          ..write('configJson: $configJson, ')
+          ..write('segmentsJson: $segmentsJson')
           ..write(')'))
         .toString();
   }
@@ -6323,6 +6380,7 @@ typedef $$MeasurementSeriesTableCreateCompanionBuilder =
       Value<bool> saveRawAudio,
       Value<bool> simulated,
       required String configJson,
+      Value<String?> segmentsJson,
     });
 typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
     MeasurementSeriesCompanion Function({
@@ -6339,6 +6397,7 @@ typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
       Value<bool> saveRawAudio,
       Value<bool> simulated,
       Value<String> configJson,
+      Value<String?> segmentsJson,
     });
 
 final class $$MeasurementSeriesTableReferences
@@ -6478,6 +6537,11 @@ class $$MeasurementSeriesTableFilterComposer
 
   ColumnFilters<String> get configJson => $composableBuilder(
     column: $table.configJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get segmentsJson => $composableBuilder(
+    column: $table.segmentsJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6635,6 +6699,11 @@ class $$MeasurementSeriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get segmentsJson => $composableBuilder(
+    column: $table.segmentsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SitesTableOrderingComposer get siteId {
     final $$SitesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6755,6 +6824,11 @@ class $$MeasurementSeriesTableAnnotationComposer
 
   GeneratedColumn<String> get configJson => $composableBuilder(
     column: $table.configJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get segmentsJson => $composableBuilder(
+    column: $table.segmentsJson,
     builder: (column) => column,
   );
 
@@ -6904,6 +6978,7 @@ class $$MeasurementSeriesTableTableManager
                 Value<bool> saveRawAudio = const Value.absent(),
                 Value<bool> simulated = const Value.absent(),
                 Value<String> configJson = const Value.absent(),
+                Value<String?> segmentsJson = const Value.absent(),
               }) => MeasurementSeriesCompanion(
                 id: id,
                 siteId: siteId,
@@ -6918,6 +6993,7 @@ class $$MeasurementSeriesTableTableManager
                 saveRawAudio: saveRawAudio,
                 simulated: simulated,
                 configJson: configJson,
+                segmentsJson: segmentsJson,
               ),
           createCompanionCallback:
               ({
@@ -6934,6 +7010,7 @@ class $$MeasurementSeriesTableTableManager
                 Value<bool> saveRawAudio = const Value.absent(),
                 Value<bool> simulated = const Value.absent(),
                 required String configJson,
+                Value<String?> segmentsJson = const Value.absent(),
               }) => MeasurementSeriesCompanion.insert(
                 id: id,
                 siteId: siteId,
@@ -6948,6 +7025,7 @@ class $$MeasurementSeriesTableTableManager
                 saveRawAudio: saveRawAudio,
                 simulated: simulated,
                 configJson: configJson,
+                segmentsJson: segmentsJson,
               ),
           withReferenceMapper: (p0) => p0
               .map(

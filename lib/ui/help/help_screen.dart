@@ -45,7 +45,9 @@ const helpSteps = [
     'Messreihe starten',
     'Tab „Messreihen“ → „Neue Messreihe“. Standort wählen, Lufttemperatur '
         'eintragen, „Aufnahme starten“. Handy liegen lassen, bis genug Autos '
-        'vorbeigefahren sind, dann „Aufnahme beenden“.',
+        'vorbeigefahren sind, dann „Aufnahme beenden“. Mit „Weiter '
+        'aufnehmen“ geht dieselbe Messreihe später weiter. Ein '
+        'USB-Stereomikrofon vorher anstecken und unter „Mikrofon“ wählen.',
   ),
   HelpStep(
     Icons.speed,

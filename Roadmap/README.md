@@ -169,6 +169,7 @@ Dinge, die global noch zu beachten sind: Besonderheiten, bekannte Einschränkung
 
 - Das Projekt-Setup (Git, `.gitignore`, `docs/`, Root-`AGENTS.md`, FVM) ist erledigt; die Root-`AGENTS.md` gilt zusätzlich (siehe `Roadmap/AGENTS.md`, Abschnitt 7). Das Flutter-Projekt wurde in Task_01 generiert; Struktur und Plattform-Schnittstelle stehen in `docs/architecture.md`.
 - Der FVM-Symlink `.fvm/versions/3.50.0` (für die IDE) ließ sich ohne Windows-Entwicklermodus nicht anlegen; `fvm flutter` funktioniert trotzdem.
-- Größtes Projektrisiko: Ob das Zielgerät zwei getrennte, unbearbeitete Mikrofonkanäle liefert, ist herstellerabhängig. Geklärt wird das in Task_01, Task_05 und Task_06. Ausweichlösung ist ein externes USB-Stereomikrofon.
+- Größtes Projektrisiko: Ob das Zielgerät zwei getrennte, unbearbeitete Mikrofonkanäle liefert, ist herstellerabhängig. Geklärt wird das in Task_01, Task_05 und Task_06. Ausweichlösung ist ein externes USB-Stereomikrofon; seit 2026-11-17 lässt es sich im Startbildschirm der Messreihe wählen (eigene Kalibrierung pro Eingabegerät, Prüfpunkte in Task_20).
+- Messreihen lassen sich nach „Aufnahme beenden“ fortsetzen (2026-11-17): WAV wird angehängt, Pausen stehen als `RecordingSegment` in DB (Schema 5) und `metadata.json`. Uhrzeiten von Datensätzen immer über `AnalysisSetup.utcMsAt(offsetS)` bilden, nie `startedAtUtcMs + offset`.
 - Geplanter Einsatz: Gerät auf dem Fenstersims, Zählung und Geschwindigkeiten einer Straße. Hinweise zur Aufstellung (Höhe, Laibung, Kalibrierung in Einbaulage) in `docs/method-notes.md`.
 - Offene fachliche Punkte aus der PDF (Abschnitt 10): Anteil der Fahrzeuge mit auswertbarem Ton, systematischer Fehler durch die ausgedehnte Schallquelle, Frequenzabhängigkeit von b, Warnton von E-Autos.

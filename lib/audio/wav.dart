@@ -210,12 +210,36 @@ Future<StereoBlock> readWavStereoRange(
 }
 
 class WavFileWriter {
-  WavFileWriter._(this._file, this.channels, this.sampleRate);
+  WavFileWriter._(
+    this._file,
+    this.channels,
+    this.sampleRate, [
+    this._dataLength = 0,
+  ]);
 
   final RandomAccessFile _file;
   final int channels;
   final int sampleRate;
-  int _dataLength = 0;
+  int _dataLength;
+
+  /// Continues a WAV written by [WavFileWriter] (a stopped measurement
+  /// series). Everything after the header counts as data, so a file whose
+  /// header was never finalised (app killed while recording) is kept too.
+  static Future<WavFileWriter> append(File file) async {
+    final info = await readWavInfo(file);
+    if (info.dataOffset != 44) {
+      throw const FormatException(
+        'Only WAV files of this app can be continued',
+      );
+    }
+    final frameBytes = info.channels * 2;
+    final raf = await file.open(mode: FileMode.append);
+    final available = await raf.length() - info.dataOffset;
+    final length = available - available % frameBytes;
+    await raf.truncate(info.dataOffset + length);
+    await raf.setPosition(info.dataOffset + length);
+    return WavFileWriter._(raf, info.channels, info.sampleRate, length);
+  }
 
   static Future<WavFileWriter> open(
     File file, {

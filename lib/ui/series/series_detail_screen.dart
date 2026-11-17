@@ -6,6 +6,7 @@ import '../../data/repository.dart';
 import '../evaluation/pass_widgets.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
+import 'series_recording_controller.dart';
 import 'series_screens.dart';
 
 /// Builds an additional section of the series detail screen.
@@ -52,7 +53,31 @@ class SeriesDetailScreen extends ConsumerWidget {
                       'Spur ${laneDirectionLabel(s.site.spec.lanes[i].direction)}: '
                       'd = ${s.slantDistances[i].toStringAsFixed(2)} m',
                     ),
+                  if (s.segments.length > 1)
+                    Text(
+                      '${s.segments.length} Aufnahmeabschnitte '
+                      '(fortgesetzt)',
+                    ),
                   const SizedBox(height: 12),
+                  if (s.endedAtUtcMs != null &&
+                      !ref.watch(seriesRecordingProvider).running)
+                    FilledButton.tonalIcon(
+                      key: const Key('detail-resume-series'),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SeriesRecordingScreen.resume(
+                              seriesId: s.id,
+                              simulated: s.row.simulated,
+                            ),
+                          ),
+                        );
+                        ref.invalidate(seriesProvider(s.id));
+                      },
+                      icon: const Icon(Icons.fiber_manual_record),
+                      label: const Text('Weiter aufnehmen'),
+                    ),
+                  const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(

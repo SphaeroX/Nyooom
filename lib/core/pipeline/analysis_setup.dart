@@ -1,3 +1,5 @@
+import '../series/recording_segment.dart';
+
 /// Geometry of one lane as the evaluation needs it.
 class LaneGeometry {
   const LaneGeometry({
@@ -25,6 +27,7 @@ class AnalysisSetup {
     required this.lanes,
     required this.speedLimitKmh,
     required this.startedAtUtcMs,
+    this.segments,
   });
 
   /// Default b without calibration in m (typical phone, technik.pdf 4.1).
@@ -37,6 +40,17 @@ class AnalysisSetup {
   final List<LaneGeometry> lanes;
   final double speedLimitKmh;
   final int startedAtUtcMs;
+
+  /// Parts of a series that was stopped and continued; null or empty for
+  /// one continuous recording starting at [startedAtUtcMs].
+  final List<RecordingSegment>? segments;
+
+  /// Wall-clock time in UTC ms at [offsetS] of the recorded signal.
+  int utcMsAt(double offsetS) => utcMsAtOffset(
+    segments ?? const [],
+    offsetS,
+    fallbackStartUtcMs: startedAtUtcMs,
+  );
 
   /// b/c in s.
   double get maxTdoa => micSpacing / speedOfSound;
@@ -57,6 +71,8 @@ class AnalysisSetup {
     'speedOfSound': speedOfSound,
     'speedLimitKmh': speedLimitKmh,
     'startedAtUtcMs': startedAtUtcMs,
+    if ((segments?.length ?? 0) > 1)
+      'segments': [for (final s in segments!) s.toJson()],
     'lanes': [
       for (final l in lanes)
         {

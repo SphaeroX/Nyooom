@@ -221,7 +221,7 @@ class EventEvaluator {
   }) {
     final t0 = fit?.t0 ?? event.peakTimeS;
     return PassRecord(
-      zeitUtcMs: setup.startedAtUtcMs + (t0 * 1000).round(),
+      zeitUtcMs: setup.utcMsAt(t0),
       offsetS: t0,
       richtung: fit?.direction ?? 0,
       klasse: QualityClass.c,
@@ -261,7 +261,7 @@ class EventEvaluator {
       lateralSpread: config.lateralSpreadM,
     );
     return PassRecord(
-      zeitUtcMs: setup.startedAtUtcMs + (fit.t0 * 1000).round(),
+      zeitUtcMs: setup.utcMsAt(fit.t0),
       offsetS: fit.t0,
       richtung: fit.direction,
       klasse: QualityClass.b,

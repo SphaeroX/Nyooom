@@ -49,6 +49,10 @@ Eine Wand quer zur Fahrbahn (Fensterlaibung) spiegelt die Quelle so, dass sie sc
 
 In einer schmalen Gasse fahren beide Richtungen auf derselben Spur, also im selben Abstand zum Gerät. Eine Spur kann dafür die Richtung `LaneSpec.twoWay` (0, Anzeige ⇄) bekommen. `SiteSpec.laneForDirection` und `AnalysisSetup.laneFor` liefern sie für +1 und −1; die Richtung des Datensatzes kommt weiter aus dem Vorzeichen von κ. Eine beidseitige Spur muss die einzige Spur des Standorts sein, sonst wäre die Zuordnung Richtung → Spur mehrdeutig (`validateSite` meldet einen Fehler). Die Selbstkalibrierung (7.4) lernt den Abstand aus beiden Richtungen, weil sie nach `laneIndex` gruppiert. In der Datenbank steht 0 in `lanes.direction`, eine Migration ist nicht nötig.
 
+### 6. Fortgesetzte Messreihe: Naht in der Aufnahme
+
+Eine fortgesetzte Messreihe ist eine einzige WAV, die Abschnitte liegen direkt hintereinander. An der Naht springt der Pegel, und ein Fahrzeug, das in der Pause vorbeifuhr, fehlt. Die Ereigniserkennung kann an der Naht ein Fenster aus zwei Abschnitten bilden; das Ergebnis ist dann meist Klasse C oder fällt unter die Dublettenregel. Die Uhrzeit eines Datensatzes kommt aus dem Abschnitt, in dem t0 liegt (`AnalysisSetup.utcMsAt`). Die Live-Auswertung beginnt nach dem Fortsetzen neu (leerer Ringpuffer), eine Vorbeifahrt genau an der Naht wird deshalb live nicht ausgewertet.
+
 ## Wirkung in der Simulation
 
 Zufallsverkehr auf zwei Spuren, 2 Minuten, seitliche Streuung 0,4 m, 10 % beschleunigend:

@@ -11,6 +11,7 @@ import '../../core/pipeline/pass_record.dart';
 import '../../core/series/series_metadata.dart';
 import '../../core/signal/level.dart';
 import '../../core/signal/pcm.dart';
+import '../../core/site/site.dart';
 import '../../core/sim/traffic.dart';
 import '../../data/live_pipeline.dart';
 import '../providers.dart';
@@ -22,13 +23,22 @@ class SeriesStartRequest {
     required this.temperatureC,
     this.simulate = false,
     this.saveRawAudio = true,
+    this.inputDevice,
   });
 
   final int siteId;
   final double temperatureC;
   final bool simulate;
   final bool saveRawAudio;
+
+  /// External input (USB stereo microphone); null for the internal
+  /// microphones.
+  final InputDevice? inputDevice;
 }
+
+/// Name stored with device and calibration for [device] (Task_05).
+String inputDeviceName(InputDevice? device) =>
+    device == null || !device.isExternal ? 'intern' : device.name;
 
 class SeriesRecordingState {
   const SeriesRecordingState({
@@ -66,6 +76,10 @@ class SeriesRecordingState {
   final bool rightClipSeen;
   final RecordingInfo? info;
   final String? error;
+
+  /// A stopped series can be continued into the same files.
+  bool get canResume =>
+      !running && !starting && seriesId != null && error == null;
 
   SeriesRecordingState copyWith({
     bool? running,
@@ -150,25 +164,17 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
       final config = ref.read(configProvider);
       final site = await repo.site(request.siteId);
       if (site == null) throw StateError('Standort nicht gefunden.');
-      final slant = [
-        for (final lane in site.spec.lanes)
-          site.spec.slantDistance(lane, sourceHeight: config.sourceHeightM),
-      ];
-      final recorder = ref.read(recorderFactoryProvider)(
-        simulate: request.simulate,
-        lanes: [
-          for (var i = 0; i < slant.length; i++)
-            TrafficLane(
-              slantDistance: slant[i],
-              direction: site.spec.lanes[i].direction,
-            ),
-        ],
-      );
+      final slant = _slantDistances(site.spec);
+      final recorder = _recorderFor(site.spec, slant, request.simulate);
       if (recorder is SimulatedStereoRecorder) {
         recorder.setTemperature(request.temperatureC);
       }
       final capabilities = await recorder.capabilities();
-      final deviceId = await repo.ensureDevice(capabilities.deviceModel);
+      final inputName = inputDeviceName(request.inputDevice);
+      final deviceId = await repo.ensureDevice(
+        capabilities.deviceModel,
+        inputDevice: inputName,
+      );
       final calibration = await repo.latestCalibration(deviceId);
       final startedAt = DateTime.now().toUtc().millisecondsSinceEpoch;
       final id = await repo.createSeries(
@@ -185,31 +191,20 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
       );
       final dir = await storage.create(id);
       await repo.setSeriesDirectory(id, dir.path);
-      _frames = 0;
-      _writer = request.saveRawAudio
+      final writer = request.saveRawAudio
           ? await WavFileWriter.open(
               storage.wavFile(id),
               channels: 2,
               sampleRate: config.sampleRate,
             )
           : null;
-      _recorder = recorder;
-      if (ref.read(liveEvaluationProvider)) {
-        final setup = (await repo.learnedSetup(id, config))!.setup;
-        final live = LivePipeline(config: config, setup: setup);
-        _live = live;
-        _liveSub = live.records.listen((record) {
-          _liveWrites = _liveWrites.then((_) => repo.addPass(id, record));
-          if (!ref.mounted) return;
-          state = state.copyWith(
-            liveRecords: [...state.liveRecords, record],
-            livePending: live.pending,
-            liveDropped: live.dropped,
-          );
-        });
-      }
-      _subscription = recorder.pcmBlocks.listen(_onPcm);
-      final info = await recorder.start(sampleRate: config.sampleRate);
+      final info = await _record(
+        id,
+        recorder,
+        writer,
+        inputDeviceId: request.inputDevice?.id,
+        offsetS: 0,
+      );
       final series = (await repo.series(id))!;
       await storage.writeMetadata(
         SeriesMetadata(
@@ -245,6 +240,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
           config: config.toJson(),
           simulated: request.simulate,
           saveRawAudio: request.saveRawAudio,
+          inputDevice: inputName,
         ),
       );
       if (!ref.mounted) return;
@@ -261,11 +257,153 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
     }
   }
 
+  /// Continues the stopped series [seriesId]: same input, WAV and records;
+  /// the pause is stored as a new recording segment.
+  Future<void> resume(int seriesId) async {
+    if (state.running || state.starting) return;
+    final previous = state;
+    state = SeriesRecordingState(
+      starting: true,
+      seriesId: seriesId,
+      elapsedS: previous.elapsedS,
+      liveRecords: previous.liveRecords,
+    );
+    try {
+      final repo = ref.read(repositoryProvider);
+      final storage = await ref.read(seriesStorageProvider.future);
+      final config = ref.read(configProvider);
+      final series = await repo.series(seriesId);
+      if (series == null) throw StateError('Messreihe nicht gefunden.');
+      final row = series.row;
+      final slant = _slantDistances(series.site.spec);
+      final recorder = _recorderFor(series.site.spec, slant, row.simulated);
+      if (recorder is SimulatedStereoRecorder) {
+        recorder.setTemperature(row.temperatureC);
+      }
+      final inputName = await repo.inputDeviceOf(seriesId);
+      InputDevice? input;
+      if (inputName != 'intern') {
+        for (final d in await recorder.inputDevices()) {
+          if (d.isExternal && d.name == inputName) input = d;
+        }
+        if (input == null) {
+          throw StateError(
+            'Eingabegerät „$inputName“ ist nicht angeschlossen.',
+          );
+        }
+      }
+      final writer = row.saveRawAudio
+          ? await WavFileWriter.append(storage.wavFile(seriesId))
+          : null;
+      final offsetS = writer != null
+          ? writer.frameCount / config.sampleRate
+          : series.durationS ?? previous.elapsedS;
+      await repo.resumeSeries(
+        seriesId,
+        offsetS: offsetS,
+        resumedAtUtcMs: DateTime.now().toUtc().millisecondsSinceEpoch,
+      );
+      final info = await _record(
+        seriesId,
+        recorder,
+        writer,
+        inputDeviceId: input?.id,
+        offsetS: offsetS,
+      );
+      final metadata = await storage.readMetadata(seriesId);
+      if (metadata != null) {
+        final updated = (await repo.series(seriesId))!;
+        await storage.writeMetadata(metadata.withSegments(updated.segments));
+      }
+      if (!ref.mounted) return;
+      state = SeriesRecordingState(
+        running: true,
+        seriesId: seriesId,
+        info: info,
+        elapsedS: offsetS,
+        liveRecords: previous.liveRecords,
+      );
+    } on MicrophonePermissionDeniedException {
+      await _abort(
+        'Mikrofon-Berechtigung fehlt. Bitte in den Einstellungen '
+        'erlauben.',
+      );
+    } on PlatformException catch (e) {
+      await _abort('Aufnahme fehlgeschlagen: ${e.message}');
+    } catch (e) {
+      await _abort('Fortsetzen fehlgeschlagen: $e');
+    }
+  }
+
+  List<double> _slantDistances(SiteSpec site) {
+    final config = ref.read(configProvider);
+    return [
+      for (final lane in site.lanes)
+        site.slantDistance(lane, sourceHeight: config.sourceHeightM),
+    ];
+  }
+
+  StereoRecorder _recorderFor(
+    SiteSpec site,
+    List<double> slant,
+    bool simulate,
+  ) => ref.read(recorderFactoryProvider)(
+    simulate: simulate,
+    lanes: [
+      for (var i = 0; i < slant.length; i++)
+        TrafficLane(
+          slantDistance: slant[i],
+          direction: site.lanes[i].direction,
+        ),
+    ],
+  );
+
+  /// Wires [recorder] to [writer] and the live evaluation and starts it;
+  /// [offsetS] is the position of the first new sample in the series.
+  Future<RecordingInfo> _record(
+    int seriesId,
+    StereoRecorder recorder,
+    WavFileWriter? writer, {
+    required int? inputDeviceId,
+    required double offsetS,
+  }) async {
+    final repo = ref.read(repositoryProvider);
+    final config = ref.read(configProvider);
+    _frames = (offsetS * config.sampleRate).round();
+    _writer = writer;
+    _recorder = recorder;
+    if (ref.read(liveEvaluationProvider)) {
+      final setup = (await repo.learnedSetup(seriesId, config))!.setup;
+      final live = LivePipeline(
+        config: config,
+        setup: setup,
+        startOffsetS: offsetS,
+      );
+      _live = live;
+      _liveSub = live.records.listen((record) {
+        _liveWrites = _liveWrites.then((_) => repo.addPass(seriesId, record));
+        if (!ref.mounted) return;
+        state = state.copyWith(
+          liveRecords: [...state.liveRecords, record],
+          livePending: live.pending,
+          liveDropped: live.dropped,
+        );
+      });
+    }
+    _subscription = recorder.pcmBlocks.listen(_onPcm);
+    return recorder.start(
+      sampleRate: config.sampleRate,
+      inputDeviceId: inputDeviceId,
+    );
+  }
+
   Future<void> _abort(String message) async {
     unawaited(_subscription?.cancel());
     _subscription = null;
     await _live?.dispose();
     _live = null;
+    await _liveSub?.cancel();
+    _liveSub = null;
     _recorder = null;
     final writer = _writer;
     _writer = null;

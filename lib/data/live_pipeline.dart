@@ -30,6 +30,7 @@ class LivePipeline {
     required this.setup,
     LiveEvaluator? evaluator,
     this.maxPending = 4,
+    this.startOffsetS = 0,
     double bufferS = 12,
   }) : _detector = EventDetector(config: config, secondaryEvents: true),
        _dedup = TrackDeduplicator(config: config),
@@ -50,6 +51,10 @@ class LivePipeline {
   final NyooomConfig config;
   final AnalysisSetup setup;
   final int maxPending;
+
+  /// Position of the first added sample in the recorded file in s (a
+  /// continued series), so offsets of the records refer to the file.
+  final double startOffsetS;
   final EventDetector _detector;
   final TrackDeduplicator _dedup;
   late final Future<List<PassRecord>> Function(
@@ -112,7 +117,7 @@ class LivePipeline {
       right[i] = _right[p];
     }
     _pending++;
-    _queue.add(_Job(StereoBlock(left, right), event, from / fs));
+    _queue.add(_Job(StereoBlock(left, right), event, from / fs + startOffsetS));
     _pump();
   }
 

@@ -1,3 +1,5 @@
+import 'recording_segment.dart';
+
 /// Lane entry of [SeriesMetadata].
 class LaneMetadata {
   const LaneMetadata({
@@ -75,6 +77,8 @@ class SeriesMetadata {
     required this.config,
     required this.simulated,
     required this.saveRawAudio,
+    this.inputDevice = 'intern',
+    this.segments = const [],
   });
 
   /// Channel convention of the stored WAV (see docs/architecture.md).
@@ -111,6 +115,11 @@ class SeriesMetadata {
     config: (json['config'] as Map).cast<String, dynamic>(),
     simulated: json['simulated'] == true,
     saveRawAudio: json['saveRawAudio'] != false,
+    inputDevice: json['inputDevice'] as String? ?? 'intern',
+    segments: [
+      for (final m in json['segments'] as List? ?? const [])
+        RecordingSegment.fromJson((m as Map).cast<String, dynamic>()),
+    ],
   );
 
   final int seriesId;
@@ -134,6 +143,19 @@ class SeriesMetadata {
   final bool simulated;
   final bool saveRawAudio;
 
+  /// Audio input: `intern` or the name of an external (USB) device.
+  final String inputDevice;
+
+  /// Recording parts of a continued series; empty for one continuous
+  /// recording from [startedAtUtcMs].
+  final List<RecordingSegment> segments;
+
+  SeriesMetadata withSegments(List<RecordingSegment> segments) =>
+      SeriesMetadata.fromJson({
+        ...toJson(),
+        'segments': [for (final s in segments) s.toJson()],
+      });
+
   Map<String, dynamic> toJson() => {
     'seriesId': seriesId,
     'siteName': siteName,
@@ -154,5 +176,7 @@ class SeriesMetadata {
     'config': config,
     'simulated': simulated,
     'saveRawAudio': saveRawAudio,
+    'inputDevice': inputDevice,
+    if (segments.isNotEmpty) 'segments': [for (final s in segments) s.toJson()],
   };
 }

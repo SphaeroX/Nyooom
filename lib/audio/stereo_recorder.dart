@@ -75,6 +75,7 @@ class RecordingInfo {
     required this.sampleRate,
     required this.channels,
     required this.effects,
+    this.preferredDevice,
   });
 
   factory RecordingInfo.fromMap(Map<Object?, Object?> map) => RecordingInfo(
@@ -85,6 +86,10 @@ class RecordingInfo {
       for (final e in ((map['effects'] as Map?) ?? const {}).entries)
         '${e.key}': EffectState.fromPlatform(e.value),
     },
+    preferredDevice: switch (map['preferredDevice']) {
+      final String name when name.isNotEmpty => name,
+      _ => null,
+    },
   );
 
   final AudioSourceKind audioSource;
@@ -93,6 +98,10 @@ class RecordingInfo {
 
   /// Effect states keyed by `agc`, `ns` and `aec`.
   final Map<String, EffectState> effects;
+
+  /// External input Android routed the recording to; null for the
+  /// internal microphones (or when the requested device was not accepted).
+  final String? preferredDevice;
 }
 
 /// Thrown when the user did not grant the microphone permission.
@@ -103,6 +112,7 @@ class InputDevice {
     required this.name,
     required this.type,
     required this.isExternal,
+    this.channelCounts = const [],
   });
 
   factory InputDevice.fromMap(Map<Object?, Object?> map) => InputDevice(
@@ -110,6 +120,10 @@ class InputDevice {
     name: map['name'] as String? ?? '',
     type: (map['type'] as num?)?.toInt() ?? 0,
     isExternal: map['isExternal'] == true,
+    channelCounts: [
+      for (final c in map['channelCounts'] as List? ?? const [])
+        (c as num).toInt(),
+    ],
   );
 
   final int id;
@@ -118,6 +132,24 @@ class InputDevice {
   /// Android `AudioDeviceInfo.TYPE_*`.
   final int type;
   final bool isExternal;
+
+  /// Channel counts the device reports; empty means any (Android reports
+  /// nothing for many devices).
+  final List<int> channelCounts;
+
+  /// Whether the device can deliver two channels (two microphones).
+  bool get supportsStereo =>
+      channelCounts.isEmpty || channelCounts.any((c) => c >= 2);
+}
+
+/// The input a measurement series should use by default: the first
+/// external device with two channels (USB stereo microphone, technik.pdf
+/// 4.3), otherwise null for the internal microphones.
+InputDevice? preferredInputDevice(List<InputDevice> devices) {
+  for (final d in devices) {
+    if (d.isExternal && d.supportsStereo) return d;
+  }
+  return null;
 }
 
 class MicrophonePermissionDeniedException implements Exception {

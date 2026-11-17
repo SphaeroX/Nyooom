@@ -7,6 +7,7 @@ import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/pipeline/reasons.dart';
 import '../core/reference/reference_track.dart';
+import '../core/series/recording_segment.dart';
 import '../core/site/site.dart';
 import 'database.dart';
 
@@ -39,11 +40,18 @@ class StoredSeries {
   int? get endedAtUtcMs => row.endedAtUtcMs;
   String get directory => row.directory;
 
-  /// Duration in s, null while recording.
-  double? get durationS {
-    final end = row.endedAtUtcMs;
-    return end == null ? null : (end - row.startedAtUtcMs) / 1000;
+  /// Continuous recording parts; one for a series that was never
+  /// continued.
+  List<RecordingSegment> get segments {
+    final stored = segmentsFromJson(row.segmentsJson);
+    return stored.isNotEmpty
+        ? stored
+        : [RecordingSegment(offsetS: 0, startedAtUtcMs: row.startedAtUtcMs)];
   }
+
+  /// Recorded duration in s without pauses, null while recording.
+  double? get durationS =>
+      recordedDurationS(segments, endedAtUtcMs: row.endedAtUtcMs);
 }
 
 /// Data access for devices, sites and measurement series.
@@ -203,6 +211,39 @@ class NyooomRepository {
         MeasurementSeriesCompanion(endedAtUtcMs: Value(endedAtUtcMs)),
       );
 
+  /// Input device name (`intern` or USB device) the series recorded with.
+  Future<String> inputDeviceOf(int seriesId) async {
+    final row = (await series(seriesId))?.row;
+    final deviceId = row?.deviceId;
+    if (deviceId == null) return 'intern';
+    final device = await (db.select(
+      db.devices,
+    )..where((d) => d.id.equals(deviceId))).getSingleOrNull();
+    return device?.inputDevice ?? 'intern';
+  }
+
+  /// Reopens a finished series: the recording continues at [offsetS] of
+  /// its signal, at wall-clock time [resumedAtUtcMs].
+  Future<void> resumeSeries(
+    int id, {
+    required double offsetS,
+    required int resumedAtUtcMs,
+  }) async {
+    final current = (await series(id))!;
+    final segments = [
+      ...current.segments,
+      RecordingSegment(offsetS: offsetS, startedAtUtcMs: resumedAtUtcMs),
+    ];
+    await (db.update(
+      db.measurementSeries,
+    )..where((s) => s.id.equals(id))).write(
+      MeasurementSeriesCompanion(
+        endedAtUtcMs: const Value(null),
+        segmentsJson: Value(segmentsToJson(segments)),
+      ),
+    );
+  }
+
   Future<StoredSeries?> series(int id) async {
     final row = await (db.select(
       db.measurementSeries,
@@ -263,6 +304,7 @@ class NyooomRepository {
       speedOfSound: series.speedOfSound,
       speedLimitKmh: series.site.spec.speedLimitKmh,
       startedAtUtcMs: series.startedAtUtcMs,
+      segments: series.segments,
       lanes: [
         for (var i = 0; i < series.site.spec.lanes.length; i++)
           LaneGeometry(

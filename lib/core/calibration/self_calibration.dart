@@ -86,6 +86,7 @@ AnalysisSetup withLearnedDistances(
   speedOfSound: setup.speedOfSound,
   speedLimitKmh: setup.speedLimitKmh,
   startedAtUtcMs: setup.startedAtUtcMs,
+  segments: setup.segments,
   lanes: [
     for (final lane in setup.lanes)
       LaneGeometry(

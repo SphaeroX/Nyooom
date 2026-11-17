@@ -74,6 +74,10 @@ class MeasurementSeries extends Table {
   BoolColumn get saveRawAudio => boolean().withDefault(const Constant(true))();
   BoolColumn get simulated => boolean().withDefault(const Constant(false))();
   TextColumn get configJson => text()();
+
+  /// Recording parts of a continued series as JSON (schema 5); null for
+  /// one continuous recording.
+  TextColumn get segmentsJson => text().nullable()();
 }
 
 /// One vehicle pass; columns named as in technik.pdf 9.1.
@@ -162,9 +166,10 @@ class NyooomDatabase extends _$NyooomDatabase {
 
   /// Schema history: 1 = Task_04; 2 = Task_09 (passes.sigma_laufzeit,
   /// passes.sigma_doppler); 3 = Task_15 (reference_tracks,
-  /// reference_points); 4 = Task_16 (sites.plus_x_bearing_deg).
+  /// reference_points); 4 = Task_16 (sites.plus_x_bearing_deg);
+  /// 5 = continued series (measurement_series.segments_json).
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -180,6 +185,10 @@ class NyooomDatabase extends _$NyooomDatabase {
       }
       if (from < 4 && !await _hasColumn('sites', 'plus_x_bearing_deg')) {
         await m.addColumn(sites, sites.plusXBearingDeg);
+      }
+      if (from < 5 &&
+          !await _hasColumn('measurement_series', 'segments_json')) {
+        await m.addColumn(measurementSeries, measurementSeries.segmentsJson);
       }
     },
     beforeOpen: (details) async {

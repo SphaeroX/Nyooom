@@ -35,6 +35,16 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 - [ ] 10-minütige Aufnahme ohne wachsenden Speicherverbrauch (Android Studio Profiler oder `adb shell dumpsys meminfo de.nyooom.app`).
 - [ ] Verhalten bei App-Wechsel und Bildschirm aus wie in Task_04 entschieden.
 
+### USB-Stereomikrofon und Fortsetzen einer Messreihe (2026-11-17)
+
+- [ ] USB-Stereomikrofon anstecken: erscheint es im Startbildschirm der Messreihe unter „Mikrofon“ und ist vorausgewählt? Gemeldete `channelCounts` notieren.
+- [ ] Aufnahmebildschirm zeigt „Mikrofon: <USB-Name>“ (Android hat `setPreferredDevice` übernommen). Sonst Gerät, Android-Version und Audioquelle notieren.
+- [ ] WAV am PC: beide Kanäle verschieden (zwei Kapseln, nicht dupliziertes Mono), linker Kanal = welche Kapsel? Abstand b der Kapseln messen.
+- [ ] Kalibrierung mit dem USB-Mikrofon im Tab „Gerät“ (Eingabegerät wählen) und danach eine Messreihe: wird die USB-Kalibrierung verwendet (`metadata.json` → `calibration`, `inputDevice`)?
+- [ ] USB-Mikrofon während der Aufnahme abziehen: Verhalten notieren (Abbruch, Wechsel auf eingebaute Mikrofone?).
+- [ ] Messreihe beenden, „Weiter aufnehmen“, wieder beenden: eine WAV mit beiden Teilen, `metadata.json` → `segments` mit zwei Einträgen, Uhrzeiten der Vorbeifahrten nach der Pause stimmen.
+- [ ] Fortsetzen aus der Detailansicht nach App-Neustart, auch mit USB-Mikrofon (muss wieder angesteckt sein).
+
 ### Einführung und Hilfe (2026-11-17)
 
 - [ ] Einführung erscheint nach frischer Installation, nach „Überspringen“ bzw. „Los geht’s“ beim nächsten Start nicht mehr.
@@ -116,6 +126,11 @@ Automatische Tests entstehen hier nur, wenn echte Aufnahmen als Fixtures dazukom
 - Bildschirm bleibt während der Aufnahme an (`FLAG_KEEP_SCREEN_ON` im Kotlin-Plugin). App nicht wechseln: ohne Foreground-Service wird das Mikrofon im Hintergrund stummgeschaltet.
 - Für den Gerätetest die **Release-APK** nehmen: Im Debug-Build läuft Dart im JIT-Modus, die Live-Auswertung (≈ 2 s pro Ereignis am PC) wäre deutlich langsamer und würde Ereignisse verwerfen (`verloren`).
 - Die Checkliste oben ist damit noch nicht abgearbeitet; das braucht das Gerät und echte Vorbeifahrten.
+
+**2026-11-17, USB-Mikrofon und Fortsetzen (Wunsch des Nutzers):**
+
+- Startbildschirm der Messreihe: Auswahl „Mikrofon“ (eingebaut oder externes Gerät aus `getInputDevices`), ein externes Gerät mit zwei Kanälen wird vorausgewählt (`preferredInputDevice`). Die Messreihe nutzt die Kalibrierung dieses Eingabegeräts (`devices.input_device`), ohne sie b = 0,15 m.
+- Gestoppte Messreihen lassen sich fortsetzen (Aufnahmebildschirm und Detailansicht, „Weiter aufnehmen“). Die WAV wird angehängt, jede Fortsetzung ist ein Abschnitt (`RecordingSegment`, DB-Schema 5, `metadata.json` → `segments`). Ob Android das USB-Gerät wirklich übernimmt, ist nur auf dem Gerät prüfbar (Checkliste oben).
 
 ## Abschluss-Checkliste
 

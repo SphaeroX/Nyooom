@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../audio/stereo_recorder.dart';
 import '../../core/model/acoustics.dart';
 import '../../core/signal/level.dart';
 import '../../core/site/site.dart';
@@ -126,12 +127,85 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
   final _temperature = TextEditingController(text: '15');
   bool? _simulate;
   bool _saveRaw = true;
+  late final Future<List<InputDevice>> _devices = _loadDevices();
+  int? _deviceId;
+  bool _deviceChosen = false;
+
+  Future<List<InputDevice>> _loadDevices() async {
+    try {
+      final devices = await ref.read(stereoRecorderProvider).inputDevices();
+      if (!_deviceChosen && mounted) {
+        setState(() => _deviceId = preferredInputDevice(devices)?.id);
+      }
+      return devices;
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
   void dispose() {
     _temperature.dispose();
     super.dispose();
   }
+
+  /// Internal microphones or an external USB stereo microphone
+  /// (technik.pdf 4.3); external stereo devices are preselected.
+  Widget _inputSelection() => FutureBuilder<List<InputDevice>>(
+    future: _devices,
+    builder: (context, snapshot) {
+      final devices = snapshot.data ?? const <InputDevice>[];
+      final external = [
+        for (final d in devices)
+          if (d.isExternal) d,
+      ];
+      InputDevice? selected;
+      for (final d in external) {
+        if (d.id == _deviceId) selected = d;
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<int?>(
+            key: ValueKey('input-device-${selected?.id}'),
+            initialValue: selected?.id,
+            decoration: const InputDecoration(
+              labelText: 'Mikrofon',
+              helperText: 'USB-Stereomikrofon anstecken, dann hier wählen',
+            ),
+            items: [
+              const DropdownMenuItem(
+                value: null,
+                child: Text('Eingebaute Mikrofone'),
+              ),
+              for (final d in external)
+                DropdownMenuItem(
+                  value: d.id,
+                  child: Text('${d.name} (USB/extern)'),
+                ),
+            ],
+            onChanged: (id) => setState(() {
+              _deviceChosen = true;
+              _deviceId = id;
+            }),
+          ),
+          if (selected != null && !selected.supportsStereo)
+            Text(
+              'Dieses Gerät meldet nur einen Kanal. Für die Messung werden '
+              'zwei Mikrofone (Stereo) gebraucht.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          if (selected != null)
+            const Text(
+              'Für ein externes Mikrofon gilt eine eigene Kalibrierung '
+              '(Tab „Gerät“, dort dasselbe Eingabegerät wählen). Ohne sie '
+              'rechnet die App mit 15 cm Mikrofonabstand.',
+            ),
+          const SizedBox(height: 8),
+        ],
+      );
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +289,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
             value: simulate,
             onChanged: (v) => setState(() => _simulate = v),
           ),
+          if (!simulate) _inputSelection(),
           SwitchListTile(
             title: const Text('Rohaudio speichern'),
             subtitle: const Text('WAV-Datei für spätere Auswertung'),
@@ -226,12 +301,20 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
             key: const Key('start-series'),
             onPressed: site == null || temperature == null
                 ? null
-                : () {
+                : () async {
+                    InputDevice? input;
+                    if (!simulate) {
+                      for (final d in await _devices) {
+                        if (d.id == _deviceId) input = d;
+                      }
+                    }
+                    if (!context.mounted) return;
                     final request = SeriesStartRequest(
                       siteId: site!.id,
                       temperatureC: temperature,
                       simulate: simulate,
                       saveRawAudio: _saveRaw,
+                      inputDevice: input,
                     );
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute<void>(
@@ -266,9 +349,23 @@ final recordingExtrasProvider = Provider<RecordingExtras?>(
 
 /// Running recording: elapsed time, levels, stop.
 class SeriesRecordingScreen extends ConsumerStatefulWidget {
-  const SeriesRecordingScreen({super.key, required this.request});
+  const SeriesRecordingScreen({
+    super.key,
+    required SeriesStartRequest this.request,
+  }) : resumeSeriesId = null,
+       simulated = false;
 
-  final SeriesStartRequest request;
+  /// Continues the stopped series [resumeSeriesId].
+  const SeriesRecordingScreen.resume({
+    super.key,
+    required int seriesId,
+    this.simulated = false,
+  }) : request = null,
+       resumeSeriesId = seriesId;
+
+  final SeriesStartRequest? request;
+  final int? resumeSeriesId;
+  final bool simulated;
 
   @override
   ConsumerState<SeriesRecordingScreen> createState() =>
@@ -279,8 +376,13 @@ class _SeriesRecordingScreenState extends ConsumerState<SeriesRecordingScreen> {
   @override
   void initState() {
     super.initState();
+    final controller = ref.read(seriesRecordingProvider.notifier);
+    final request = widget.request;
+    final resumeId = widget.resumeSeriesId;
     Future.microtask(
-      () => ref.read(seriesRecordingProvider.notifier).start(widget.request),
+      () => request != null
+          ? controller.start(request)
+          : controller.resume(resumeId!),
     );
   }
 
@@ -294,7 +396,9 @@ class _SeriesRecordingScreenState extends ConsumerState<SeriesRecordingScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            widget.request.simulate ? 'Messreihe (Simulation)' : 'Messreihe',
+            (widget.request?.simulate ?? widget.simulated)
+                ? 'Messreihe (Simulation)'
+                : 'Messreihe',
           ),
         ),
         body: ListView(
@@ -313,8 +417,18 @@ class _SeriesRecordingScreenState extends ConsumerState<SeriesRecordingScreen> {
             ),
             if (state.info != null)
               Text(
-                'Quelle: ${state.info!.audioSource.platformName}',
+                'Quelle: ${state.info!.audioSource.platformName} · '
+                'Mikrofon: ${state.info!.preferredDevice ?? 'eingebaut'}',
                 textAlign: TextAlign.center,
+              ),
+            if (state.info != null &&
+                widget.request?.inputDevice != null &&
+                state.info!.preferredDevice == null)
+              Text(
+                'Android hat das gewählte USB-Mikrofon nicht übernommen, '
+                'es nehmen die eingebauten Mikrofone auf.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             const SizedBox(height: 12),
             CompactLevel(
@@ -342,11 +456,22 @@ class _SeriesRecordingScreenState extends ConsumerState<SeriesRecordingScreen> {
                 icon: const Icon(Icons.stop),
                 label: const Text('Aufnahme beenden'),
               )
-            else if (!state.starting)
+            else if (!state.starting) ...[
+              if (state.canResume)
+                OutlinedButton.icon(
+                  key: const Key('resume-series'),
+                  onPressed: () => ref
+                      .read(seriesRecordingProvider.notifier)
+                      .resume(state.seriesId!),
+                  icon: const Icon(Icons.fiber_manual_record),
+                  label: const Text('Weiter aufnehmen'),
+                ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Fertig'),
               ),
+            ],
             if (extras != null) extras(context),
           ],
         ),
