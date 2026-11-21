@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 
 /// Plays a recorded clip (WAV file) for listening.
@@ -44,4 +45,27 @@ class PlatformClipPlayer implements ClipPlayer {
     }
     return _completions.stream;
   }
+}
+
+/// Playback through the `audioplayers` package (desktop). The player is
+/// created on first use.
+class AudioplayersClipPlayer implements ClipPlayer {
+  AudioPlayer? _player;
+  final _completions = StreamController<void>.broadcast();
+
+  AudioPlayer get _p =>
+      _player ??= AudioPlayer()
+        ..onPlayerComplete.listen((_) => _completions.add(null));
+
+  @override
+  Future<void> play(String path) async {
+    await _p.stop();
+    await _p.play(DeviceFileSource(path));
+  }
+
+  @override
+  Future<void> stop() async => _player?.stop();
+
+  @override
+  Stream<void> get completions => _completions.stream;
 }

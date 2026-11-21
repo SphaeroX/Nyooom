@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../audio/clip_player.dart';
 import '../../audio/input_devices.dart';
+import '../../audio/platform_audio.dart';
 import '../../audio/stereo_recorder.dart';
 import '../../core/collect/clip_collector.dart';
 import '../../core/collect/collection_manifest.dart';
@@ -38,7 +39,9 @@ final collectionProvider = FutureProvider.family<CollectionManifest?, int>((
   return storage.read(id);
 });
 
-final clipPlayerProvider = Provider<ClipPlayer>((ref) => PlatformClipPlayer());
+final clipPlayerProvider = Provider<ClipPlayer>(
+  (ref) => clipPlayerFor(android: Platform.isAndroid),
+);
 
 /// Where the ZIP of an export is written before sharing.
 final collectExportDirectoryProvider = FutureProvider<Directory>((ref) async {

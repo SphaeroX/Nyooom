@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../audio/platform_audio.dart';
 import '../../audio/stereo_recorder.dart';
 import '../../audio/wav.dart';
 import '../../core/config/nyooom_config.dart';
@@ -17,7 +18,7 @@ import '../device/input_device_selection.dart';
 final configProvider = Provider<NyooomConfig>((ref) => const NyooomConfig());
 
 final stereoRecorderProvider = Provider<StereoRecorder>(
-  (ref) => StereoRecorder(),
+  (ref) => stereoRecorderFor(android: Platform.isAndroid),
 );
 
 final capabilitiesProvider = FutureProvider<AudioCapabilities>(

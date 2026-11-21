@@ -185,6 +185,7 @@ class InputDevice {
     AndroidInputType.hdmi => 'HDMI',
     AndroidInputType.dock => 'Dock',
     AndroidInputType.builtinMic => 'intern',
+    desktopInputType => 'PC',
     _ => 'Typ $type',
   };
 
@@ -200,6 +201,9 @@ InputDevice? preferredInputDevice(List<InputDevice> devices) {
   }
   return null;
 }
+
+/// [InputDevice.type] of inputs reported by the desktop audio API.
+const desktopInputType = -1;
 
 /// Android `AudioDeviceInfo.TYPE_*` values of input devices.
 abstract final class AndroidInputType {
