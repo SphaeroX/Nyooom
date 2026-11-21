@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,8 @@ import '../../audio/wav.dart';
 import '../../core/config/nyooom_config.dart';
 import '../../core/signal/level.dart';
 import '../../core/signal/pcm.dart';
+import '../../core/signal/stereo_content.dart';
+import '../device/input_device_selection.dart';
 
 final configProvider = Provider<NyooomConfig>((ref) => const NyooomConfig());
 
@@ -45,6 +48,7 @@ class RecorderState {
     this.saving = false,
     this.savedPath,
     this.error,
+    this.stereoContent,
   });
 
   final bool running;
@@ -60,6 +64,9 @@ class RecorderState {
   final String? savedPath;
   final String? error;
 
+  /// Content of the channels over the last second (mono or real stereo).
+  final StereoContent? stereoContent;
+
   RecorderState copyWith({
     bool? running,
     Object? info = _unchanged,
@@ -70,6 +77,7 @@ class RecorderState {
     bool? saving,
     Object? savedPath = _unchanged,
     Object? error = _unchanged,
+    StereoContent? stereoContent,
   }) => RecorderState(
     running: running ?? this.running,
     info: identical(info, _unchanged) ? this.info : info as RecordingInfo?,
@@ -82,6 +90,7 @@ class RecorderState {
         ? this.savedPath
         : savedPath as String?,
     error: identical(error, _unchanged) ? this.error : error as String?,
+    stereoContent: stereoContent ?? this.stereoContent,
   );
 }
 
@@ -91,6 +100,8 @@ class RecorderController extends Notifier<RecorderState> {
   WavFileWriter? _writer;
   String? _writerPath;
   Future<void> _pendingWrites = Future.value();
+  final List<StereoBlock> _window = [];
+  int _windowFrames = 0;
 
   @override
   RecorderState build() {
@@ -111,8 +122,14 @@ class RecorderController extends Notifier<RecorderState> {
       onError: (Object e) => state = state.copyWith(error: 'Stream-Fehler: $e'),
     );
     try {
-      final info = await recorder.start(sampleRate: config.sampleRate);
+      final device = await readActiveInputDevice(ref);
+      final info = await recorder.start(
+        sampleRate: config.sampleRate,
+        inputDeviceId: device?.id,
+      );
       if (!ref.mounted) return;
+      _window.clear();
+      _windowFrames = 0;
       state = RecorderState(running: true, info: info);
     } on MicrophonePermissionDeniedException {
       _failStart(
@@ -183,7 +200,27 @@ class RecorderController extends Notifier<RecorderState> {
       right: right,
       leftClipSeen: state.leftClipSeen || left.clipping,
       rightClipSeen: state.rightClipSeen || right.clipping,
+      stereoContent: _analyseWindow(block),
     );
+  }
+
+  /// Collects one second of audio and then judges whether the channels
+  /// differ; null while the second is not complete.
+  StereoContent? _analyseWindow(StereoBlock block) {
+    _window.add(block);
+    _windowFrames += block.length;
+    final second = ref.read(configProvider).sampleRate;
+    if (_windowFrames < second) return null;
+    final left = Float64List(_windowFrames), right = Float64List(_windowFrames);
+    var offset = 0;
+    for (final b in _window) {
+      left.setAll(offset, b.left);
+      right.setAll(offset, b.right);
+      offset += b.length;
+    }
+    _window.clear();
+    _windowFrames = 0;
+    return analyseStereoContent(StereoBlock(left, right));
   }
 
   /// Cancels the PCM subscription without waiting for the platform side.

@@ -18,7 +18,7 @@ Schichten mit einer festen Abhängigkeitsrichtung: `ui` → `data`/`audio` → `
 
 - `lib/core/`: reine Dart-Fachlogik (Signalmodell, DSP, Auswertung, Statistik, Konfiguration). **Kein Import von `package:flutter`, drift oder Plattformcode.** So bleibt sie mit `package:test` schnell testbar.
 - `lib/audio/`: Dart-Schnittstelle zum Kotlin-Plugin (Recorder-Stream, Gerätefähigkeiten), WAV-Lesen und -Schreiben.
-- `lib/data/`: drift-Datenbank, Repositories, Dateiablage der Messreihen.
+- `lib/data/`: drift-Datenbank, Repositories, Dateiablage der Messreihen, gespeicherte Eingabegerät-Auswahl.
 - `lib/ui/`: Screens, Widgets, Riverpod-Provider.
 - `android/`: Flutter-Host und Kotlin-Plugin-Code.
 
@@ -105,15 +105,24 @@ lib/
   ui/inspection/                    Sichtprüfung (Korrelogramm, Spektrogramm, Modellkurve)
   ui/common/                        RgbaImageView
   ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)
+  ui/device/                        Eingabegeräte-Auswahl (InputDeviceSelector im Tab Gerät, InputDeviceHint auf Aufnahme-Bildschirmen, inputDevicesProvider, activeInputDeviceProvider, inputChoiceStoreProvider)
   ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController), Detailansicht
+  ui/collect/                       Tab "Sammeln": Sammlungen, freie Aufnahme (CollectController), Clips anhören und markieren (ClipLabelScreen), Clips aus Messreihe (CollectFromSeriesSection)
+  core/collect/clip_collector.dart  schneidet das Auswertefenster jedes erkannten Ereignisses (EventDetector) als Clip aus einem laufenden Strom
+  core/collect/collection_manifest.dart  collection.json (Clips, Markierung auto/kein_auto/unklar/offen) und labels.csv
+  data/collection_storage.dart      Ablage <App-Dokumente>/collections/<id>/clip_NNN.wav + collection.json, ZIP-Export, collectFromWav (Messreihe → Clips)
+  audio/clip_player.dart            Wiedergabe der Clips über das Kotlin-Plugin (ClipPlayer)
   core/signal/pcm.dart              StereoBlock, De-/Interleaving (PCM16, Float32)
   core/signal/level.dart            RMS/Peak in dBFS, Clipping-Erkennung
-  audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo)
+  core/signal/stereo_content.dart   Stereo-Inhalt: identisch (Mono), ein Kanal stumm, echtes Stereo
+  audio/stereo_recorder.dart        Dart-Seite des Kotlin-Plugins (Channels, Fähigkeiten, RecordingInfo, InputDevice)
+  audio/input_devices.dart          Auswahl-Logik der Eingabegeräte (Filter, Kalibrier-Name, Wiedererkennung nach Neustecken)
   audio/wav.dart                    WAV-Encoder/-Decoder (16 Bit PCM) und streamender WavFileWriter
   ui/recorder/                      RecorderController (Riverpod Notifier) und RecorderScreen
 android/app/src/main/kotlin/de/nyooom/app/
   MainActivity.kt                   registriert NyooomAudioPlugin
   NyooomAudioPlugin.kt              AudioRecord-Aufnahme, Berechtigung, Effekte
+  ClipPlayback.kt                   MediaPlayer-Wiedergabe der Sammel-Clips (eigener MethodChannel)
 ```
 
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
@@ -130,11 +139,16 @@ android/app/src/main/kotlin/de/nyooom/app/
 - MethodChannel `de.nyooom/audio`:
   - `getCapabilities` → `{unprocessedSupported, agcAvailable, nsAvailable, aecAvailable, deviceModel, sdkInt, microphones: [String]}`
   - `start {sampleRate}` → `{audioSource: "UNPROCESSED"|"VOICE_RECOGNITION", sampleRate, channels, effects: {agc, ns, aec: "unavailable"|"disabled"|"enabled"}, activeMicrophones: [String]}`; fragt bei Bedarf die Mikrofon-Berechtigung an. Fehlercodes: `PERMISSION_DENIED`, `INIT_FAILED`, `ALREADY_RUNNING`, `BUSY`.
-  - `getInputDevices` → `[{id, name, type, isExternal, channelCounts}]` (`AudioManager.getDevices(GET_DEVICES_INPUTS)`)
-  - `start` akzeptiert zusätzlich `inputDeviceId` (→ `AudioRecord.setPreferredDevice`, z. B. USB-Stereo-Interface, technik.pdf 4.3); Antwort enthält `preferredDevice`.
+  - `getInputDevices` → `[{id, name, type, isExternal, channelCounts, sampleRates, channelMasks, channelIndexMasks}]` (`AudioManager.getDevices(GET_DEVICES_INPUTS)`)
+  - `start` akzeptiert zusätzlich `inputDeviceId` (→ `AudioRecord.setPreferredDevice`, z. B. USB-Stereo-Interface, technik.pdf 4.3); Antwort enthält `preferredDevice` sowie `routedDevice`/`routedDeviceId` (`AudioRecord.getRoutedDevice`, das Gerät, von dem Android tatsächlich aufnimmt).
+  - Plattform → Dart: `inputDevicesChanged` (ohne Argumente), sobald ein Eingabegerät angeschlossen oder entfernt wird (`AudioDeviceCallback`). Bewusst über den MethodChannel statt eines eigenen EventChannels: Ohne Plugin (Tests, andere Plattformen) bleibt das still, ein fehlender EventChannel würde einen Fehler melden.
   - `stop`
 - Während einer Aufnahme setzt das Plugin `FLAG_KEEP_SCREEN_ON` am Activity-Fenster und nimmt es bei `stop` wieder weg. Grund: Es gibt keinen Foreground-Service (Task_04), und Android schaltet das Mikrofon stumm, sobald die App nicht mehr sichtbar ist.
+- MethodChannel `de.nyooom/playback` (`ClipPlayback.kt`, Datensammler): `playFile {path}` spielt eine WAV-Datei mit `MediaPlayer` ab (ersetzt eine laufende Wiedergabe), `stopPlayback`; Plattform → Dart `playbackCompleted` am Ende eines Clips. Eigener Kanal, damit der Rückruf-Handler nicht den von `inputDevicesChanged` ersetzt. Bewusst ohne Audio-Paket: keine neue Abhängigkeit.
 - EventChannel `de.nyooom/audio_stream`: `Uint8List`-Blöcke (ca. 20 ms), interleaved 16 Bit little-endian, L/R in der Reihenfolge von `CHANNEL_IN_STEREO`. Vor `start` abonnieren.
+- Eingabegerät: Ausgewählt wird nur im Tab „Gerät“ (`InputDeviceSelector`); die Auswahl gilt app-weit (`inputDeviceChoiceProvider`) für Pegeltest, Kalibrierung und Messreihen. Diese Bildschirme zeigen nur `InputDeviceHint` (aktuelles Gerät plus Warnungen: nicht verbunden, nur Mono). Die Auswahl bleibt über App-Neustarts erhalten: `main` setzt `inputChoiceStoreProvider` auf `FileInputChoiceStore` (`input_device.json` im App-Dokumentenverzeichnis, `lib/data/input_choice_store.dart`); ohne diese Verdrahtung (Tests) hält `MemoryInputChoiceStore` sie nur im Speicher. Eine Aufnahme wartet über `readActiveInputDevice` auf das Einlesen der gespeicherten Auswahl. „Interne Mikrofone (Standard)“ öffnet Android ohne bevorzugtes Gerät; die eingebauten Mikrofone stehen deshalb nicht einzeln in der Liste, ebenso keine Systemquellen (Telefonie, Submix, Echo-Referenz, Tuner). Externe Geräte stehen zuerst. Nach dem Neustecken vergibt Android eine neue Id; die Auswahl folgt dem Gerät über Name und Typ, solange es fehlt, wird intern aufgenommen und die Auswahl zeigt einen Hinweis.
+- Stereo-Nachweis: Die Auswahl zeigt, was Android über das Gerät meldet (`InputDevice.reportedFormat`, Kanäle und Abtastraten), ohne es zu sperren. Der Pegeltest bewertet jede Sekunde den Inhalt beider Kanäle (`RecorderState.stereoContent`, `analyseStereoContent`); siehe `docs/method-notes.md`, „Externe Mikrofone“. `getInputDevices` liefert zusätzlich `sampleRates`, `channelMasks`, `channelIndexMasks`; das Plugin schreibt jedes Gerät ins Logcat (Tag `NyooomAudio`).
+- Kalibrierungen gelten je Telefonmodell und Eingabegerät (`Devices.model` + `Devices.inputDevice`: `intern` oder Produktname des Geräts). Eine Messreihe übernimmt die Kalibrierung des gewählten Eingabegeräts; `metadata.json` enthält `inputDevice`.
 - Rohaufnahmen landen als `nyooom_YYYYMMDD_HHMMSS.wav` in `<App-Dokumentordner>/recordings/`.
 
 ## Offene Entscheidungen

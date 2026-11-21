@@ -77,11 +77,17 @@ final calibrationProvider =
       CalibrationController.new,
     );
 
-/// Latest calibration per device model (for status displays).
+/// Latest calibration per device model and input (`intern` or e.g. the
+/// name of a USB interface), for status displays.
 final latestCalibrationProvider =
-    FutureProvider.family<CalibrationRow?, String>((ref, model) async {
+    FutureProvider.family<CalibrationRow?, ({String model, String input})>((
+      ref,
+      key,
+    ) async {
       final repo = ref.watch(repositoryProvider);
-      return repo.latestCalibration(await repo.ensureDevice(model));
+      return repo.latestCalibration(
+        await repo.ensureDevice(key.model, inputDevice: key.input),
+      );
     });
 
 /// Guided suitability check (technik.pdf 4.4) and calibration of b and Δ0
@@ -143,13 +149,27 @@ class CalibrationController extends Notifier<CalibrationState> {
       _recordings.add(signal);
       final config = ref.read(configProvider);
       final c = speedOfSound(state.temperatureC);
+      // External microphones may be placed further apart than a phone's.
+      final maxSpacing = capture.inputName == 'intern'
+          ? DeviceCheckLimits.defaultMaxMicSpacing
+          : DeviceCheckLimits.externalMaxMicSpacing;
       var right = state.right, left = state.left;
       var processing = state.processing;
       switch (step) {
         case CalibrationStep.clapsRight:
-          right = measureAxis(signal, config: config, speedOfSound: c);
+          right = measureAxis(
+            signal,
+            config: config,
+            speedOfSound: c,
+            maxMicSpacing: maxSpacing,
+          );
         case CalibrationStep.clapsLeft:
-          left = measureAxis(signal, config: config, speedOfSound: c);
+          left = measureAxis(
+            signal,
+            config: config,
+            speedOfSound: c,
+            maxMicSpacing: maxSpacing,
+          );
         case CalibrationStep.constantSignal:
           processing = checkNoProcessing(signal, sampleRate: config.sampleRate);
       }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 
 import '../core/signal/pcm.dart';
@@ -76,6 +78,8 @@ class RecordingInfo {
     required this.channels,
     required this.effects,
     this.preferredDevice,
+    this.routedDevice = '',
+    this.routedDeviceId,
   });
 
   factory RecordingInfo.fromMap(Map<Object?, Object?> map) => RecordingInfo(
@@ -90,6 +94,8 @@ class RecordingInfo {
       final String name when name.isNotEmpty => name,
       _ => null,
     },
+    routedDevice: map['routedDevice'] as String? ?? '',
+    routedDeviceId: (map['routedDeviceId'] as num?)?.toInt(),
   );
 
   final AudioSourceKind audioSource;
@@ -102,9 +108,13 @@ class RecordingInfo {
   /// External input Android routed the recording to; null for the
   /// internal microphones (or when the requested device was not accepted).
   final String? preferredDevice;
+
+  /// Input device Android actually records from (`getRoutedDevice`); empty
+  /// when unknown.
+  final String routedDevice;
+  final int? routedDeviceId;
 }
 
-/// Thrown when the user did not grant the microphone permission.
 /// An audio input (internal microphones or USB interface, technik.pdf 4.3).
 class InputDevice {
   const InputDevice({
@@ -113,6 +123,7 @@ class InputDevice {
     required this.type,
     required this.isExternal,
     this.channelCounts = const [],
+    this.sampleRates = const [],
   });
 
   factory InputDevice.fromMap(Map<Object?, Object?> map) => InputDevice(
@@ -121,11 +132,16 @@ class InputDevice {
     type: (map['type'] as num?)?.toInt() ?? 0,
     isExternal: map['isExternal'] == true,
     channelCounts: [
-      for (final c in map['channelCounts'] as List? ?? const [])
+      for (final c in (map['channelCounts'] as List?) ?? const [])
         (c as num).toInt(),
+    ],
+    sampleRates: [
+      for (final r in (map['sampleRates'] as List?) ?? const [])
+        (r as num).toInt(),
     ],
   );
 
+  /// Platform id; changes when the device is plugged in again.
   final int id;
   final String name;
 
@@ -133,18 +149,51 @@ class InputDevice {
   final int type;
   final bool isExternal;
 
-  /// Channel counts the device reports; empty means any (Android reports
-  /// nothing for many devices).
+  /// Supported channel counts; empty when the device does not report them.
   final List<int> channelCounts;
 
-  /// Whether the device can deliver two channels (two microphones).
-  bool get supportsStereo =>
-      channelCounts.isEmpty || channelCounts.any((c) => c >= 2);
+  /// Supported sample rates in Hz; empty when any rate is accepted.
+  final List<int> sampleRates;
+
+  /// Whether the device reports stereo; null when unknown. Only what the
+  /// device descriptor says: the recording itself is checked separately
+  /// (`analyseStereoContent`).
+  bool? get stereo =>
+      channelCounts.isEmpty ? null : channelCounts.any((c) => c >= 2);
+
+  /// Whether the device can deliver two channels (unknown counts as yes).
+  bool get supportsStereo => stereo ?? true;
+
+  /// What Android reports about the format, for the user.
+  String get reportedFormat {
+    if (channelCounts.isEmpty) return 'Android meldet: Kanäle unbekannt';
+    final counts = channelCounts.join('/');
+    final channels = channelCounts.length == 1 && channelCounts.first == 1
+        ? '1 Kanal'
+        : '$counts Kanäle';
+    final rates = sampleRates.isEmpty ? '' : ', ${sampleRates.join('/')} Hz';
+    return 'Android meldet: $channels$rates';
+  }
+
+  /// Short name of the connection type.
+  String get typeLabel => switch (type) {
+    AndroidInputType.usbDevice || AndroidInputType.usbAccessory => 'USB',
+    AndroidInputType.usbHeadset => 'USB-Headset',
+    AndroidInputType.wiredHeadset => 'Kabel-Headset',
+    AndroidInputType.bluetoothSco || AndroidInputType.bleHeadset => 'Bluetooth',
+    AndroidInputType.lineAnalog || AndroidInputType.lineDigital => 'Line-In',
+    AndroidInputType.hdmi => 'HDMI',
+    AndroidInputType.dock => 'Dock',
+    AndroidInputType.builtinMic => 'intern',
+    _ => 'Typ $type',
+  };
+
+  /// Display text in the selection.
+  String get label => '$name ($typeLabel)';
 }
 
-/// The input a measurement series should use by default: the first
-/// external device with two channels (USB stereo microphone, technik.pdf
-/// 4.3), otherwise null for the internal microphones.
+/// The first external device with two channels (USB stereo microphone,
+/// technik.pdf 4.3), otherwise null for the internal microphones.
 InputDevice? preferredInputDevice(List<InputDevice> devices) {
   for (final d in devices) {
     if (d.isExternal && d.supportsStereo) return d;
@@ -152,6 +201,27 @@ InputDevice? preferredInputDevice(List<InputDevice> devices) {
   return null;
 }
 
+/// Android `AudioDeviceInfo.TYPE_*` values of input devices.
+abstract final class AndroidInputType {
+  static const wiredHeadset = 3;
+  static const lineAnalog = 5;
+  static const lineDigital = 6;
+  static const bluetoothSco = 7;
+  static const hdmi = 9;
+  static const usbDevice = 11;
+  static const usbAccessory = 12;
+  static const dock = 13;
+  static const builtinMic = 15;
+  static const fmTuner = 16;
+  static const tvTuner = 17;
+  static const telephony = 18;
+  static const usbHeadset = 22;
+  static const remoteSubmix = 25;
+  static const bleHeadset = 26;
+  static const echoReference = 28;
+}
+
+/// Thrown when the user did not grant the microphone permission.
 class MicrophonePermissionDeniedException implements Exception {
   const MicrophonePermissionDeniedException([this.message]);
 
@@ -173,8 +243,13 @@ class StereoRecorder {
   static const methodChannelName = 'de.nyooom/audio';
   static const eventChannelName = 'de.nyooom/audio_stream';
 
+  /// Call from the platform when input devices were added or removed.
+  static const devicesChangedMethod = 'inputDevicesChanged';
+
   final MethodChannel _method;
   final EventChannel _events;
+  final _deviceChanges = StreamController<void>.broadcast();
+  bool _handlerSet = false;
 
   Future<AudioCapabilities> capabilities() async {
     final map = await _method.invokeMapMethod<Object?, Object?>(
@@ -183,7 +258,7 @@ class StereoRecorder {
     return AudioCapabilities.fromMap(map ?? const {});
   }
 
-  /// Starts recording; requests the microphone permission if needed.
+  /// All input devices the platform reports.
   Future<List<InputDevice>> inputDevices() async {
     final list = await _method.invokeListMethod<Object?>('getInputDevices');
     return [
@@ -192,6 +267,22 @@ class StereoRecorder {
     ];
   }
 
+  /// One event per change of the input devices (USB plugged in or out).
+  ///
+  /// The platform calls [devicesChangedMethod] on the method channel; unlike
+  /// an event channel this stays silent where the plugin is missing.
+  Stream<void> get deviceChanges {
+    if (!_handlerSet) {
+      _handlerSet = true;
+      _method.setMethodCallHandler((call) async {
+        if (call.method == devicesChangedMethod) _deviceChanges.add(null);
+        return null;
+      });
+    }
+    return _deviceChanges.stream;
+  }
+
+  /// Starts recording; requests the microphone permission if needed.
   Future<RecordingInfo> start({
     required int sampleRate,
     int? inputDeviceId,

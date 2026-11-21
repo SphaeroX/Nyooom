@@ -56,4 +56,23 @@ void main() {
     expect(container.read(calibrationProvider).result, isNull);
     expect(controller.save, throwsStateError);
   });
+
+  test(
+    'an external input is calibrated with a wide microphone spacing',
+    () async {
+      final controller = container.read(calibrationProvider.notifier);
+      controller.begin(
+        SimulatedCalibrationCapture(
+          micSpacing: 0.6,
+          inputName: 'Funkempfänger',
+        ),
+        20,
+      );
+      await controller.record(CalibrationStep.clapsRight);
+      await controller.record(CalibrationStep.clapsLeft);
+      final state = container.read(calibrationProvider);
+      expect(state.stereo!.passed, isTrue);
+      expect(state.result!.micSpacing, closeTo(0.6 * 343.2 / 343, 0.006));
+    },
+  );
 }

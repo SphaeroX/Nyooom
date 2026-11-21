@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../audio/stereo_recorder.dart';
 import '../../core/signal/level.dart';
+import '../../core/signal/stereo_content.dart';
+import '../device/input_device_selection.dart';
 import 'recorder_controller.dart';
 
 /// Raw stereo recording: live level per channel and WAV saving.
@@ -34,8 +36,25 @@ class RecorderScreen extends ConsumerWidget {
               loading: () => const Text('Gerätefähigkeiten werden gelesen …'),
               error: (e, _) => Text('Gerätefähigkeiten unbekannt: $e'),
             ),
+            const SizedBox(height: 8),
+            const InputDeviceHint(),
             const SizedBox(height: 16),
             if (state.info != null) _SessionInfo(info: state.info!),
+            if (state.stereoContent case final content?)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Stereo-Prüfung: ${content.message}',
+                  key: const Key('stereo-content'),
+                  style: TextStyle(
+                    color: content.kind == StereoContentKind.distinct
+                        ? Colors.green
+                        : content.kind == StereoContentKind.tooQuiet
+                        ? null
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             _LevelMeter(
               label: 'Kanal 1 (links)',
@@ -118,7 +137,8 @@ class _SessionInfo extends StatelessWidget {
       '${info.sampleRate} Hz, ${info.channels} Kanäle\n'
       'AGC: ${_effect(info.effects['agc'])} · '
       'NS: ${_effect(info.effects['ns'])} · '
-      'AEC: ${_effect(info.effects['aec'])}',
+      'AEC: ${_effect(info.effects['aec'])}'
+      '${info.routedDevice.isEmpty ? '' : '\nEingang: ${info.routedDevice}'}',
     );
   }
 }

@@ -90,6 +90,9 @@ class SimulatedStereoRecorder implements StereoRecorder {
   ];
 
   @override
+  Stream<void> get deviceChanges => const Stream.empty();
+
+  @override
   Future<RecordingInfo> start({
     required int sampleRate,
     int? inputDeviceId,

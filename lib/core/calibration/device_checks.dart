@@ -19,6 +19,16 @@ class DeviceCheckLimits {
   /// Search range for the TDOA while b is still unknown (internal mics).
   static const defaultMaxMicSpacing = 0.3;
 
+  /// Search range for external inputs (e.g. two wireless lavaliers on a
+  /// bar), which may be placed further apart than the phone microphones.
+  static const externalMaxMicSpacing = 1.0;
+
+  /// Recommended spacing: phone microphones, external microphones. Above
+  /// the external maximum the far-field model Δ = b/c·u loses accuracy for
+  /// lanes a few metres away.
+  static const phoneSpacingRange = (min: 0.10, max: 0.20);
+  static const externalSpacingRange = (min: 0.10, max: 0.50);
+
   /// Below this spacing the two maxima count as "both at zero" (mono).
   static const minMicSpacing = 0.05;
 
@@ -326,6 +336,29 @@ CalibrationResult calibrate({
     maxTdoa: maxTdoa,
     swapChannels: swapChannels,
   );
+}
+
+/// Hint when the calibrated spacing [micSpacing] lies outside the
+/// recommended range; null when it is fine.
+String? spacingHint(double micSpacing, {required bool external}) {
+  final range = external
+      ? DeviceCheckLimits.externalSpacingRange
+      : DeviceCheckLimits.phoneSpacingRange;
+  String cm(double m) => (m * 100).toStringAsFixed(0);
+  if (micSpacing < range.min) {
+    return 'Hinweis: b liegt unter ${cm(range.min)} cm. Aufstellung und '
+        'Klatschposition prüfen; bei kleinem Abstand wird die Messung '
+        'ungenau.';
+  }
+  if (micSpacing > range.max) {
+    return external
+        ? 'Hinweis: b liegt über ${cm(range.max)} cm. Das Messmodell nutzt '
+              'die Fernfeld-Näherung (b klein gegen den Spurabstand); die '
+              'Mikrofone näher zusammenstellen.'
+        : 'Hinweis: b liegt außerhalb von ${cm(range.min)} bis '
+              '${cm(range.max)} cm. Aufstellung und Klatschposition prüfen.';
+  }
+  return null;
 }
 
 String _us(double seconds) => '${(seconds * 1e6).toStringAsFixed(0)} µs';

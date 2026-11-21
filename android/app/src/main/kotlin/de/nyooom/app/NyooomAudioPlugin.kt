@@ -3,6 +3,7 @@ package de.nyooom.app
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -38,8 +39,11 @@ import io.flutter.plugin.common.PluginRegistry
  * While recording, the screen is kept on: without a foreground service
  * Android silences the microphone once the app is no longer visible.
  *
- * Method channel `de.nyooom/audio`: getCapabilities, start({sampleRate}), stop.
+ * Method channel `de.nyooom/audio`: getCapabilities, getInputDevices,
+ * start({sampleRate, inputDeviceId}), stop.
  * Event channel `de.nyooom/audio_stream`: ByteArray blocks.
+ * Calls `inputDevicesChanged` on the method channel when input devices are
+ * added or removed (USB interface plugged in or out).
  */
 class NyooomAudioPlugin :
     FlutterPlugin,
@@ -51,6 +55,7 @@ class NyooomAudioPlugin :
     companion object {
         const val METHOD_CHANNEL = "de.nyooom/audio"
         const val EVENT_CHANNEL = "de.nyooom/audio_stream"
+        const val DEVICES_CHANGED_METHOD = "inputDevicesChanged"
         private const val PERMISSION_REQUEST_CODE = 4711
         private const val TAG = "NyooomAudio"
 
@@ -61,6 +66,8 @@ class NyooomAudioPlugin :
     private lateinit var context: Context
     private var methodChannel: MethodChannel? = null
     private var eventChannel: EventChannel? = null
+    private var clipPlayback: ClipPlayback? = null
+    private var deviceCallback: AudioDeviceCallback? = null
     private var activityBinding: ActivityPluginBinding? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -85,12 +92,49 @@ class NyooomAudioPlugin :
         eventChannel = EventChannel(binding.binaryMessenger, EVENT_CHANNEL).also {
             it.setStreamHandler(this)
         }
+        clipPlayback = ClipPlayback(binding.binaryMessenger)
+        registerDeviceCallback()
+    }
+
+    /** Tells Dart when input devices are added or removed (USB hot plug). */
+    private fun registerDeviceCallback() {
+        unregisterDeviceCallback()
+        val callback = object : AudioDeviceCallback() {
+            private var initial = true
+
+            override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
+                // Android reports all present devices once on registration.
+                if (initial) {
+                    initial = false
+                    return
+                }
+                if (addedDevices.any { it.isSource }) notifyDevicesChanged()
+            }
+
+            override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
+                if (removedDevices.any { it.isSource }) notifyDevicesChanged()
+            }
+        }
+        audioManager().registerAudioDeviceCallback(callback, mainHandler)
+        deviceCallback = callback
+    }
+
+    private fun notifyDevicesChanged() {
+        methodChannel?.invokeMethod(DEVICES_CHANGED_METHOD, null)
+    }
+
+    private fun unregisterDeviceCallback() {
+        deviceCallback?.let { audioManager().unregisterAudioDeviceCallback(it) }
+        deviceCallback = null
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         stopRecording()
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
+        unregisterDeviceCallback()
+        clipPlayback?.dispose()
+        clipPlayback = null
         methodChannel = null
         eventChannel = null
     }
@@ -174,9 +218,22 @@ class NyooomAudioPlugin :
                 "type" to d.type,
                 "isExternal" to (d.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
                     d.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
+                    d.type == AudioDeviceInfo.TYPE_USB_ACCESSORY ||
                     d.type == AudioDeviceInfo.TYPE_WIRED_HEADSET),
                 "channelCounts" to d.channelCounts.toList(),
-            )
+                "sampleRates" to d.sampleRates.toList(),
+                "channelMasks" to d.channelMasks.toList(),
+                "channelIndexMasks" to d.channelIndexMasks.toList(),
+            ).also {
+                Log.i(
+                    TAG,
+                    "Input ${d.id} '${d.productName}' type=${d.type} " +
+                        "counts=${d.channelCounts.toList()} " +
+                        "masks=${d.channelMasks.toList()} " +
+                        "indexMasks=${d.channelIndexMasks.toList()} " +
+                        "rates=${d.sampleRates.toList()}",
+                )
+            }
         }
 
     private fun describe(info: MicrophoneInfo): String {
@@ -329,7 +386,13 @@ class NyooomAudioPlugin :
         } else {
             emptyList()
         }
-        Log.i(TAG, "Recording: source=$sourceName rate=${record.sampleRate} effects=$effectStates")
+        // setPreferredDevice is only a wish; report where Android routed.
+        val routed = record.routedDevice
+        Log.i(
+            TAG,
+            "Recording: source=$sourceName rate=${record.sampleRate} " +
+                "device=${routed?.productName} effects=$effectStates",
+        )
         result.success(
             mapOf(
                 "audioSource" to sourceName,
@@ -338,6 +401,8 @@ class NyooomAudioPlugin :
                 "effects" to effectStates,
                 "activeMicrophones" to activeMicrophones,
                 "preferredDevice" to preferredDevice,
+                "routedDevice" to (routed?.productName?.toString() ?: ""),
+                "routedDeviceId" to routed?.id,
             ),
         )
     }

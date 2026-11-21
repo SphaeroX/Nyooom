@@ -56,7 +56,7 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 - [ ] Schritt-für-Schritt-Assistent (seit 2026-11-16): reichen 5 s Countdown für die 3 m, erkennt die 5-s-Aufnahme drei Klatscher, ist der grüne/orange Bildschirm aus 3 m erkennbar?
 - [ ] b liegt im Bereich 0,10 bis 0,20 m; Werte für b und Δ0 notieren.
 - [ ] Ergebnis "liefert das Gerät zwei unbearbeitete Kanäle?" in `Roadmap/README.md` eintragen.
-- [ ] Optional: USB-Stereo-Interface über die Eingabegeräte-Auswahl testen.
+- [ ] Optional: USB-Stereo-Interface über die Eingabegeräte-Auswahl testen (Tab „Gerät“: erscheint nach dem Anstecken ohne Neustart, Pegeltest zeigt „Eingang: <Gerät>“, Kalibrierung wird getrennt von „intern“ gespeichert, Abziehen fällt mit Hinweis auf intern zurück). Stereo-Prüfung im Pegeltest: an Sender 1 reiben → nur ein Balken, „echtes Stereo“ bei Umgebungsgeräusch; Logcat-Zeile `NyooomAudio Input …` mit Kanälen/Masken notieren.
 
 ### Aus Task_06: Sichtprüfung (erster Entscheidungspunkt der PDF)
 

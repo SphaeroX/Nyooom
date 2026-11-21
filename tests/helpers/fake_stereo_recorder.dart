@@ -54,6 +54,14 @@ class FakeStereoRecorder implements StereoRecorder {
   @override
   Future<List<InputDevice>> inputDevices() async => devices;
 
+  final _deviceChanges = StreamController<void>.broadcast();
+
+  /// Simulates plugging a device in or out.
+  void emitDeviceChange() => _deviceChanges.add(null);
+
+  @override
+  Stream<void> get deviceChanges => _deviceChanges.stream;
+
   @override
   Future<RecordingInfo> start({
     required int sampleRate,
@@ -91,6 +99,20 @@ Uint8List sinePcm16({
     final s = math.sin(2 * math.pi * 1000 * n / sampleRate);
     samples[2 * n] = (leftAmplitude * s * 32767).round();
     samples[2 * n + 1] = (rightAmplitude * s * 32767).round();
+  }
+  return samples.buffer.asUint8List();
+}
+
+/// Interleaved 16-bit PCM with independent noise on both channels.
+Uint8List noisePcm16({
+  int seed = 1,
+  double amplitude = 0.2,
+  int frames = 4800,
+}) {
+  final rnd = math.Random(seed);
+  final samples = Int16List(frames * 2);
+  for (var i = 0; i < samples.length; i++) {
+    samples[i] = ((rnd.nextDouble() * 2 - 1) * amplitude * 32767).round();
   }
   return samples.buffer.asUint8List();
 }

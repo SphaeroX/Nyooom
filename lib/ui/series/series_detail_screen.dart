@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/site/site.dart' show laneDirectionLabel;
 import '../../data/repository.dart';
+import '../collect/collect_screens.dart';
 import '../evaluation/pass_widgets.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
@@ -14,7 +15,10 @@ typedef SeriesSection = Widget Function(BuildContext context, StoredSeries s);
 
 /// Sections added by later tasks (evaluation, statistics, export, …).
 final seriesSectionsProvider = Provider<List<SeriesSection>>(
-  (ref) => [(context, s) => EvaluationSection(series: s)],
+  (ref) => [
+    (context, s) => EvaluationSection(series: s),
+    (context, s) => CollectFromSeriesSection(series: s),
+  ],
 );
 
 /// Detail of one measurement series.

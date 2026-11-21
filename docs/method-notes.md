@@ -83,6 +83,13 @@ Der Fehler von κ liegt bei etwa 1 % (quadratisches Mittel). Der Fehler der Gesc
 - Größerer Abstand heißt kleineres κ und leisere Fahrzeuge: siehe Suchbereich κ und Grundpegel.
 - An der Fassade ist es oft windiger als am Stativ. Windschutz verwenden.
 
+## Externe Mikrofone (USB, Funk-Ansteckmikrofone)
+
+- Ob ein Gerät Stereo liefert, entscheidet die Aufnahme, nicht die Geräteangabe. `AudioDeviceInfo.getChannelCounts()` ist nur ein Hinweis; die App zeigt ihn an („Android meldet: …“), sperrt aber nichts. Der Pegeltest prüft jede Sekunde mit `analyseStereoContent` (`lib/core/signal/stereo_content.dart`): Korrelation bei Verschiebung 0 ab 0,999 → identische Kanäle (doppeltes Mono), ein Kanal mehr als 30 dB leiser → stummer Kanal, sonst echtes Stereo. Die Kalibrierprüfung 1 (zwei getrennte Maxima) bleibt der eigentliche Nachweis.
+- Funkempfänger mit zwei Sendern mischen über USB-C oft beide Sender auf Mono, solange sie nicht in den Stereo-Modus geschaltet sind. Dann sind beide Kanäle identisch. Abhilfe am Empfänger, nicht in der App.
+- Zwei Ansteckmikrofone dürfen weiter auseinander stehen als die Telefonmikrofone. Der Kalibrier-Assistent sucht bei externen Eingängen bis b = 1 m (`DeviceCheckLimits.externalMaxMicSpacing`, statt 0,3 m). Empfohlen sind 10 bis 50 cm: Das Modell Δ = b/c·u ist eine Fernfeld-Näherung, b muss klein gegen den Spurabstand bleiben (`spacingHint`).
+- Bei Funkstrecken kann sich die Laufzeitdifferenz der beiden Sender nach dem Neukoppeln ändern. Δ0 deshalb nach jedem Einschalten neu kalibrieren; die Mikrofone fest montieren (Stange), denn b gilt nur für diese Aufstellung.
+
 ## Parameter der Spurtrennung
 
 | Parameter | Startwert | Bedeutung |
@@ -98,3 +105,7 @@ In der Simulation liegt die mittlere Korrelation einer echten zweiten Spur bei 0
 
 ---
 Pflege: Bei Änderungen am Auswerteverfahren diese Datei sofort aktualisieren.
+
+## Datensammler (Lernmaterial)
+
+Tab „Sammeln“: Eine Sammlung nimmt mit dem app-weit gewählten Eingabegerät frei auf. `ClipCollector` lässt die Ereigniserkennung aus technik.pdf 5.1 mitlaufen (nur dominante Maxima, wie `detectEvents`) und schneidet je Ereignis das Auswertefenster (±`eventWindowS` um das Maximum) als Stereo-WAV heraus. Im Speicher bleiben nur `3 · eventWindowS + eventLevelSmoothingS` Audio; die übrige Aufnahme wird nicht gespeichert. Erkannt wird alles, was `eventThresholdDb` über den Rauschboden steigt, also auch Nicht-Fahrzeuge: genau die soll der Nutzer beim Anhören als „kein Auto“ markieren. Dieselben Clips lassen sich nachträglich aus einer Messreihe mit Rohaudio erzeugen (Detailansicht). Export: ZIP mit allen Clips, `collection.json` (Gerät, Eingabegerät, Pegel, Rauschboden, Dauer, Überlappung, Markierung) und `labels.csv`. Damit lassen sich Schwelle, Fensterlänge und später eine Klassifikation Fahrzeug/kein Fahrzeug an echten Daten prüfen.

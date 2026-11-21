@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../audio/stereo_recorder.dart';
 import '../../core/model/acoustics.dart';
 import '../../core/signal/level.dart';
 import '../../core/site/site.dart';
 import '../../data/repository.dart';
+import '../device/input_device_selection.dart';
 import '../providers.dart';
 import '../sites/site_form.dart';
 import '../sites/site_screens.dart';
@@ -127,85 +127,12 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
   final _temperature = TextEditingController(text: '15');
   bool? _simulate;
   bool _saveRaw = true;
-  late final Future<List<InputDevice>> _devices = _loadDevices();
-  int? _deviceId;
-  bool _deviceChosen = false;
-
-  Future<List<InputDevice>> _loadDevices() async {
-    try {
-      final devices = await ref.read(stereoRecorderProvider).inputDevices();
-      if (!_deviceChosen && mounted) {
-        setState(() => _deviceId = preferredInputDevice(devices)?.id);
-      }
-      return devices;
-    } catch (_) {
-      return const [];
-    }
-  }
 
   @override
   void dispose() {
     _temperature.dispose();
     super.dispose();
   }
-
-  /// Internal microphones or an external USB stereo microphone
-  /// (technik.pdf 4.3); external stereo devices are preselected.
-  Widget _inputSelection() => FutureBuilder<List<InputDevice>>(
-    future: _devices,
-    builder: (context, snapshot) {
-      final devices = snapshot.data ?? const <InputDevice>[];
-      final external = [
-        for (final d in devices)
-          if (d.isExternal) d,
-      ];
-      InputDevice? selected;
-      for (final d in external) {
-        if (d.id == _deviceId) selected = d;
-      }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<int?>(
-            key: ValueKey('input-device-${selected?.id}'),
-            initialValue: selected?.id,
-            decoration: const InputDecoration(
-              labelText: 'Mikrofon',
-              helperText: 'USB-Stereomikrofon anstecken, dann hier wählen',
-            ),
-            items: [
-              const DropdownMenuItem(
-                value: null,
-                child: Text('Eingebaute Mikrofone'),
-              ),
-              for (final d in external)
-                DropdownMenuItem(
-                  value: d.id,
-                  child: Text('${d.name} (USB/extern)'),
-                ),
-            ],
-            onChanged: (id) => setState(() {
-              _deviceChosen = true;
-              _deviceId = id;
-            }),
-          ),
-          if (selected != null && !selected.supportsStereo)
-            Text(
-              'Dieses Gerät meldet nur einen Kanal. Für die Messung werden '
-              'zwei Mikrofone (Stereo) gebraucht.',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          if (selected != null)
-            const Text(
-              'Für ein externes Mikrofon gilt eine eigene Kalibrierung '
-              '(Tab „Gerät“, dort dasselbe Eingabegerät wählen). Ohne sie '
-              'rechnet die App mit 15 cm Mikrofonabstand.',
-            ),
-          const SizedBox(height: 8),
-        ],
-      );
-    },
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +216,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
             value: simulate,
             onChanged: (v) => setState(() => _simulate = v),
           ),
-          if (!simulate) _inputSelection(),
+          if (!simulate) const InputDeviceHint(),
           SwitchListTile(
             title: const Text('Rohaudio speichern'),
             subtitle: const Text('WAV-Datei für spätere Auswertung'),
@@ -301,20 +228,14 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
             key: const Key('start-series'),
             onPressed: site == null || temperature == null
                 ? null
-                : () async {
-                    InputDevice? input;
-                    if (!simulate) {
-                      for (final d in await _devices) {
-                        if (d.id == _deviceId) input = d;
-                      }
-                    }
-                    if (!context.mounted) return;
+                : () {
+                    final device = ref.read(activeInputDeviceProvider);
                     final request = SeriesStartRequest(
                       siteId: site!.id,
                       temperatureC: temperature,
                       simulate: simulate,
                       saveRawAudio: _saveRaw,
-                      inputDevice: input,
+                      inputDevice: device,
                     );
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute<void>(

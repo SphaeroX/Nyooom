@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../calibration/calibration_screen.dart';
 import '../help/help_screen.dart';
+import '../collect/collect_screens.dart';
 import '../reference/reference_screens.dart';
 import '../series/series_screens.dart';
 import '../sites/site_screens.dart';
@@ -21,6 +22,11 @@ final homeTabsProvider = Provider<List<HomeTab>>(
     HomeTab('Messreihen', Icons.list_alt, (_) => const SeriesListScreen()),
     HomeTab('Standorte', Icons.place_outlined, (_) => const SiteListScreen()),
     HomeTab('Referenz', Icons.gps_fixed, (_) => const ReferenceListScreen()),
+    HomeTab(
+      'Sammeln',
+      Icons.library_music_outlined,
+      (_) => const CollectionListScreen(),
+    ),
     HomeTab('Gerät', Icons.mic_none, (_) => const DeviceScreen()),
     HomeTab('Hilfe', Icons.help_outline, (_) => const HelpScreen()),
   ],

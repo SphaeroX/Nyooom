@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nyooom/audio/stereo_recorder.dart';
 import 'package:nyooom/audio/wav.dart';
 import 'package:nyooom/core/site/site.dart';
 import 'package:nyooom/data/database.dart';
@@ -155,4 +156,57 @@ void main() {
     expect(metadata.calibration!.micSpacing, 0.147);
     expect(metadata.calibration!.channelOffset, 5e-6);
   });
+
+  test(
+    'a USB input records from that device with its own calibration',
+    () async {
+      final repo = NyooomRepository(db);
+      final internal = await repo.ensureDevice('Fake Phone');
+      await repo.addCalibration(
+        CalibrationsCompanion.insert(
+          deviceId: internal,
+          micSpacingM: 0.147,
+          channelOffsetS: 5e-6,
+          temperatureC: 18,
+          createdAtUtcMs: 1000,
+        ),
+      );
+      final usbDevice = await repo.ensureDevice(
+        'Fake Phone',
+        inputDevice: 'USB Audio',
+      );
+      final usbCalibration = await repo.addCalibration(
+        CalibrationsCompanion.insert(
+          deviceId: usbDevice,
+          micSpacingM: 0.40,
+          channelOffsetS: 1e-6,
+          temperatureC: 18,
+          createdAtUtcMs: 900,
+        ),
+      );
+      final siteId = await createSite();
+      final controller = container.read(seriesRecordingProvider.notifier);
+      await controller.start(
+        SeriesStartRequest(
+          siteId: siteId,
+          temperatureC: 15,
+          inputDevice: const InputDevice(
+            id: 9,
+            name: 'USB Audio',
+            type: 11,
+            isExternal: true,
+          ),
+        ),
+      );
+      final id = container.read(seriesRecordingProvider).seriesId!;
+      await controller.stop();
+      expect(recorder.lastInputDeviceId, 9);
+      final row = (await repo.series(id))!.row;
+      expect(row.deviceId, usbDevice);
+      expect(row.calibrationId, usbCalibration);
+      final metadata = (await SeriesStorage(dir).readMetadata(id))!;
+      expect(metadata.inputDevice, 'USB Audio');
+      expect(metadata.calibration!.micSpacing, 0.40);
+    },
+  );
 }

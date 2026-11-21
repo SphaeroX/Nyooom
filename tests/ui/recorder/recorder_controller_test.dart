@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nyooom/audio/stereo_recorder.dart';
 import 'package:nyooom/audio/wav.dart';
 import 'package:nyooom/core/signal/level.dart';
+import 'package:nyooom/core/signal/stereo_content.dart';
+import 'package:nyooom/ui/device/input_device_selection.dart';
 import 'package:nyooom/ui/recorder/recorder_controller.dart';
 
 import '../../helpers/fake_stereo_recorder.dart';
@@ -123,4 +125,47 @@ void main() {
       4800,
     );
   });
+
+  test('the level test records from the chosen input device', () async {
+    final fake = FakeStereoRecorder()
+      ..devices = const [
+        InputDevice(id: 9, name: 'USB Audio', type: 11, isExternal: true),
+      ];
+    final container = makeContainer(fake);
+    final devices = await container.read(inputDevicesProvider.future);
+    container.read(inputDeviceChoiceProvider.notifier).choose(devices.single);
+
+    await container.read(recorderControllerProvider.notifier).start();
+    expect(recorder.lastInputDeviceId, 9);
+  });
+
+  test(
+    'the level test tells a duplicated mono signal from real stereo',
+    () async {
+      final container = makeContainer(FakeStereoRecorder());
+      final controller = container.read(recorderControllerProvider.notifier);
+      await controller.start();
+      expect(container.read(recorderControllerProvider).stereoContent, isNull);
+
+      // One second of the same signal on both channels (scaled): mono.
+      for (var i = 0; i < 10; i++) {
+        recorder.emit(sinePcm16(leftAmplitude: 0.3, rightAmplitude: 0.15));
+      }
+      await flush();
+      expect(
+        container.read(recorderControllerProvider).stereoContent?.kind,
+        StereoContentKind.identical,
+      );
+
+      // Then two independent signals: distinct channels.
+      for (var i = 0; i < 10; i++) {
+        recorder.emit(noisePcm16(seed: i));
+      }
+      await flush();
+      expect(
+        container.read(recorderControllerProvider).stereoContent?.kind,
+        StereoContentKind.distinct,
+      );
+    },
+  );
 }

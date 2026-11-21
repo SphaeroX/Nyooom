@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyooom/audio/stereo_recorder.dart';
@@ -173,5 +175,61 @@ void main() {
     mockMethods((call) async => {'audioSource': 'UNPROCESSED'});
     await StereoRecorder().start(sampleRate: 48000, inputDeviceId: 9);
     expect(calls.single.arguments, {'sampleRate': 48000, 'inputDeviceId': 9});
+  });
+
+  test('input devices report their channel counts', () async {
+    mockMethods(
+      (call) async => [
+        {
+          'id': 9,
+          'name': 'USB Audio',
+          'type': 11,
+          'isExternal': true,
+          'channelCounts': [1, 2],
+          'sampleRates': [48000],
+        },
+      ],
+    );
+    final devices = await StereoRecorder().inputDevices();
+    expect(devices.single.channelCounts, [1, 2]);
+    expect(devices.single.sampleRates, [48000]);
+  });
+
+  test('start reports the device Android actually routed to', () async {
+    mockMethods(
+      (call) async => {
+        'audioSource': 'UNPROCESSED',
+        'preferredDevice': 'USB Audio',
+        'routedDevice': 'USB Audio',
+        'routedDeviceId': 9,
+      },
+    );
+    final info = await StereoRecorder().start(
+      sampleRate: 48000,
+      inputDeviceId: 9,
+    );
+    expect(info.routedDevice, 'USB Audio');
+    expect(info.routedDeviceId, 9);
+  });
+
+  test('device changes (USB plugged in or out) arrive as events', () async {
+    final recorder = StereoRecorder();
+    var changes = 0;
+    final sub = recorder.deviceChanges.listen((_) => changes++);
+    addTearDown(sub.cancel);
+    Future<void> platformCalls(String method) {
+      final done = Completer<void>();
+      messenger.handlePlatformMessage(
+        StereoRecorder.methodChannelName,
+        const StandardMethodCodec().encodeMethodCall(MethodCall(method)),
+        (_) => done.complete(),
+      );
+      return done.future;
+    }
+
+    await platformCalls(StereoRecorder.devicesChangedMethod);
+    await platformCalls(StereoRecorder.devicesChangedMethod);
+    await Future<void>.delayed(Duration.zero);
+    expect(changes, 2);
   });
 }

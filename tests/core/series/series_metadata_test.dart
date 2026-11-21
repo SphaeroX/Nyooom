@@ -67,4 +67,13 @@ void main() {
     final json = metadata.toJson()..['calibration'] = null;
     expect(SeriesMetadata.fromJson(json).calibration, isNull);
   });
+
+  test('stores the input device; older files default to internal', () {
+    final json = metadata.toJson();
+    expect(json['inputDevice'], 'intern');
+    json.remove('inputDevice');
+    expect(SeriesMetadata.fromJson(json).inputDevice, 'intern');
+    json['inputDevice'] = 'USB Audio';
+    expect(SeriesMetadata.fromJson(json).inputDevice, 'USB Audio');
+  });
 }

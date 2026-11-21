@@ -85,16 +85,17 @@ class SimulatedCalibrationCapture implements CalibrationCapture {
     this.micSpacing = 0.15,
     this.channelOffset = 4e-6,
     this.speedOfSound = 343,
+    this.inputName = 'intern',
   });
 
+  @override
+  final String inputName;
   final double micSpacing;
   final double channelOffset;
   final double speedOfSound;
 
   @override
   String get deviceModel => 'Simulation';
-  @override
-  String get inputName => 'intern';
 
   @override
   Future<StereoBlock> capture(CalibrationStep step, Duration duration) async {

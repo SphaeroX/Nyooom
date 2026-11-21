@@ -2,10 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../audio/capture.dart';
+import '../../audio/input_devices.dart';
 import '../../audio/simulated_stereo_recorder.dart';
-import '../../audio/stereo_recorder.dart';
 import '../../core/calibration/device_checks.dart';
 import '../../data/database.dart';
+import '../device/input_device_selection.dart';
 import '../providers.dart';
 import '../recorder/recorder_screen.dart';
 import '../series/series_screens.dart' show formatDate;
@@ -35,10 +36,15 @@ class DeviceScreen extends ConsumerWidget {
                 ref.read(simulationDefaultProvider.notifier).set(v),
           ),
           const SizedBox(height: 8),
-          const CalibrationStatusCard(
-            model: SimulatedStereoRecorder.deviceModel,
-          ),
-          if (!simulated) const _PlatformCalibrationStatus(),
+          if (simulated)
+            const CalibrationStatusCard(
+              model: SimulatedStereoRecorder.deviceModel,
+            )
+          else ...[
+            const InputDeviceSelector(),
+            const SizedBox(height: 8),
+            const _PlatformCalibrationStatus(),
+          ],
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () => Navigator.of(context).push(
@@ -69,27 +75,41 @@ class _PlatformCalibrationStatus extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caps = ref.watch(capabilitiesProvider);
+    final input = calibrationInputName(ref.watch(activeInputDeviceProvider));
     return caps.when(
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Text('Gerät nicht abfragbar: $e'),
-      data: (c) => CalibrationStatusCard(model: c.deviceModel),
+      data: (c) => CalibrationStatusCard(model: c.deviceModel, input: input),
     );
   }
 }
 
-/// Shows the latest calibration of [model].
+/// Shows the latest calibration of [model] with [input].
 class CalibrationStatusCard extends ConsumerWidget {
-  const CalibrationStatusCard({super.key, required this.model});
+  const CalibrationStatusCard({
+    super.key,
+    required this.model,
+    this.input = 'intern',
+  });
 
   final String model;
 
+  /// `intern` or the name of the external input device.
+  final String input;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final latest = ref.watch(latestCalibrationProvider(model));
+    final latest = ref.watch(
+      latestCalibrationProvider((model: model, input: input)),
+    );
     return Card(
       child: ListTile(
         leading: const Icon(Icons.straighten),
-        title: Text('Kalibrierung $model'),
+        title: Text(
+          input == 'intern'
+              ? 'Kalibrierung $model'
+              : 'Kalibrierung $model · $input',
+        ),
         subtitle: latest.when(
           loading: () => const Text('…'),
           error: (e, _) => Text('Fehler: $e'),
@@ -125,7 +145,6 @@ const _pageCount = 6;
 class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
   final _temperature = TextEditingController(text: '15');
   bool? _simulate;
-  InputDevice? _device;
   int _page = 0;
 
   @override
@@ -143,16 +162,16 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
     } else {
       final recorder = ref.read(stereoRecorderProvider);
       final caps = await recorder.capabilities();
+      final device = ref.read(activeInputDeviceProvider);
       capture = RecorderCalibrationCapture(
         recorder: recorder,
         deviceModel: caps.deviceModel,
         sampleRate: ref.read(configProvider).sampleRate,
-        inputDeviceId: _device?.id,
-        inputName: _device == null || !_device!.isExternal
-            ? 'intern'
-            : _device!.name,
+        inputDeviceId: device?.id,
+        inputName: calibrationInputName(device),
       );
     }
+    if (!mounted) return;
     ref.read(calibrationProvider.notifier).begin(capture, temperature);
   }
 
@@ -301,6 +320,7 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
             ),
           ),
           const SizedBox(height: 8),
+          if (!simulate) const InputDeviceHint(),
           ExpansionTile(
             title: const Text('Erweiterte Einstellungen'),
             tilePadding: EdgeInsets.zero,
@@ -311,7 +331,6 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
                 value: simulate,
                 onChanged: (v) => setState(() => _simulate = v),
               ),
-              if (!simulate) _deviceSelection(),
             ],
           ),
         ];
@@ -471,36 +490,6 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
         child: const Text('Zurück'),
       ),
     ];
-  }
-
-  Widget _deviceSelection() {
-    return FutureBuilder<List<InputDevice>>(
-      future: ref.read(stereoRecorderProvider).inputDevices(),
-      builder: (context, snapshot) {
-        final devices = snapshot.data ?? const <InputDevice>[];
-        return DropdownButtonFormField<int?>(
-          initialValue: _device?.id,
-          decoration: const InputDecoration(labelText: 'Eingabegerät'),
-          items: [
-            const DropdownMenuItem(
-              value: null,
-              child: Text('Standard (intern)'),
-            ),
-            for (final d in devices)
-              DropdownMenuItem(
-                value: d.id,
-                child: Text('${d.name}${d.isExternal ? ' (extern)' : ''}'),
-              ),
-          ],
-          onChanged: (id) => setState(() {
-            _device = null;
-            for (final d in devices) {
-              if (d.id == id) _device = d;
-            }
-          }),
-        );
-      },
-    );
   }
 
   Widget _check(String label, CheckResult? result) => ListTile(
