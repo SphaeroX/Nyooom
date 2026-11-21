@@ -32,7 +32,7 @@ InputChoiceStore fileInputChoiceStore(Ref ref) =>
       return File('${dir.path}${Platform.pathSeparator}input_device.json');
     });
 
-/// The input the user chose in the "GerÃ¤t" tab; null means the internal
+/// The input the user chose in the "Gerät" tab; null means the internal
 /// microphones. Applies app-wide (level test, calibration, measurement
 /// series) and is restored at app start.
 final inputDeviceChoiceProvider =
@@ -110,7 +110,7 @@ Future<InputDevice?> readActiveInputDevice(Ref ref) async {
   return ref.read(activeInputDeviceProvider);
 }
 
-/// Dropdown for the app-wide input device, only in the "GerÃ¤t" tab.
+/// Dropdown for the app-wide input device, only in the "Gerät" tab.
 class InputDeviceSelector extends ConsumerWidget {
   const InputDeviceSelector({super.key});
 
@@ -134,7 +134,7 @@ class InputDeviceSelector extends ConsumerWidget {
                   key: const Key('input-device'),
                   initialValue: active?.id,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'EingabegerÃ¤t'),
+                  decoration: const InputDecoration(labelText: 'Eingabegerät'),
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -157,7 +157,7 @@ class InputDeviceSelector extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'GerÃ¤teliste aktualisieren',
+              tooltip: 'Geräteliste aktualisieren',
               onPressed: () => ref.invalidate(inputDevicesProvider),
               icon: const Icon(Icons.refresh),
             ),
@@ -166,8 +166,8 @@ class InputDeviceSelector extends ConsumerWidget {
         const _DeviceStatus(showFormat: true),
         if (devices.hasValue && list.isEmpty && choice == null)
           const Text(
-            'Kein externes GerÃ¤t erkannt. Ein USB-Interface wird nach dem '
-            'AnschlieÃŸen automatisch angezeigt.',
+            'Kein externes Gerät erkannt. Ein USB-Interface wird nach dem '
+            'Anschließen automatisch angezeigt.',
           ),
       ],
     );
@@ -175,7 +175,7 @@ class InputDeviceSelector extends ConsumerWidget {
 }
 
 /// Names the app-wide input device on screens that record; it is changed
-/// only in the "GerÃ¤t" tab.
+/// only in the "Gerät" tab.
 class InputDeviceHint extends ConsumerWidget {
   const InputDeviceHint({super.key});
 
@@ -193,9 +193,9 @@ class InputDeviceHint extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'EingabegerÃ¤t: '
+                  'Eingabegerät: '
                   '${active?.label ?? 'Interne Mikrofone'} '
-                  '(Ã¤ndern im Tab â€žGerÃ¤tâ€œ)',
+                  '(ändern im Tab „Gerät“)',
                   key: const Key('input-device-hint'),
                 ),
               ),
@@ -223,24 +223,24 @@ class _DeviceStatus extends ConsumerWidget {
     final error = Theme.of(context).colorScheme.error;
     if (devices.hasError) {
       return Text(
-        'GerÃ¤teliste nicht abfragbar: ${devices.error}',
+        'Geräteliste nicht abfragbar: ${devices.error}',
         style: TextStyle(color: error),
       );
     }
     if (choice != null && active == null) {
       return Text(
         '${choice.name} ist nicht verbunden. Aufgenommen wird mit den '
-        'internen Mikrofonen, bis das GerÃ¤t wieder angeschlossen ist.',
+        'internen Mikrofonen, bis das Gerät wieder angeschlossen ist.',
         style: TextStyle(color: error),
       );
     }
     if (active?.stereo == false) {
       return Text(
-        '${active!.reportedFormat}. Das ist nur die Angabe des GerÃ¤ts; '
-        'ob wirklich zwei getrennte KanÃ¤le ankommen, zeigt die '
-        'Stereo-PrÃ¼fung im Pegeltest. FunkempfÃ¤nger mit zwei Sendern '
+        '${active!.reportedFormat}. Das ist nur die Angabe des Geräts; '
+        'ob wirklich zwei getrennte Kanäle ankommen, zeigt die '
+        'Stereo-Prüfung im Pegeltest. Funkempfänger mit zwei Sendern '
         'liefern oft nur im Stereo-Modus (Schalter oder App des '
-        'EmpfÃ¤ngers) getrennte KanÃ¤le.',
+        'Empfängers) getrennte Kanäle.',
         key: const Key('input-device-mono-hint'),
         style: TextStyle(color: error),
       );

@@ -125,6 +125,7 @@ android/app/src/main/kotlin/de/nyooom/app/
   ClipPlayback.kt                   MediaPlayer-Wiedergabe der Sammel-Clips (eigener MethodChannel)
 ```
 
+- Plattformen: Android (Messgerät) und Windows-Desktop (`windows/`, `fvm flutter build windows`). Unter Windows laufen Datenbank, Standorte, Auswertung, Export, Simulation und Sammlungen; Aufnahme, Geräteliste und Clip-Wiedergabe gibt es dort noch nicht (das Plugin ist nur in Kotlin vorhanden, die App meldet „Aufnahme fehlgeschlagen“ bzw. „Geräteliste nicht abfragbar“). Der Windows-Build braucht den Entwicklermodus (Symlinks für Plugins) und Visual Studio mit C++.
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
 - Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
 - Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), `share_plus` (Android-Teilen-Dialog für Exporte), `geolocator` (GPS-Logger für Referenzfahrten), `file_picker` (GPX/CSV-Import), dev: `test`, `drift_dev`, `build_runner`, `archive` (nur zum Prüfen der ZIP-Exporte in Tests) (Code-Generierung `fvm dart run build_runner build -d`).

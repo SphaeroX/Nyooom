@@ -88,6 +88,23 @@ void main() {
     expect(container.read(activeInputDeviceProvider)?.id, 14);
   });
 
+  testWidgets('labels show umlauts, not broken encoding', (tester) async {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Column(children: [InputDeviceSelector(), InputDeviceHint()]),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Eingabegerät'), findsOneWidget);
+    expect(find.textContaining('Ã'), findsNothing);
+    expect(find.textContaining('„Gerät“'), findsOneWidget);
+  });
+
   testWidgets('the selector offers the USB device and stores the choice', (
     tester,
   ) async {
