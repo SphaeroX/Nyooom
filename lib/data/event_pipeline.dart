@@ -50,12 +50,27 @@ class EventPipeline {
     PassEvent event, {
     required double windowStartS,
   }) => [
+    for (final track in evaluateTracks(
+      window,
+      event,
+      windowStartS: windowStartS,
+    ))
+      track.record,
+  ];
+
+  /// [evaluateAll] together with the TDOA analysis each record came from
+  /// (correlogram and fit, for further evaluation of the track).
+  List<({PassRecord record, EventAnalysis analysis})> evaluateTracks(
+    StereoBlock window,
+    PassEvent event, {
+    required double windowStartS,
+  }) => [
     for (final analysis in _evaluator.analyseTracks(
       window,
       event,
       windowStartS: windowStartS,
     ))
-      _complete(analysis),
+      (record: _complete(analysis), analysis: analysis),
   ];
 
   /// Doppler and fusion for one track.

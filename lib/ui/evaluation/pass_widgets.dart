@@ -11,6 +11,7 @@ import '../stats/statistics_screen.dart';
 import '../validation/validation_screen.dart';
 import 'evaluation_controller.dart';
 import 'self_calibration_card.dart';
+import 'spacing_learning_card.dart';
 
 String formatTime(int utcMs) {
   final t = DateTime.fromMillisecondsSinceEpoch(utcMs).toLocal();
@@ -137,6 +138,9 @@ class EvaluationSection extends ConsumerWidget {
           icon: const Icon(Icons.bar_chart),
           label: const Text('Statistik'),
         ),
+        if (eval.note != null) Text(eval.note!),
+        const SizedBox(height: 8),
+        SpacingLearningCard(seriesId: series.id),
         const SizedBox(height: 8),
         SelfCalibrationCard(series: series),
         const SizedBox(height: 8),

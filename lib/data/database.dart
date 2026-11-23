@@ -78,6 +78,12 @@ class MeasurementSeries extends Table {
   /// Recording parts of a continued series as JSON (schema 5); null for
   /// one continuous recording.
   TextColumn get segmentsJson => text().nullable()();
+
+  /// Effective microphone spacing in m, channel offset in s and number of
+  /// passes they were learned from (schema 6); null = calibration is used.
+  RealColumn get learnedMicSpacingM => real().nullable()();
+  RealColumn get learnedChannelOffsetS => real().nullable()();
+  IntColumn get learnedPassCount => integer().nullable()();
 }
 
 /// One vehicle pass; columns named as in technik.pdf 9.1.
@@ -167,9 +173,12 @@ class NyooomDatabase extends _$NyooomDatabase {
   /// Schema history: 1 = Task_04; 2 = Task_09 (passes.sigma_laufzeit,
   /// passes.sigma_doppler); 3 = Task_15 (reference_tracks,
   /// reference_points); 4 = Task_16 (sites.plus_x_bearing_deg);
-  /// 5 = continued series (measurement_series.segments_json).
+  /// 5 = continued series (measurement_series.segments_json);
+  /// 6 = spacing learned from the passes
+  /// (measurement_series.learned_mic_spacing_m, learned_channel_offset_s,
+  /// learned_pass_count).
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -189,6 +198,17 @@ class NyooomDatabase extends _$NyooomDatabase {
       if (from < 5 &&
           !await _hasColumn('measurement_series', 'segments_json')) {
         await m.addColumn(measurementSeries, measurementSeries.segmentsJson);
+      }
+      if (from < 6) {
+        for (final column in [
+          measurementSeries.learnedMicSpacingM,
+          measurementSeries.learnedChannelOffsetS,
+          measurementSeries.learnedPassCount,
+        ]) {
+          if (!await _hasColumn('measurement_series', column.name)) {
+            await m.addColumn(measurementSeries, column);
+          }
+        }
       }
     },
     beforeOpen: (details) async {

@@ -49,7 +49,7 @@
   "lateralSpreadM": 0.4,
   "distanceCheckTolerance": 0.25,
   "residualLimitS": 0.00003,
-  "monotonicMinFraction": 0.8,
+  "monotonicMinFraction": 0.45,
   "sourceHeightM": 0.3,
   "matchToleranceS": 2.0,
   "referenceAverageS": 2.0,
@@ -76,5 +76,8 @@
   "trackMinSeparationS": 1.0,
   "duplicateWindowS": 0.5,
   "mirrorKappaTolerance": 0.15,
-  "mirrorT0ToleranceS": 0.15
+  "mirrorT0ToleranceS": 0.15,
+  "plateauMinDirectionCosine": 0.95,
+  "plateauMinCount": 5,
+  "plateauMaxDeviation": 0.2
 }

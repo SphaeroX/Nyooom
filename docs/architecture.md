@@ -62,6 +62,7 @@ lib/
   core/sim/traffic.dart             TrafficGenerator: deterministischer Mischverkehr für die Simulationsquelle
   core/calibration/device_checks.dart  Eignungsprüfung 4.4 und Kalibrierung 7.1 (reine Logik)
   core/calibration/self_calibration.dart  Selbstkalibrierung der Spurabstände (technik.pdf 7.4)
+  core/calibration/plateau_calibration.dart  wirksamer Mikrofonabstand b und Δ0 aus den Plateaus der Laufzeitkurve einer Vorbeifahrt; judgeSpacing entscheidet, ob der Median einer Messreihe die Kalibrierung ersetzt
   core/sim/calibration_signals.dart Klatschen in Achsrichtung, Dauerrauschen (mit simulierter AGC)
   core/events/event_detector.dart   Ereigniserkennung blockweise (technik.pdf 5.1), wahlweise mit Nebenmaxima als eigenen Ereignissen
   core/inspection/                  Pegelverlauf, Heatmap-Renderer (RGBA), Daten der Sichtprüfung
@@ -70,7 +71,7 @@ lib/
   core/pipeline/event_evaluator.dart  Laufzeitauswertung eines Ereignisfensters (v_T, σ_T, Klasse B/C); `analyseTracks` trennt mehrere Fahrzeuge
   core/pipeline/track_dedup.dart    TrackDeduplicator: dasselbe Fahrzeug aus zwei Fenstern nur einmal
   core/pipeline/doppler.dart        Doppler Variante 1: Tonspuren + Regression mit bekanntem u(t) (technik.pdf 5.4), Abstandsprüfung je Tonspur (ToneGate)
-  core/pipeline/doppler_sharpness.dart  Doppler Variante 2: Entzerrung und Schärfemaximum, Kombinationsregel
+  core/pipeline/doppler_sharpness.dart  Doppler Variante 2: Entzerrung und Schärfemaximum mit Gegenprobe (falsch herum entzerrt), Kombinationsregel
   core/pipeline/fusion.dart         Beschleunigungs-/Abstandsprüfung, gewichtete Fusion, Klassenlogik (5.4–5.6)
   core/pipeline/least_squares.dart  allgemeiner Levenberg-Marquardt-Löser mit Kovarianz
   core/pipeline/joint_fit.dart      gemeinsame Ausgleichsrechnung über v, d, t0, f0_k (Option)
@@ -85,11 +86,12 @@ lib/
   core/series/recording_segment.dart  Aufnahmeabschnitte einer fortgesetzten Messreihe, Uhrzeit zu Signalposition
   audio/simulated_stereo_recorder.dart  StereoRecorder mit synthetischem Verkehr (Isolate-Rendering, Echtzeit-Takt)
   audio/capture.dart                Aufnahme fester Dauer, CalibrationCapture (echt/simuliert)
-  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes, ReferenceTracks, ReferencePoints), Version 5
+  data/database.dart                drift-Schema (Devices, Calibrations, Sites, Lanes, MeasurementSeries, Passes, ReferenceTracks, ReferencePoints), Version 6
   data/repository.dart              NyooomRepository
   data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live), `evaluateAll` für alle Fahrzeuge des Fensters
   data/live_pipeline.dart           Live-Auswertung: Ringpuffer, Worker-Isolate, Warteschlange
-  data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt
+  data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt; lernt auf Wunsch b und Δ0 aus den Vorbeifahrten (learnSeriesSpacing)
+  data/collection_evaluation.dart   wertet die Clips einer gelabelten Sammlung aus (evaluateCollection, evaluateClip) und vergleicht mit den Markierungen
   data/series_export.dart           Export einer Messreihe in Dateien bzw. ZIP (gestreamt)
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
   data/onboarding_store.dart        Merker-Datei <Dokumente>/onboarding_done (Einführung gesehen)
@@ -97,7 +99,7 @@ lib/
   ui/home/                          HomeScreen mit Tabs (homeTabsProvider)
   ui/help/                          Einführung beim ersten Start (OnboardingGate in main.dart), Tab "Hilfe" mit Schritt-für-Schritt-Anleitung
   ui/sites/                         Standortliste und -formular
-  ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt
+  ui/evaluation/                    Auswertung starten, Ergebnisliste, Detail einer Vorbeifahrt, Karten zu gelerntem Mikrofonabstand (SpacingLearningCard) und Spurabstand (SelfCalibrationCard)
   ui/reference/                     Tab "Referenz": Logger, Import, Verlauf
   ui/validation/                    Validierung mit Ampel und Streudiagramm
   ui/export/                        Teilen-Buttons (share_plus)
@@ -128,12 +130,14 @@ android/app/src/main/kotlin/de/nyooom/app/
 ```
 
 - Plattformen: Android (Messgerät) und Windows-Desktop (`windows/`, `fvm flutter build windows`). `lib/audio/platform_audio.dart` wählt nach `Platform.isAndroid`: Android nimmt über das Kotlin-Plugin auf und spielt darüber ab, der PC über `DesktopStereoRecorder` (Paket `record`, PCM16 Stereo, AGC/Echo/Rauschunterdrückung aus) und `AudioplayersClipPlayer` (Paket `audioplayers`). Der PC meldet keine An-/Absteck-Ereignisse (Liste über den Aktualisieren-Knopf), Eingänge haben den Typ `desktopInputType` („PC“) und gelten als extern, damit Kalibrierung und Messreihe denselben Gerätenamen verwenden. Viele PC-Mikrofone sind mono und werden von Windows auf zwei Kanäle verdoppelt; das zeigt die Stereo-Prüfung im Pegeltest. Der Windows-Build braucht den Entwicklermodus (Symlinks für Plugins) und Visual Studio mit C++.
+- Werkzeuge am PC (`tool/`, reines Dart, Aufruf `fvm dart run tool/<name>.dart`): `write_default_config.dart` schreibt `assets/nyooom_config.json`, `evaluate_collection.dart` wertet eine exportierte Sammlung gegen ihre Markierungen aus (Optionen im Dateikopf, siehe `docs/testing.md`).
 - Das Kotlin-Plugin liegt im App-Modul (kein eigenes Plugin-Paket) und wird in `MainActivity.configureFlutterEngine` registriert.
 - Flutter 3.50 liefert Material als eigenes Paket: Widgets kommen aus `package:material_ui/material_ui.dart` (nicht `package:flutter/material.dart`).
 - Abhängigkeiten: `flutter_riverpod`, `path_provider` (App-Dokumentordner), `drift` + `drift_flutter` (SQLite, Datenhaltung laut Roadmap), `share_plus` (Android-Teilen-Dialog für Exporte), `geolocator` (GPS-Logger für Referenzfahrten), `file_picker` (GPX/CSV-Import), `record` (Aufnahme am PC), `audioplayers` (Clip-Wiedergabe am PC), dev: `test`, `drift_dev`, `build_runner`, `archive` (nur zum Prüfen der ZIP-Exporte in Tests) (Code-Generierung `fvm dart run build_runner build -d`).
 - Simulationsquelle: Beim Start einer Messreihe kann statt der Mikrofone `SimulatedStereoRecorder` gewählt werden (synthetischer Verkehr aus `lib/core/sim/`). Damit läuft die App im Emulator und ohne geeignetes Gerät. Standard ist seit Task_20 das Mikrofon (`simulationDefaultProvider` = false); die Simulation wird im Startbildschirm eingeschaltet.
 - Kalibrier-Assistent (`CalibrationScreen`): sechs Seiten für Laien (Willkommen mit Temperatur, Handy aufstellen, rechts klatschen, links klatschen, konstantes Signal optional/überspringbar, Ergebnis mit Speichern). „Weiter" ist gesperrt, bis `CalibrationController.stepPassed` den Schritt bestätigt. Vor jeder Aufnahme läuft ein Countdown (`calibrationCountdownProvider`, Standard 5 s), damit man ca. 3 m zur Klatschposition gehen kann; die Klatsch-Aufnahmen dauern 5 s. Countdown (orange) und Aufnahme (grün) füllen den Bildschirm, damit sie aus 3 m lesbar sind. Bewusst kein Piepton und keine Vibration: beides würde als Transiente in der Aufnahme landen.
 - Eingabegerät einer Messreihe: Der Startbildschirm bietet „Mikrofon“ an (eingebaut oder ein externes Gerät aus `getInputDevices`); ein externes Gerät mit zwei Kanälen wird vorausgewählt (`preferredInputDevice`). `SeriesStartRequest.inputDevice` geht als `inputDeviceId` an das Plugin. Gerätezeile und Kalibrierung hängen an Modell **und** Eingabegerät (`devices.input_device`: `intern` oder Gerätename), deshalb braucht ein USB-Mikrofon eine eigene Kalibrierung. Der Aufnahmebildschirm zeigt `RecordingInfo.preferredDevice` und warnt, wenn Android das gewählte Gerät nicht übernommen hat.
+- Mikrofonabstand aus den Vorbeifahrten: `EvaluationController.run` wertet mit `analyseSeriesInBackground(learnSpacing: true)` aus, ausgehend von der Kalibrierung (`repo.learnedSetup(…, learnedSpacing: false)`), und speichert das Ergebnis mit `repo.setLearnedSpacing` an der Messreihe (Schema 6, drei Spalten `learned_…`, null = Kalibrierung gilt). `repo.analysisSetup(id)` liefert danach den gelernten Wert. Regeln und Grenzen in `docs/method-notes.md`.
 - Fortsetzen einer Messreihe (`SeriesRecordingController.resume`): nach „Aufnahme beenden“ oder aus der Detailansicht. Die WAV wird mit `WavFileWriter.append` weitergeschrieben (auch ohne finalisierten Kopf), die Live-Auswertung startet mit `LivePipeline(startOffsetS:)` an der bisherigen Signalposition, sodass `offsetS` sich weiter auf die Datei bezieht. Jede Fortsetzung legt einen `RecordingSegment` (Signalposition, Uhrzeit) an: Spalte `measurement_series.segments_json` (Schema 5, null = ein Abschnitt) und `metadata.json` → `segments`. `AnalysisSetup.utcMsAt` rechnet damit die Uhrzeit der Vorbeifahrten, `StoredSeries.durationS` zählt die Pausen nicht mit. Das Eingabegerät wird beim Fortsetzen über den Namen wiedergefunden; ist es nicht angesteckt, bricht `resume` mit Meldung ab.
 - Schnelltest: Ohne Standort bietet der Startbildschirm `quickTestSite()` an (`lib/core/site/site.dart`, Spuren 5 m → und 8 m ←, Höhe 1,5 m). Ohne Kalibrierung gelten b = 0,15 m und Δ0 = 0. Geschwindigkeiten skalieren mit dem angenommenen Abstand, Erkennung und Zählung nicht.
 

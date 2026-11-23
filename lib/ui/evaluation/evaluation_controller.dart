@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/pipeline/pass_record.dart';
 import '../../data/series_analysis.dart';
 import '../providers.dart';
+import 'spacing_learning_card.dart';
 
 /// Pass records of a series.
 final passesProvider = FutureProvider.family<List<PassRecord>, int>(
@@ -17,12 +18,16 @@ class EvaluationState {
     this.fraction = 0,
     this.phase = '',
     this.error,
+    this.note,
   });
 
   final bool running;
   final double fraction;
   final String phase;
   final String? error;
+
+  /// Hint after a finished run (spacing not learned or not taken over).
+  final String? note;
 }
 
 final evaluationProvider =
@@ -31,7 +36,9 @@ final evaluationProvider =
     );
 
 /// Runs the offline evaluation of a stored series in the background and
-/// stores the records.
+/// stores the records. The run learns the effective microphone spacing and
+/// the channel offset from the passes, starting from the calibration, and
+/// stores them with the series if there are enough passes.
 class EvaluationController extends Notifier<EvaluationState> {
   EvaluationController(this.seriesId);
 
@@ -45,9 +52,11 @@ class EvaluationController extends Notifier<EvaluationState> {
     state = const EvaluationState(running: true, phase: 'Start');
     try {
       final repo = ref.read(repositoryProvider);
+      final config = ref.read(configProvider);
       final setup = (await repo.learnedSetup(
         seriesId,
-        ref.read(configProvider),
+        config,
+        learnedSpacing: false,
       ))?.setup;
       final storage = await ref.read(seriesStorageProvider.future);
       final wav = storage.wavFile(seriesId);
@@ -60,7 +69,8 @@ class EvaluationController extends Notifier<EvaluationState> {
       final stream = analyseSeriesInBackground(
         wavPath: wav.path,
         setup: setup,
-        config: ref.read(configProvider),
+        config: config,
+        learnSpacing: true,
       );
       await for (final p in stream) {
         if (!ref.mounted) return;
@@ -72,10 +82,17 @@ class EvaluationController extends Notifier<EvaluationState> {
         }
         final result = p.result;
         if (result != null) {
+          final learning = p.learning;
+          await repo.setLearnedSpacing(seriesId, learning?.learned);
           await repo.replacePasses(seriesId, result);
           if (!ref.mounted) return;
           ref.invalidate(passesProvider(seriesId));
-          state = const EvaluationState(fraction: 1, phase: 'fertig');
+          ref.invalidate(spacingInfoProvider(seriesId));
+          state = EvaluationState(
+            fraction: 1,
+            phase: 'fertig',
+            note: learning == null ? null : spacingNote(learning, config),
+          );
           return;
         }
         state = EvaluationState(

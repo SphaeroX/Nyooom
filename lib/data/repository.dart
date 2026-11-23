@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../core/calibration/plateau_calibration.dart';
 import '../core/calibration/self_calibration.dart';
 import '../core/config/nyooom_config.dart';
 import '../core/model/acoustics.dart';
@@ -290,16 +291,47 @@ class NyooomRepository {
 
   Future<List<DeviceRow>> devices() => db.select(db.devices).get();
 
+  /// b and Δ0 learned from the passes of series [id], or null.
+  Future<LearnedSpacing?> learnedSpacing(int id) async {
+    final row = (await series(id))?.row;
+    final spacing = row?.learnedMicSpacingM;
+    if (row == null || spacing == null) return null;
+    return LearnedSpacing(
+      micSpacing: spacing,
+      channelOffset: row.learnedChannelOffsetS ?? 0,
+      passCount: row.learnedPassCount ?? 0,
+    );
+  }
+
+  /// Stores the learned b and Δ0 of series [id]; null goes back to the
+  /// calibration.
+  Future<void> setLearnedSpacing(int id, LearnedSpacing? learned) =>
+      (db.update(db.measurementSeries)..where((s) => s.id.equals(id))).write(
+        MeasurementSeriesCompanion(
+          learnedMicSpacingM: Value(learned?.micSpacing),
+          learnedChannelOffsetS: Value(learned?.channelOffset),
+          learnedPassCount: Value(learned?.passCount),
+        ),
+      );
+
   /// Constants for evaluating series [id]: calibration (or defaults), c and
-  /// lane geometry.
-  Future<AnalysisSetup?> analysisSetup(int id) async {
+  /// lane geometry. b and Δ0 learned from the passes of the series replace
+  /// the calibration unless [learnedSpacing] is false.
+  Future<AnalysisSetup?> analysisSetup(
+    int id, {
+    bool learnedSpacing = true,
+  }) async {
     final series = await this.series(id);
     if (series == null) return null;
     final calId = series.row.calibrationId;
     final cal = calId == null ? null : await calibration(calId);
+    final learned = learnedSpacing ? await this.learnedSpacing(id) : null;
     return AnalysisSetup(
-      micSpacing: cal?.micSpacingM ?? AnalysisSetup.defaultMicSpacing,
-      channelOffset: cal?.channelOffsetS ?? 0,
+      micSpacing:
+          learned?.micSpacing ??
+          cal?.micSpacingM ??
+          AnalysisSetup.defaultMicSpacing,
+      channelOffset: learned?.channelOffset ?? cal?.channelOffsetS ?? 0,
       swapChannels: cal?.swapChannels ?? false,
       speedOfSound: series.speedOfSound,
       speedLimitKmh: series.site.spec.speedLimitKmh,
@@ -358,9 +390,10 @@ class NyooomRepository {
   /// (technik.pdf 7.4) and the learning state per lane.
   Future<({AnalysisSetup setup, List<LaneLearning> learning})?> learnedSetup(
     int seriesId,
-    NyooomConfig config,
-  ) async {
-    final setup = await analysisSetup(seriesId);
+    NyooomConfig config, {
+    bool learnedSpacing = true,
+  }) async {
+    final setup = await analysisSetup(seriesId, learnedSpacing: learnedSpacing);
     final series = await this.series(seriesId);
     if (setup == null || series == null) return null;
     final learning = learnLaneDistances(

@@ -55,6 +55,21 @@ class AnalysisSetup {
   /// b/c in s.
   double get maxTdoa => micSpacing / speedOfSound;
 
+  /// The same setup with another b and Δ0 (learned from the passes).
+  AnalysisSetup withCalibration({
+    required double micSpacing,
+    required double channelOffset,
+  }) => AnalysisSetup(
+    micSpacing: micSpacing,
+    channelOffset: channelOffset,
+    swapChannels: swapChannels,
+    speedOfSound: speedOfSound,
+    lanes: lanes,
+    speedLimitKmh: speedLimitKmh,
+    startedAtUtcMs: startedAtUtcMs,
+    segments: segments,
+  );
+
   /// The lane vehicles with [direction] use (technik.pdf 5.3), or null;
   /// a two-way lane (direction 0) serves both directions.
   LaneGeometry? laneFor(int direction) {

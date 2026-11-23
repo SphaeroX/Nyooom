@@ -1803,6 +1803,39 @@ class $MeasurementSeriesTable extends MeasurementSeries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _learnedMicSpacingMMeta =
+      const VerificationMeta('learnedMicSpacingM');
+  @override
+  late final GeneratedColumn<double> learnedMicSpacingM =
+      GeneratedColumn<double>(
+        'learned_mic_spacing_m',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _learnedChannelOffsetSMeta =
+      const VerificationMeta('learnedChannelOffsetS');
+  @override
+  late final GeneratedColumn<double> learnedChannelOffsetS =
+      GeneratedColumn<double>(
+        'learned_channel_offset_s',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _learnedPassCountMeta = const VerificationMeta(
+    'learnedPassCount',
+  );
+  @override
+  late final GeneratedColumn<int> learnedPassCount = GeneratedColumn<int>(
+    'learned_pass_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1819,6 +1852,9 @@ class $MeasurementSeriesTable extends MeasurementSeries
     simulated,
     configJson,
     segmentsJson,
+    learnedMicSpacingM,
+    learnedChannelOffsetS,
+    learnedPassCount,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1951,6 +1987,33 @@ class $MeasurementSeriesTable extends MeasurementSeries
         ),
       );
     }
+    if (data.containsKey('learned_mic_spacing_m')) {
+      context.handle(
+        _learnedMicSpacingMMeta,
+        learnedMicSpacingM.isAcceptableOrUnknown(
+          data['learned_mic_spacing_m']!,
+          _learnedMicSpacingMMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learned_channel_offset_s')) {
+      context.handle(
+        _learnedChannelOffsetSMeta,
+        learnedChannelOffsetS.isAcceptableOrUnknown(
+          data['learned_channel_offset_s']!,
+          _learnedChannelOffsetSMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learned_pass_count')) {
+      context.handle(
+        _learnedPassCountMeta,
+        learnedPassCount.isAcceptableOrUnknown(
+          data['learned_pass_count']!,
+          _learnedPassCountMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2016,6 +2079,18 @@ class $MeasurementSeriesTable extends MeasurementSeries
         DriftSqlType.string,
         data['${effectivePrefix}segments_json'],
       ),
+      learnedMicSpacingM: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}learned_mic_spacing_m'],
+      ),
+      learnedChannelOffsetS: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}learned_channel_offset_s'],
+      ),
+      learnedPassCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}learned_pass_count'],
+      ),
     );
   }
 
@@ -2043,6 +2118,12 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
   /// Recording parts of a continued series as JSON (schema 5); null for
   /// one continuous recording.
   final String? segmentsJson;
+
+  /// Effective microphone spacing in m, channel offset in s and number of
+  /// passes they were learned from (schema 6); null = calibration is used.
+  final double? learnedMicSpacingM;
+  final double? learnedChannelOffsetS;
+  final int? learnedPassCount;
   const SeriesRow({
     required this.id,
     required this.siteId,
@@ -2058,6 +2139,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     required this.simulated,
     required this.configJson,
     this.segmentsJson,
+    this.learnedMicSpacingM,
+    this.learnedChannelOffsetS,
+    this.learnedPassCount,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2083,6 +2167,15 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     map['config_json'] = Variable<String>(configJson);
     if (!nullToAbsent || segmentsJson != null) {
       map['segments_json'] = Variable<String>(segmentsJson);
+    }
+    if (!nullToAbsent || learnedMicSpacingM != null) {
+      map['learned_mic_spacing_m'] = Variable<double>(learnedMicSpacingM);
+    }
+    if (!nullToAbsent || learnedChannelOffsetS != null) {
+      map['learned_channel_offset_s'] = Variable<double>(learnedChannelOffsetS);
+    }
+    if (!nullToAbsent || learnedPassCount != null) {
+      map['learned_pass_count'] = Variable<int>(learnedPassCount);
     }
     return map;
   }
@@ -2111,6 +2204,15 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       segmentsJson: segmentsJson == null && nullToAbsent
           ? const Value.absent()
           : Value(segmentsJson),
+      learnedMicSpacingM: learnedMicSpacingM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learnedMicSpacingM),
+      learnedChannelOffsetS: learnedChannelOffsetS == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learnedChannelOffsetS),
+      learnedPassCount: learnedPassCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learnedPassCount),
     );
   }
 
@@ -2134,6 +2236,13 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       simulated: serializer.fromJson<bool>(json['simulated']),
       configJson: serializer.fromJson<String>(json['configJson']),
       segmentsJson: serializer.fromJson<String?>(json['segmentsJson']),
+      learnedMicSpacingM: serializer.fromJson<double?>(
+        json['learnedMicSpacingM'],
+      ),
+      learnedChannelOffsetS: serializer.fromJson<double?>(
+        json['learnedChannelOffsetS'],
+      ),
+      learnedPassCount: serializer.fromJson<int?>(json['learnedPassCount']),
     );
   }
   @override
@@ -2154,6 +2263,11 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       'simulated': serializer.toJson<bool>(simulated),
       'configJson': serializer.toJson<String>(configJson),
       'segmentsJson': serializer.toJson<String?>(segmentsJson),
+      'learnedMicSpacingM': serializer.toJson<double?>(learnedMicSpacingM),
+      'learnedChannelOffsetS': serializer.toJson<double?>(
+        learnedChannelOffsetS,
+      ),
+      'learnedPassCount': serializer.toJson<int?>(learnedPassCount),
     };
   }
 
@@ -2172,6 +2286,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     bool? simulated,
     String? configJson,
     Value<String?> segmentsJson = const Value.absent(),
+    Value<double?> learnedMicSpacingM = const Value.absent(),
+    Value<double?> learnedChannelOffsetS = const Value.absent(),
+    Value<int?> learnedPassCount = const Value.absent(),
   }) => SeriesRow(
     id: id ?? this.id,
     siteId: siteId ?? this.siteId,
@@ -2189,6 +2306,15 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     simulated: simulated ?? this.simulated,
     configJson: configJson ?? this.configJson,
     segmentsJson: segmentsJson.present ? segmentsJson.value : this.segmentsJson,
+    learnedMicSpacingM: learnedMicSpacingM.present
+        ? learnedMicSpacingM.value
+        : this.learnedMicSpacingM,
+    learnedChannelOffsetS: learnedChannelOffsetS.present
+        ? learnedChannelOffsetS.value
+        : this.learnedChannelOffsetS,
+    learnedPassCount: learnedPassCount.present
+        ? learnedPassCount.value
+        : this.learnedPassCount,
   );
   SeriesRow copyWithCompanion(MeasurementSeriesCompanion data) {
     return SeriesRow(
@@ -2224,6 +2350,15 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       segmentsJson: data.segmentsJson.present
           ? data.segmentsJson.value
           : this.segmentsJson,
+      learnedMicSpacingM: data.learnedMicSpacingM.present
+          ? data.learnedMicSpacingM.value
+          : this.learnedMicSpacingM,
+      learnedChannelOffsetS: data.learnedChannelOffsetS.present
+          ? data.learnedChannelOffsetS.value
+          : this.learnedChannelOffsetS,
+      learnedPassCount: data.learnedPassCount.present
+          ? data.learnedPassCount.value
+          : this.learnedPassCount,
     );
   }
 
@@ -2243,7 +2378,10 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           ..write('saveRawAudio: $saveRawAudio, ')
           ..write('simulated: $simulated, ')
           ..write('configJson: $configJson, ')
-          ..write('segmentsJson: $segmentsJson')
+          ..write('segmentsJson: $segmentsJson, ')
+          ..write('learnedMicSpacingM: $learnedMicSpacingM, ')
+          ..write('learnedChannelOffsetS: $learnedChannelOffsetS, ')
+          ..write('learnedPassCount: $learnedPassCount')
           ..write(')'))
         .toString();
   }
@@ -2264,6 +2402,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     simulated,
     configJson,
     segmentsJson,
+    learnedMicSpacingM,
+    learnedChannelOffsetS,
+    learnedPassCount,
   );
   @override
   bool operator ==(Object other) =>
@@ -2282,7 +2423,10 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           other.saveRawAudio == this.saveRawAudio &&
           other.simulated == this.simulated &&
           other.configJson == this.configJson &&
-          other.segmentsJson == this.segmentsJson);
+          other.segmentsJson == this.segmentsJson &&
+          other.learnedMicSpacingM == this.learnedMicSpacingM &&
+          other.learnedChannelOffsetS == this.learnedChannelOffsetS &&
+          other.learnedPassCount == this.learnedPassCount);
 }
 
 class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
@@ -2300,6 +2444,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
   final Value<bool> simulated;
   final Value<String> configJson;
   final Value<String?> segmentsJson;
+  final Value<double?> learnedMicSpacingM;
+  final Value<double?> learnedChannelOffsetS;
+  final Value<int?> learnedPassCount;
   const MeasurementSeriesCompanion({
     this.id = const Value.absent(),
     this.siteId = const Value.absent(),
@@ -2315,6 +2462,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.simulated = const Value.absent(),
     this.configJson = const Value.absent(),
     this.segmentsJson = const Value.absent(),
+    this.learnedMicSpacingM = const Value.absent(),
+    this.learnedChannelOffsetS = const Value.absent(),
+    this.learnedPassCount = const Value.absent(),
   });
   MeasurementSeriesCompanion.insert({
     this.id = const Value.absent(),
@@ -2331,6 +2481,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.simulated = const Value.absent(),
     required String configJson,
     this.segmentsJson = const Value.absent(),
+    this.learnedMicSpacingM = const Value.absent(),
+    this.learnedChannelOffsetS = const Value.absent(),
+    this.learnedPassCount = const Value.absent(),
   }) : siteId = Value(siteId),
        temperatureC = Value(temperatureC),
        speedOfSound = Value(speedOfSound),
@@ -2353,6 +2506,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Expression<bool>? simulated,
     Expression<String>? configJson,
     Expression<String>? segmentsJson,
+    Expression<double>? learnedMicSpacingM,
+    Expression<double>? learnedChannelOffsetS,
+    Expression<int>? learnedPassCount,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2369,6 +2525,11 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       if (simulated != null) 'simulated': simulated,
       if (configJson != null) 'config_json': configJson,
       if (segmentsJson != null) 'segments_json': segmentsJson,
+      if (learnedMicSpacingM != null)
+        'learned_mic_spacing_m': learnedMicSpacingM,
+      if (learnedChannelOffsetS != null)
+        'learned_channel_offset_s': learnedChannelOffsetS,
+      if (learnedPassCount != null) 'learned_pass_count': learnedPassCount,
     });
   }
 
@@ -2387,6 +2548,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Value<bool>? simulated,
     Value<String>? configJson,
     Value<String?>? segmentsJson,
+    Value<double?>? learnedMicSpacingM,
+    Value<double?>? learnedChannelOffsetS,
+    Value<int?>? learnedPassCount,
   }) {
     return MeasurementSeriesCompanion(
       id: id ?? this.id,
@@ -2403,6 +2567,10 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       simulated: simulated ?? this.simulated,
       configJson: configJson ?? this.configJson,
       segmentsJson: segmentsJson ?? this.segmentsJson,
+      learnedMicSpacingM: learnedMicSpacingM ?? this.learnedMicSpacingM,
+      learnedChannelOffsetS:
+          learnedChannelOffsetS ?? this.learnedChannelOffsetS,
+      learnedPassCount: learnedPassCount ?? this.learnedPassCount,
     );
   }
 
@@ -2451,6 +2619,17 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     if (segmentsJson.present) {
       map['segments_json'] = Variable<String>(segmentsJson.value);
     }
+    if (learnedMicSpacingM.present) {
+      map['learned_mic_spacing_m'] = Variable<double>(learnedMicSpacingM.value);
+    }
+    if (learnedChannelOffsetS.present) {
+      map['learned_channel_offset_s'] = Variable<double>(
+        learnedChannelOffsetS.value,
+      );
+    }
+    if (learnedPassCount.present) {
+      map['learned_pass_count'] = Variable<int>(learnedPassCount.value);
+    }
     return map;
   }
 
@@ -2470,7 +2649,10 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
           ..write('saveRawAudio: $saveRawAudio, ')
           ..write('simulated: $simulated, ')
           ..write('configJson: $configJson, ')
-          ..write('segmentsJson: $segmentsJson')
+          ..write('segmentsJson: $segmentsJson, ')
+          ..write('learnedMicSpacingM: $learnedMicSpacingM, ')
+          ..write('learnedChannelOffsetS: $learnedChannelOffsetS, ')
+          ..write('learnedPassCount: $learnedPassCount')
           ..write(')'))
         .toString();
   }
@@ -6381,6 +6563,9 @@ typedef $$MeasurementSeriesTableCreateCompanionBuilder =
       Value<bool> simulated,
       required String configJson,
       Value<String?> segmentsJson,
+      Value<double?> learnedMicSpacingM,
+      Value<double?> learnedChannelOffsetS,
+      Value<int?> learnedPassCount,
     });
 typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
     MeasurementSeriesCompanion Function({
@@ -6398,6 +6583,9 @@ typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
       Value<bool> simulated,
       Value<String> configJson,
       Value<String?> segmentsJson,
+      Value<double?> learnedMicSpacingM,
+      Value<double?> learnedChannelOffsetS,
+      Value<int?> learnedPassCount,
     });
 
 final class $$MeasurementSeriesTableReferences
@@ -6542,6 +6730,21 @@ class $$MeasurementSeriesTableFilterComposer
 
   ColumnFilters<String> get segmentsJson => $composableBuilder(
     column: $table.segmentsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get learnedMicSpacingM => $composableBuilder(
+    column: $table.learnedMicSpacingM,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get learnedChannelOffsetS => $composableBuilder(
+    column: $table.learnedChannelOffsetS,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get learnedPassCount => $composableBuilder(
+    column: $table.learnedPassCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6704,6 +6907,21 @@ class $$MeasurementSeriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get learnedMicSpacingM => $composableBuilder(
+    column: $table.learnedMicSpacingM,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get learnedChannelOffsetS => $composableBuilder(
+    column: $table.learnedChannelOffsetS,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get learnedPassCount => $composableBuilder(
+    column: $table.learnedPassCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SitesTableOrderingComposer get siteId {
     final $$SitesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6829,6 +7047,21 @@ class $$MeasurementSeriesTableAnnotationComposer
 
   GeneratedColumn<String> get segmentsJson => $composableBuilder(
     column: $table.segmentsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get learnedMicSpacingM => $composableBuilder(
+    column: $table.learnedMicSpacingM,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get learnedChannelOffsetS => $composableBuilder(
+    column: $table.learnedChannelOffsetS,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get learnedPassCount => $composableBuilder(
+    column: $table.learnedPassCount,
     builder: (column) => column,
   );
 
@@ -6979,6 +7212,9 @@ class $$MeasurementSeriesTableTableManager
                 Value<bool> simulated = const Value.absent(),
                 Value<String> configJson = const Value.absent(),
                 Value<String?> segmentsJson = const Value.absent(),
+                Value<double?> learnedMicSpacingM = const Value.absent(),
+                Value<double?> learnedChannelOffsetS = const Value.absent(),
+                Value<int?> learnedPassCount = const Value.absent(),
               }) => MeasurementSeriesCompanion(
                 id: id,
                 siteId: siteId,
@@ -6994,6 +7230,9 @@ class $$MeasurementSeriesTableTableManager
                 simulated: simulated,
                 configJson: configJson,
                 segmentsJson: segmentsJson,
+                learnedMicSpacingM: learnedMicSpacingM,
+                learnedChannelOffsetS: learnedChannelOffsetS,
+                learnedPassCount: learnedPassCount,
               ),
           createCompanionCallback:
               ({
@@ -7011,6 +7250,9 @@ class $$MeasurementSeriesTableTableManager
                 Value<bool> simulated = const Value.absent(),
                 required String configJson,
                 Value<String?> segmentsJson = const Value.absent(),
+                Value<double?> learnedMicSpacingM = const Value.absent(),
+                Value<double?> learnedChannelOffsetS = const Value.absent(),
+                Value<int?> learnedPassCount = const Value.absent(),
               }) => MeasurementSeriesCompanion.insert(
                 id: id,
                 siteId: siteId,
@@ -7026,6 +7268,9 @@ class $$MeasurementSeriesTableTableManager
                 simulated: simulated,
                 configJson: configJson,
                 segmentsJson: segmentsJson,
+                learnedMicSpacingM: learnedMicSpacingM,
+                learnedChannelOffsetS: learnedChannelOffsetS,
+                learnedPassCount: learnedPassCount,
               ),
           withReferenceMapper: (p0) => p0
               .map(

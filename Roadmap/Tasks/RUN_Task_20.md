@@ -62,14 +62,14 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 
 - [ ] 20 bis 30 echte Vorbeifahrten aufnehmen, Korrelogramm und Spektrogramm im Viewer ansehen.
 - [ ] Entscheidung interne vs. externe Mikrofone durch den Nutzer, in `Roadmap/README.md` festhalten.
-- [ ] Kurze Ausschnitte (wenige Sekunden) als Fixtures nach `tests/fixtures/` legen und Regressionstests ergänzen.
+- [x] Kurze Ausschnitte (wenige Sekunden) als Fixtures nach `tests/fixtures/` legen und Regressionstests ergänzen. (2026-11-23: drei Ausschnitte, `tests/data/real_recordings_test.dart`)
 
 ### Aus Task_07 bis Task_11: Auswertung auf echten Daten
 
 - [ ] Ereigniserkennung findet die visuell erkennbaren Einzelvorbeifahrten.
 - [ ] Ergebnisliste einer echten Messreihe mit plausiblen Geschwindigkeiten.
-- [ ] Anteil der Ereignisse mit nutzbarem Ton (Doppler) zählen, in `Roadmap/README.md` notieren.
-- [ ] Anteil A/B/C auf echten Daten ermitteln, in `Roadmap/README.md` notieren.
+- [x] Anteil der Ereignisse mit nutzbarem Ton (Doppler) zählen, in `Roadmap/README.md` notieren. (2026-11-23, Fenstersims: 0 von 10)
+- [x] Anteil A/B/C auf echten Daten ermitteln, in `Roadmap/README.md` notieren. (2026-11-23, Fenstersims, 10 Autos: 0 / 9 / 1)
 
 ### Aus Task_12: Live-Betrieb
 
@@ -99,7 +99,7 @@ WAV vom Gerät holen: `adb exec-out run-as de.nyooom.app ls app_flutter` und `ad
 Hintergrund in `docs/method-notes.md`.
 
 - [ ] Aufnahme mit Kolonnen und Gegenverkehr von Hand auszählen (Video oder Strichliste, mindestens 50 Fahrzeuge) und mit der Zahl der Datensätze vergleichen: fehlende und erfundene Fahrzeuge notieren.
-- [ ] Mittlere Korrelation echter Spuren ansehen (`MotionFit.strength`): passt `trackMinStrength` = 0,15, oder gibt es Geisterspuren bzw. verworfene echte Spuren?
+- [x] Mittlere Korrelation echter Spuren ansehen (`MotionFit.strength`): passt `trackMinStrength` = 0,15, oder gibt es Geisterspuren bzw. verworfene echte Spuren? (2026-11-23: passt, Autos 0,17 bis 0,25, sonst höchstens 0,085; verworfen wurden echte Spuren wegen `monotonicMinFraction`, jetzt 0,45)
 - [ ] Anteil der Datensätze mit Grund „Ton nicht zuordenbar" und „Beschleunigung" bei dichtem Verkehr notieren.
 - [ ] Grundpegel bei dichtem Verkehr: werden leise Fahrzeuge noch erkannt? Gegebenenfalls `noiseFloorPercentile` anpassen und hier festhalten.
 - [ ] Fenstersims: b und Δ0 in Einbaulage kalibrieren und mit der Kalibrierung am Stativ vergleichen. Im Korrelogramm prüfen, ob eine gespiegelte Spur (Laibung) zu sehen ist.
@@ -131,6 +131,21 @@ Automatische Tests entstehen hier nur, wenn echte Aufnahmen als Fixtures dazukom
 
 - Startbildschirm der Messreihe: Auswahl „Mikrofon“ (eingebaut oder externes Gerät aus `getInputDevices`), ein externes Gerät mit zwei Kanälen wird vorausgewählt (`preferredInputDevice`). Die Messreihe nutzt die Kalibrierung dieses Eingabegeräts (`devices.input_device`), ohne sie b = 0,15 m.
 - Gestoppte Messreihen lassen sich fortsetzen (Aufnahmebildschirm und Detailansicht, „Weiter aufnehmen“). Die WAV wird angehängt, jede Fortsetzung ist ein Abschnitt (`RecordingSegment`, DB-Schema 5, `metadata.json` → `segments`). Ob Android das USB-Gerät wirklich übernimmt, ist nur auf dem Gerät prüfbar (Checkliste oben).
+
+**2026-11-23, erste echte Aufnahmen (Sammlung vom Fenstersims, Auswertung am PC):**
+
+Aufnahme des Nutzers: Google Pixel 11, Eingabe „USB-Audio - Wireless Microphone“ (zwei Funkmikrofone, 15 cm), 2,5 m über der Fahrbahn, etwa 3 m zur Straße, 2 °C, Tempo-30-Zone. 17 Minuten, 29 Clips, markiert: 10 Auto, 19 kein Auto. Einzelheiten und Zahlen in `docs/method-notes.md`, Abschnitt „Erste echte Aufnahmen“.
+
+- Das Funkmikrofon liefert echtes Stereo (beide Kanäle verschieden, saubere S-Kurven). Wirksamer Abstand aus den Vorbeifahrten: b = 14,2 cm, Δ0 = −6 µs.
+- Ereigniserkennung: alle 10 Autos als Clip vorhanden; dazu 19 Ereignisse ohne Auto (Schwelle 10 dB), die die Auswertung bis auf eines als „keine Spur“ verwirft.
+- Anteil A/B/C der 10 Autos: 0 / 9 / 1 (vor den Korrekturen 1 falsche A / 3 / 6).
+- Anteil mit nutzbarem Ton (Doppler): 0 von 10. Motorordnungen liegen unter 300 Hz und ändern sich mit der Drehzahl stärker als der Doppler-Sprung.
+- `trackMinStrength` = 0,15 passt (Autos 0,17 bis 0,25, sonst höchstens 0,085). `monotonicMinFraction` war zu streng und steht jetzt auf 0,45.
+- Keine Spiegelspur der Laibung zu sehen. Die zweite Linie im Korrelogramm (±150 µs) ist ein Nebenmaximum der Korrelation, keine Reflexion.
+- Geschwindigkeiten: 17,6 bis 35,4 km/h, Median 27 km/h, mit 4,4 m horizontal zur Spurmitte (Angabe des Nutzers, Schrägabstand 4,92 m). Mit den zuerst genannten 3 m (Fahrbahnrand) waren es 13 bis 27 km/h. Plausibel für Tempo 30, aber ohne Referenzfahrten nicht bestätigt.
+- Neue Werkzeuge: `tool/evaluate_collection.dart`, Fixtures in `tests/fixtures/` mit `tests/data/real_recordings_test.dart`.
+- Die App lernt b und Δ0 jetzt beim Auswerten einer Messreihe selbst (Wunsch des Nutzers, DB-Schema 6). Auf dem Gerät noch zu prüfen: Laufzeit der Auswertung mit Lernen, Anzeige der Karte „Mikrofonabstand aus den Vorbeifahrten“, Migration einer bestehenden Installation.
+- Noch offen aus der Checkliste: alles, was das Gerät selbst betrifft (Audioquelle, Effekte, Live-Laufzeit), Referenzfahrten, dichter Verkehr.
 
 ## Abschluss-Checkliste
 

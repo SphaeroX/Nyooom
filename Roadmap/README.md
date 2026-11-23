@@ -37,7 +37,7 @@ Stand: 2026-11-16 – **Entwicklung abgeschlossen (Task_01 bis Task_19).** Offen
 | 17 | Doppler Variante 2: Entzerrung | erledigt |
 | 18 | Selbstkalibrierung | erledigt |
 | 19 | Gemeinsame Ausgleichsrechnung | erledigt |
-| 20 | Geräte- und Feldtest | läuft (App für Schnelltest vorbereitet) |
+| 20 | Geräte- und Feldtest | läuft (erste echte Aufnahmen ausgewertet, Referenzfahrten offen) |
 
 Status ist `offen`, `läuft` (Datei trägt das Präfix `RUN_`) oder `erledigt` (Datei liegt in `Archiv/`). Die Tabelle wird beim Archivieren eines Tasks aktualisiert.
 
@@ -154,6 +154,15 @@ Globale Informationen, Architekturentscheidungen und Wissen, das für das gesamt
 
 - Mikrofon ist Standardquelle neuer Messreihen; Schnelltest-Standort ohne Ausmessen (`quickTestSite()`); Bildschirm bleibt während der Aufnahme an. Gerätetests mit der Release-APK (`fvm flutter build apk --release`, signiert mit Debug-Schlüssel), Debug-Build ist für die Live-Auswertung zu langsam. (Task_20)
 
+**Aus Task_20 (erste echte Aufnahmen, 2026-11-23, Fenstersims mit zwei Funkmikrofonen):**
+
+- Einzelheiten in `docs/method-notes.md`, Abschnitt „Erste echte Aufnahmen“. Es gibt noch keine Referenzgeschwindigkeit; belegt sind Erkennung und Richtung, nicht die Genauigkeit.
+- 10 Autos: 9 mit Geschwindigkeit (Klasse B), keines mit nutzbarem Doppler-Ton. 19 Ereignisse ohne Auto: 18 verworfen, eines ist akustisch eine Vorbeifahrt (vermutlich Fahrrad).
+- Der wirksame Mikrofonabstand entscheidet über die Geschwindigkeit: 5 % zu viel b ergeben 15 bis 20 % zu wenig. `estimatePlateaus` liest b und Δ0 aus den Vorbeifahrten. Die App lernt beide beim Auswerten einer Messreihe (ab 5 Vorbeifahrten, höchstens 20 % neben der Kalibrierung) und speichert sie an der Messreihe (DB-Schema 6); `repo.analysisSetup(id)` liefert danach den gelernten Wert. Live gilt bis zur ersten Auswertung die Kalibrierung.
+- `monotonicMinFraction` 0,45 statt 0,8 (echte Autos sind keine Punktquelle). Doppler-Variante 2 hat eine Gegenprobe gegen erfundene Töne; ihre Entscheidung bleibt auf echtem Reifenrauschen wacklig.
+- Sammlungen aus dem Tab „Sammeln“ lassen sich am PC gegen die Markierungen auswerten: `fvm dart run tool/evaluate_collection.dart <ordner> …` (`lib/data/collection_evaluation.dart`).
+- Echte Ausschnitte als Fixtures: `tests/fixtures/fenster_*.wav`, Test `tests/data/real_recordings_test.dart`.
+
 **Aus der Konzept- und Physikprüfung (2026-11-16, nach Task_19, kein eigener Task):**
 
 - Formeln und Zahlen aus `technik.pdf` 3 bis 8 sind nachgerechnet und stimmen. Ergebnis, Änderungen und Grenzen stehen in `docs/method-notes.md`; vor Änderungen an der Auswertung lesen.
@@ -172,4 +181,5 @@ Dinge, die global noch zu beachten sind: Besonderheiten, bekannte Einschränkung
 - Größtes Projektrisiko: Ob das Zielgerät zwei getrennte, unbearbeitete Mikrofonkanäle liefert, ist herstellerabhängig. Geklärt wird das in Task_01, Task_05 und Task_06. Ausweichlösung ist ein externes USB-Stereomikrofon; seit 2026-11-17 lässt es sich im Startbildschirm der Messreihe wählen (eigene Kalibrierung pro Eingabegerät, Prüfpunkte in Task_20).
 - Messreihen lassen sich nach „Aufnahme beenden“ fortsetzen (2026-11-17): WAV wird angehängt, Pausen stehen als `RecordingSegment` in DB (Schema 5) und `metadata.json`. Uhrzeiten von Datensätzen immer über `AnalysisSetup.utcMsAt(offsetS)` bilden, nie `startedAtUtcMs + offset`.
 - Geplanter Einsatz: Gerät auf dem Fenstersims, Zählung und Geschwindigkeiten einer Straße. Hinweise zur Aufstellung (Höhe, Laibung, Kalibrierung in Einbaulage) in `docs/method-notes.md`.
-- Offene fachliche Punkte aus der PDF (Abschnitt 10): Anteil der Fahrzeuge mit auswertbarem Ton, systematischer Fehler durch die ausgedehnte Schallquelle, Frequenzabhängigkeit von b, Warnton von E-Autos.
+- Offene fachliche Punkte aus der PDF (Abschnitt 10): Anteil der Fahrzeuge mit auswertbarem Ton (erste Aufnahme am Fenstersims: 0 von 10), systematischer Fehler durch die ausgedehnte Schallquelle (im Korrelogramm sichtbar, Größe offen), Frequenzabhängigkeit von b, Warnton von E-Autos.
+- Ohne Referenzfahrten ist keine Geschwindigkeit der App geprüft. Am Fenstersims ergab sich mit 4,4 m zur Spurmitte ein Median von 27 km/h (Tempo-30-Zone, plausibel); mit dem Abstand zum Fahrbahnrand (3 m) waren es 20 km/h. Am Standort immer den Abstand zur Mitte der Fahrspur eintragen.

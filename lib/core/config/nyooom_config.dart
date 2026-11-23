@@ -58,7 +58,7 @@ class NyooomConfig {
     this.lateralSpreadM = 0.4,
     this.distanceCheckTolerance = 0.25,
     this.residualLimitS = 30e-6,
-    this.monotonicMinFraction = 0.8,
+    this.monotonicMinFraction = 0.45,
     this.sourceHeightM = 0.3,
     this.matchToleranceS = 2,
     this.referenceAverageS = 2,
@@ -86,6 +86,9 @@ class NyooomConfig {
     this.duplicateWindowS = 0.5,
     this.mirrorKappaTolerance = 0.15,
     this.mirrorT0ToleranceS = 0.15,
+    this.plateauMinDirectionCosine = 0.95,
+    this.plateauMinCount = 5,
+    this.plateauMaxDeviation = 0.2,
   });
 
   /// Recording sample rate in Hz (4.2, 9.2).
@@ -216,7 +219,10 @@ class NyooomConfig {
   final double residualLimitS;
 
   /// Minimum fraction of block maxima that must follow the fitted S curve
-  /// for the track to count as monotonic (5.6).
+  /// for the track to count as monotonic (5.6). Real cars at 4 m reach
+  /// 0.62 to 0.92 (the source is several metres long, not a point),
+  /// events without a vehicle at most 0.24 (recording of 2026-11-23);
+  /// the start value 0.8 rejected half of the cars.
   final double monotonicMinFraction;
 
   /// Height of the sound source above the road (7.2).
@@ -304,6 +310,21 @@ class NyooomConfig {
   /// first one from a side wall, not a vehicle.
   final double mirrorKappaTolerance;
   final double mirrorT0ToleranceS;
+
+  /// The plateaus of the TDOA curve, from which the effective microphone
+  /// spacing and the channel offset of a pass are read, are the blocks
+  /// with |u| of at least this value (real recordings, 2026-11-23).
+  final double plateauMinDirectionCosine;
+
+  /// The spacing and offset learned from the plateaus replace the
+  /// calibration of a series from this many passes on (the median then
+  /// tolerates single outliers, e.g. a long vehicle).
+  final int plateauMinCount;
+
+  /// A learned spacing farther than this fraction from the calibrated one
+  /// is not used: the plateaus then show something else than the device
+  /// (curved road, wall).
+  final double plateauMaxDeviation;
 
   /// Acceleration check limit in m/s.
   double get accelerationCheckLimit => accelerationCheckLimitKmh / 3.6;
@@ -416,6 +437,12 @@ class NyooomConfig {
       duplicateWindowS: f('duplicateWindowS', d.duplicateWindowS),
       mirrorKappaTolerance: f('mirrorKappaTolerance', d.mirrorKappaTolerance),
       mirrorT0ToleranceS: f('mirrorT0ToleranceS', d.mirrorT0ToleranceS),
+      plateauMinDirectionCosine: f(
+        'plateauMinDirectionCosine',
+        d.plateauMinDirectionCosine,
+      ),
+      plateauMinCount: i('plateauMinCount', d.plateauMinCount),
+      plateauMaxDeviation: f('plateauMaxDeviation', d.plateauMaxDeviation),
     );
   }
 
@@ -498,5 +525,8 @@ class NyooomConfig {
     'duplicateWindowS': duplicateWindowS,
     'mirrorKappaTolerance': mirrorKappaTolerance,
     'mirrorT0ToleranceS': mirrorT0ToleranceS,
+    'plateauMinDirectionCosine': plateauMinDirectionCosine,
+    'plateauMinCount': plateauMinCount,
+    'plateauMaxDeviation': plateauMaxDeviation,
   };
 }

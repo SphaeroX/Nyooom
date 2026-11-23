@@ -35,21 +35,33 @@ class SharpnessResult {
 /// Search: coarse grid ([NyooomConfig.sharpnessCoarseStep]) over
 /// [dopplerSpeedMin, dopplerSpeedMax], then [NyooomConfig.dopplerSpeedStep]
 /// around the maximum. Uncertainty from the half-height width of S.
+///
+/// Counter-check (real recordings, 2026-11-23): tyre noise and stationary
+/// lines of the surroundings also give a largest S somewhere, often at the
+/// slowest candidate, where the signal is warped least. Warping by the
+/// same amount the wrong way round (as if the vehicle approached while it
+/// leaves) blurs a tone of the vehicle even more, but treats everything
+/// else the same. A maximum counts as a tone only if it exceeds
+/// [NyooomConfig.sharpnessPeakFactor] times the reversed sharpness at the
+/// same speed (largest of the candidate and its two neighbours) by at
+/// least [NyooomConfig.sharpnessMinPeak].
 class SharpnessEstimator {
   SharpnessEstimator({required this.config, required this.speedOfSound});
 
   final NyooomConfig config;
   final double speedOfSound;
 
-  /// Sharpness for one candidate [speed] (m/s, positive).
+  /// Sharpness for one candidate [speed] (m/s, positive). With [reversed]
+  /// the signal is warped the wrong way round (counter-check).
   double sharpness(
     Float64List sum, {
     required double windowStartS,
     required double speed,
     required double kappa,
     required double t0,
+    bool reversed = false,
   }) {
-    final dewarped = _dewarp(sum, windowStartS, speed, kappa, t0);
+    final dewarped = _dewarp(sum, windowStartS, speed, kappa, t0, reversed);
     if (dewarped.length < config.sharpnessFftSize) return 0;
     final n = config.sharpnessFftSize;
     final fft = Fft.of(n);
@@ -107,12 +119,13 @@ class SharpnessEstimator {
     required double kappa,
     required double t0,
   }) {
-    double s(double v) => sharpness(
+    double s(double v, {bool reversed = false}) => sharpness(
       sum,
       windowStartS: windowStartS,
       speed: v,
       kappa: kappa,
       t0: t0,
+      reversed: reversed,
     );
     final coarse = <double>[];
     final values = <double>[];
@@ -148,14 +161,21 @@ class SharpnessEstimator {
         if (i < lo - 1 || i > hi + 1) values[i],
     ]..sort();
     final median = outside.isEmpty ? overall : outside[outside.length ~/ 2];
+    SharpnessResult noTone() =>
+        SharpnessResult(speed: null, sigma: null, peak: peak, median: median);
     if (!(peak > config.sharpnessPeakFactor * median) ||
         peak < config.sharpnessMinPeak) {
-      return SharpnessResult(
-        speed: null,
-        sigma: null,
-        peak: peak,
-        median: median,
-      );
+      return noTone();
+    }
+    // Counter-check, only for a candidate tone (three more evaluations).
+    var reversedPeak = 0.0;
+    for (var i = best - 1; i <= best + 1; i++) {
+      if (i < 0 || i >= coarse.length) continue;
+      reversedPeak = math.max(reversedPeak, s(coarse[i], reversed: true));
+    }
+    if (peak - config.sharpnessPeakFactor * reversedPeak <
+        config.sharpnessMinPeak) {
+      return noTone();
     }
     // Refine around the coarse maximum.
     var bestV = coarse[best], bestS = peak;
@@ -198,12 +218,16 @@ class SharpnessEstimator {
 
   /// Resamples [sum] (window starting at [windowStartS]) onto a uniform
   /// emission-time grid within |u| ≤ [NyooomConfig.sharpnessMaxDirectionCosine].
+  /// With [reversed] the travel time shrinks with the distance instead of
+  /// growing (t = te + (2d − r)/c): the Doppler shift is doubled instead of
+  /// removed, while the amount of warping stays the same.
   Float64List _dewarp(
     Float64List sum,
     double windowStartS,
     double speed,
     double kappa,
     double t0,
+    bool reversed,
   ) {
     final fs = config.sampleRate.toDouble();
     final c = speedOfSound;
@@ -215,7 +239,8 @@ class SharpnessEstimator {
     var teFrom = t0 - tauMax, teTo = t0 + tauMax;
     double reception(double te) {
       final x = speed * (te - t0);
-      return te + math.sqrt(d * d + x * x) / c;
+      final r = math.sqrt(d * d + x * x);
+      return te + (reversed ? 2 * d - r : r) / c;
     }
 
     while (reception(teFrom) < windowStartS + 2 / fs && teFrom < t0) {

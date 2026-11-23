@@ -2,7 +2,7 @@
 
 > Wann lesen: bevor du an Ereigniserkennung, Laufzeitanpassung, Doppler, Fusion oder Zählung etwas änderst, und bevor du Messungen am Fenster oder bei dichtem Verkehr beurteilst.
 
-`technik.pdf` bleibt die fachliche Referenz. Diese Datei hält fest, was die Prüfung des Konzepts (2026-11-16, nach Task_19) ergeben hat und wo der Code bewusst über die PDF hinausgeht. Alle Zahlen stammen aus der Simulation; echte Aufnahmen stehen noch aus (Task_20).
+`technik.pdf` bleibt die fachliche Referenz. Diese Datei hält fest, was die Prüfung des Konzepts (2026-11-16, nach Task_19) ergeben hat und wo der Code bewusst über die PDF hinausgeht. Die Zahlen der Konzeptprüfung stammen aus der Simulation; was die ersten echten Aufnahmen ergeben haben, steht im Abschnitt „Erste echte Aufnahmen“.
 
 ## Geprüft und in Ordnung
 
@@ -35,6 +35,8 @@ Die PHAT-Gewichtung macht jede kohärente Quelle zu einem Maximum ähnlicher Hö
 
 Eine Quelle mit fester Richtung (Maschine, Gespräch) ergibt keine Spur mehr: Im Bereich der Annäherung liegt dort keine Korrelation.
 
+`monotonicMinFraction` steht seit den ersten echten Aufnahmen auf 0,45 statt 0,8 (Begründung im Abschnitt „Erste echte Aufnahmen“).
+
 ### 3. Doppler: steigender Ton und fremde Töne
 
 - Die Regression lieferte |v|. Ein Ton, der gegen das Modell steigt (Gasgeben, fremde Quelle), wurde so zu einer scheinbaren Geschwindigkeit. Jetzt setzt `DopplerResult.frequencyRises` denselben Befund wie die Beschleunigungsprüfung: Klasse B, Grund „Beschleunigung".
@@ -52,6 +54,52 @@ In einer schmalen Gasse fahren beide Richtungen auf derselben Spur, also im selb
 ### 6. Fortgesetzte Messreihe: Naht in der Aufnahme
 
 Eine fortgesetzte Messreihe ist eine einzige WAV, die Abschnitte liegen direkt hintereinander. An der Naht springt der Pegel, und ein Fahrzeug, das in der Pause vorbeifuhr, fehlt. Die Ereigniserkennung kann an der Naht ein Fenster aus zwei Abschnitten bilden; das Ergebnis ist dann meist Klasse C oder fällt unter die Dublettenregel. Die Uhrzeit eines Datensatzes kommt aus dem Abschnitt, in dem t0 liegt (`AnalysisSetup.utcMsAt`). Die Live-Auswertung beginnt nach dem Fortsetzen neu (leerer Ringpuffer), eine Vorbeifahrt genau an der Naht wird deshalb live nicht ausgewertet.
+
+## Erste echte Aufnahmen (2026-11-23, Fenstersims)
+
+Sammlung aus dem Tab „Sammeln“: 17 Minuten, 29 Clips, vom Nutzer markiert (10 Auto, 19 kein Auto). Zwei Funkmikrofone über USB („Wireless Microphone“), 15 cm Abstand laut Maßband, 2,5 m über der Fahrbahn, etwa 3 m zum Fahrbahnrand und etwa 4,4 m zur Mitte der Fahrspur (Angabe des Nutzers), 2 °C, Tempo-30-Zone. Es gibt **keine Referenzgeschwindigkeit**: Geprüft sind Erkennung, Richtung und Plausibilität, nicht die Genauigkeit. Nachrechnen: `fvm dart run tool/evaluate_collection.dart <ordner> --abstand 4.4 --hoehe 2.5 --temperatur 2 --b-schaetzen`.
+
+### Was die Aufnahmen zeigen
+
+- **Echtes Stereo, saubere S-Kurven.** Die Laufzeit geht von +425 µs nach −425 µs (bzw. umgekehrt), Kanalversatz etwa −6 µs.
+- **Wirksamer Mikrofonabstand 14,2 cm statt 15 cm** (Einzelwerte aus den Vorbeifahrten 14,1 bis 14,4 cm). Das ist die wichtigste Stellgröße: Mit b = 15 cm erreicht die Messkurve die Asymptote des Modells nicht, die Anpassung gleicht das mit einem kleineren κ aus. 5 % zu viel b ergaben 15 bis 20 % zu wenig Geschwindigkeit.
+- **Nebenmaxima ±150 µs neben der Spur.** Die Kohärenz der beiden Kanäle ist bei 0,3 bis 1,7 kHz und bei 3,7 bis 8 kHz hoch, dazwischen (2 bis 3,5 kHz) fast null. Mit dieser Lücke hat die PHAT-Korrelation starke Nebenmaxima. Sie liegen außerhalb der Ausreißergrenze von 40 µs und stören die Anpassung nicht; es ist keine zweite Quelle.
+- **Ausgedehnte Quelle.** Vor der größten Annäherung liegt das Korrelationsmaximum 20 bis 40 µs vor der Modellkurve (Front des Autos), danach ebenso weit dahinter (Heck). Ein Auto ist bei 4 m Abstand kein Punkt. Ein Modell mit wandernder Quelle bzw. zwei Achsen passte nicht messbar besser und ließ sich aus den Daten nicht eindeutig bestimmen; es ist nicht umgesetzt. Der systematische Fehler in κ ist damit offen (Schätzung aus der Geometrie: einige Prozent zu klein).
+- **Kennwerte der Spur:** Autos haben eine mittlere Korrelation (`MotionFit.strength`) von 0,17 bis 0,25 und einen Kurvenanteil von 0,62 bis 0,92. Ereignisse ohne Fahrzeug: höchstens 0,085 und 0,24. In der Simulation (Punktquelle) lag die Stärke bei 0,3 bis 0,4. `trackMinStrength` = 0,15 passt, der Abstand zu den Autos ist aber klein.
+- **Motortöne nur unter 300 Hz.** Über 150 Hz, wo die Tonsuche arbeitet, gibt es bei keinem der 10 Autos eine durchgehende Tonspur. Die Motorordnungen (30 bis 300 Hz) sind gut zu sehen, aber die Drehzahl ändert sich an dieser Stelle bei jedem Auto um 2 bis 7 % pro Sekunde (Gasgeben, Auskuppeln bis Leerlauf). Der Doppler-Sprung bei 30 km/h beträgt insgesamt 5 %. Beides lässt sich nicht trennen: Versuchsweise Regressionen auf den Motorordnungen ergaben 12 bis 170 km/h. Eine Tonsuche unter 150 Hz ist deshalb nicht eingebaut.
+
+### Was geändert wurde
+
+- **`monotonicMinFraction` 0,8 → 0,45.** Der Startwert verwarf 5 von 9 Autos als „Spur nicht monoton“, weil die ausgedehnte Quelle Blöcke neben die Kurve legt. 0,45 liegt zwischen den Autos (ab 0,62) und allem anderen (bis 0,24). Die Simulationstests für anhaltende und abbiegende Fahrzeuge bestehen weiter.
+- **Gegenprobe in Doppler-Variante 2.** Das Schärfemaß hat auf Reifenrauschen irgendwo ein größtes S, oft beim langsamsten Kandidaten, und stationäre Linien der Umgebung sind ohne Entzerrung am schärfsten. In 3 von 10 Clips entstand so ein „Ton“, je nach Ausschnitt mit 15 oder 25 km/h, einmal mit Klasse A. Jetzt wird ein Kandidat zusätzlich gleich stark falsch herum entzerrt (`sharpness(reversed: true)`, Laufzeit t = te + (2d − r)/c): Das verdoppelt die Doppler-Verschiebung eines Fahrzeugtons, behandelt alles andere gleich. Ein Ton gilt nur, wenn S um `sharpnessMinPeak` über dem `sharpnessPeakFactor`-Fachen dieser Gegenprobe liegt.
+- **b und Δ0 aus den Vorbeifahrten** (`estimatePlateaus`, `lib/core/calibration/plateau_calibration.dart`): Weit vor und nach der Vorbeifahrt steht das Fahrzeug fast in Verlängerung der Mikrofone, die Laufzeit liegt bei Δ0 ± b/c. Aus den Blöcken mit |u| ≥ `plateauMinDirectionCosine` (0,95) folgen b und Δ0; gemeint ist der auf die Straßenrichtung projizierte Abstand, also genau der Wert, den das Modell braucht. Braucht eine gerade Straße und ein Fenster, das die Plateaus erreicht (κ ab etwa 0,8 1/s).
+- **Die App lernt b und Δ0 beim Auswerten einer Messreihe** („Messreihe auswerten“, `learnSeriesSpacing` in `lib/data/series_analysis.dart`). Ablauf: Ereignisse suchen, dann zwei Runden nur mit der Laufzeitspur (ohne Doppler). Die erste Runde rechnet mit der Kalibrierung, die zweite mit dem Median der ersten, weil die Anpassung mit falschem b das Plateau um etwa 1 % verschiebt. Danach die volle Auswertung mit dem gelernten Wert. Regeln (`judgeSpacing`): mindestens `plateauMinCount` (5) Vorbeifahrten mit Plateaus, sonst gilt die Kalibrierung; weicht der Median mehr als `plateauMaxDeviation` (20 %) von der Kalibrierung ab, wird er nicht übernommen und gemeldet (gekrümmte Straße, Wand, Mikrofonachse schief). Der Median verträgt einzelne Ausreißer; auf der Sammlung lagen ein langes Fahrzeug bei 12,0 cm und das vermutete Fahrrad bei 11,1 cm, der Median bei 14,2 cm.
+  - Gespeichert wird je Messreihe (`measurement_series.learned_mic_spacing_m`, `learned_channel_offset_s`, `learned_pass_count`, Schema 6). `repo.analysisSetup(id)` liefert danach den gelernten Wert, also auch für Sichtprüfung, Export und das Fortsetzen der Aufnahme; `analysisSetup(id, learnedSpacing: false)` die Kalibrierung. Jedes erneute Auswerten lernt von der Kalibrierung aus neu.
+  - Die Kanalzuordnung (links/rechts getauscht) wird nicht gelernt, die Kalibrierung dafür bleibt nötig.
+  - **Live** gilt die Kalibrierung, solange die Messreihe noch nicht ausgewertet wurde. Die Geschwindigkeiten der Live-Liste sind bei falschem b entsprechend zu klein; maßgeblich ist die Auswertung der gespeicherten Aufnahme.
+  - Kosten: Das Lernen verlängerte die Auswertung am PC um etwa die Hälfte (232 s Aufnahme mit 20 Ereignissen: 46 s ohne, 71 s mit).
+  - Probe mit den echten Clips, zu einer Datei verbunden und wie eine Messreihe ausgewertet, Start mit b = 15 cm: gelernt 14,2 cm und −9 µs aus 10 Vorbeifahrten, Geschwindigkeiten 17 bis 37 km/h statt 14 bis 27 km/h.
+- **Auswertung gelabelter Sammlungen** (`lib/data/collection_evaluation.dart`, `tool/evaluate_collection.dart`).
+
+### Ergebnis auf der Sammlung
+
+| | vorher | jetzt |
+|---|---|---|
+| Autos mit Geschwindigkeit | 4 von 10 | 9 von 10 |
+| davon Klasse A | 1 (falscher Ton) | 0 |
+| „kein Auto“ mit Geschwindigkeit | 1 von 19 | 1 von 19 |
+
+- Das fehlende Auto (Clip 14) hat stark verzögert, der Motor fällt auf Leerlauf. Das Pegelmaximum liegt 1,6 s vor der größten Annäherung und damit außerhalb des t0-Suchbereichs (`t0SearchRangeS` = 1 s).
+- Der falsche Treffer (Clip 29, 14 dB über dem Grundpegel, Autos 23 bis 32 dB) hat eine vollständige S-Kurve mit κ wie ein Auto. Akustisch ist das eine Vorbeifahrt, vermutlich ein Fahrrad oder ein leises Fahrzeug. Die Laufzeitmethode kann das nicht unterscheiden.
+- Richtung: 7 Autos −1, 2 Autos +1.
+- **Geschwindigkeit: 17,6 bis 35,4 km/h, Median 27 km/h**, gerechnet mit 4,92 m Schrägabstand (4,4 m horizontal zur Spurmitte). Das passt zur Tempo-30-Zone (erwartet 25 bis 40 km/h). Mit den zuerst genannten 3 m (Fahrbahnrand, Schrägabstand 3,72 m) waren es 13 bis 27 km/h: Die Geschwindigkeit ist proportional zum Abstand, einzutragen ist immer der Abstand zur Mitte der Fahrspur. Beide Richtungen sind hier mit demselben Abstand gerechnet; fahren sie auf verschiedenen Spuren, braucht jede ihren eigenen. Der Fehler der ausgedehnten Quelle bleibt offen, eine Referenz gibt es weiter nicht.
+- **Doppler: kein nutzbarer Wert bei 10 Autos.** Variante 1 findet keine Tonspur. Variante 2 meldet nach der Gegenprobe noch vereinzelt einen Wert, der an der Abstandsprüfung scheitert. Die Entscheidung ist nicht stabil: Sie kippt, wenn sich κ um 0,5 % ändert, weil S(v) auf echten Signalen um mehrere Einheiten schwankt. Ein Clip (lautes Fahrzeug mit Linien bei 160 bis 550 Hz) zeigt in allen Varianten ein Maximum bei 31 bis 34 km/h, besteht das Kriterium aber nur manchmal.
+
+### Was für eine echte Validierung fehlt
+
+- Abstand vom Mikrofon zur Mitte jeder Fahrspur mit dem Maßband messen und am Standort eintragen (bisher geschätzt: 4,4 m).
+- Referenzfahrten nach `technik.pdf` 8.1 mit dem GPS-Logger. Für Doppler dazu ein Dauerton aus dem Fahrzeug (Lautsprecher, 1 bis 2 kHz): ein Ton, der sicher konstant ist, zeigt, ob die Doppler-Kette auf dem Gerät stimmt.
+- Eine Stelle, an der gleichmäßig gefahren wird. Vor einer Einmündung oder Engstelle ändern alle die Drehzahl.
 
 ## Wirkung in der Simulation
 
@@ -101,7 +149,7 @@ Der Fehler von κ liegt bei etwa 1 % (quadratisches Mittel). Der Fehler der Gesc
 | `duplicateWindowS` | 0,5 s | gleiche Richtung, t0 näher beieinander: dasselbe Fahrzeug |
 | `mirrorKappaTolerance`, `mirrorT0ToleranceS` | 15 %, 0,15 s | Erkennung der Spiegelspur |
 
-In der Simulation liegt die mittlere Korrelation einer echten zweiten Spur bei 0,3 bis 0,4, ohne zweites Fahrzeug bei 0,00 bis 0,02. Die Werte sind mit echten Aufnahmen zu prüfen (Task_20).
+In der Simulation liegt die mittlere Korrelation einer echten zweiten Spur bei 0,3 bis 0,4, ohne zweites Fahrzeug bei 0,00 bis 0,02. Echte Autos am Fenstersims: 0,17 bis 0,25, ohne Fahrzeug höchstens 0,085 (Abschnitt „Erste echte Aufnahmen“). Mehrere Fahrzeuge gleichzeitig sind mit echten Aufnahmen noch nicht geprüft.
 
 ---
 Pflege: Bei Änderungen am Auswerteverfahren diese Datei sofort aktualisieren.
