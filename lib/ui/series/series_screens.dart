@@ -127,6 +127,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
   final _temperature = TextEditingController(text: '15');
   bool? _simulate;
   bool _saveRaw = true;
+  bool _collectClips = true;
 
   @override
   void dispose() {
@@ -217,11 +218,28 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
             onChanged: (v) => setState(() => _simulate = v),
           ),
           if (!simulate) const InputDeviceHint(),
-          SwitchListTile(
-            title: const Text('Rohaudio speichern'),
-            subtitle: const Text('WAV-Datei für spätere Auswertung'),
-            value: _saveRaw,
-            onChanged: (v) => setState(() => _saveRaw = v),
+          Wrap(
+            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text('Speichern:'),
+              FilterChip(
+                key: const Key('save-raw'),
+                label: const Text('Rohaudio (WAV)'),
+                tooltip: 'WAV-Datei für spätere Auswertung',
+                selected: _saveRaw,
+                onSelected: (v) => setState(() => _saveRaw = v),
+              ),
+              FilterChip(
+                key: const Key('collect-clips'),
+                label: const Text('Clips'),
+                tooltip:
+                    'Wie der Datensammler: jedes Ereignis als Clip zum '
+                    'Anhören, Markieren und einzeln Auswerten',
+                selected: _collectClips,
+                onSelected: (v) => setState(() => _collectClips = v),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -235,6 +253,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
                       temperatureC: temperature,
                       simulate: simulate,
                       saveRawAudio: _saveRaw,
+                      collectClips: _collectClips,
                       inputDevice: device,
                     );
                     Navigator.of(context).pushReplacement(

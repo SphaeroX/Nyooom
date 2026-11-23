@@ -76,4 +76,13 @@ void main() {
     json['inputDevice'] = 'USB Audio';
     expect(SeriesMetadata.fromJson(json).inputDevice, 'USB Audio');
   });
+
+  test('stores whether clips are collected; older files collect none', () {
+    final json = metadata.toJson();
+    expect(json['collectClips'], false);
+    json.remove('collectClips');
+    expect(SeriesMetadata.fromJson(json).collectClips, isFalse);
+    json['collectClips'] = true;
+    expect(SeriesMetadata.fromJson(json).collectClips, isTrue);
+  });
 }

@@ -78,6 +78,7 @@ class SeriesMetadata {
     required this.simulated,
     required this.saveRawAudio,
     this.inputDevice = 'intern',
+    this.collectClips = false,
     this.segments = const [],
   });
 
@@ -116,6 +117,7 @@ class SeriesMetadata {
     simulated: json['simulated'] == true,
     saveRawAudio: json['saveRawAudio'] != false,
     inputDevice: json['inputDevice'] as String? ?? 'intern',
+    collectClips: json['collectClips'] == true,
     segments: [
       for (final m in json['segments'] as List? ?? const [])
         RecordingSegment.fromJson((m as Map).cast<String, dynamic>()),
@@ -145,6 +147,9 @@ class SeriesMetadata {
 
   /// Audio input: `intern` or the name of an external (USB) device.
   final String inputDevice;
+
+  /// Events are cut into a clip collection of the series while recording.
+  final bool collectClips;
 
   /// Recording parts of a continued series; empty for one continuous
   /// recording from [startedAtUtcMs].
@@ -177,6 +182,7 @@ class SeriesMetadata {
     'simulated': simulated,
     'saveRawAudio': saveRawAudio,
     'inputDevice': inputDevice,
+    'collectClips': collectClips,
     if (segments.isNotEmpty) 'segments': [for (final s in segments) s.toJson()],
   };
 }

@@ -9,6 +9,7 @@ import '../core/events/event_detector.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/signal/pcm.dart';
+import 'collection_storage.dart';
 import 'event_pipeline.dart';
 
 /// Result of evaluating one clip of a collection.
@@ -141,4 +142,24 @@ CollectionEvaluation evaluateCollection(
     );
   }
   return CollectionEvaluation(manifest: manifest, clips: clips);
+}
+
+/// Reads [clip] of collection [collectionId] and evaluates it.
+Future<ClipEvaluation> evaluateStoredClip(
+  CollectionStorage storage,
+  int collectionId,
+  ClipEntry clip, {
+  required NyooomConfig config,
+  required AnalysisSetup setup,
+}) async {
+  final wav = decodeWav(
+    await storage.clipFile(collectionId, clip.file).readAsBytes(),
+  );
+  if (wav.channels != 2) throw FormatException('${clip.file}: kein Stereo');
+  return evaluateClip(
+    deinterleavePcm16(wav.samples),
+    clip,
+    config: config,
+    setup: setup,
+  );
 }

@@ -9,7 +9,6 @@ import '../../audio/clip_player.dart';
 import '../../audio/input_devices.dart';
 import '../../audio/platform_audio.dart';
 import '../../audio/stereo_recorder.dart';
-import '../../core/collect/clip_collector.dart';
 import '../../core/collect/collection_manifest.dart';
 import '../../core/signal/level.dart';
 import '../../core/signal/pcm.dart';
@@ -37,6 +36,16 @@ final collectionProvider = FutureProvider.family<CollectionManifest?, int>((
 ) async {
   final storage = await ref.watch(collectionStorageProvider.future);
   return storage.read(id);
+});
+
+/// The clip collection of series [seriesId] (collector switched on at the
+/// start, or clips cut later from its raw audio), null without one.
+final seriesClipsProvider = FutureProvider.family<CollectionManifest?, int>((
+  ref,
+  seriesId,
+) async {
+  final storage = await ref.watch(collectionStorageProvider.future);
+  return storage.forSeries(seriesId);
 });
 
 final clipPlayerProvider = Provider<ClipPlayer>(
@@ -106,10 +115,9 @@ final collectControllerProvider =
 class CollectController extends Notifier<CollectState> {
   StreamSubscription<Uint8List>? _subscription;
   StereoRecorder? _recorder;
-  ClipCollector? _collector;
+  LiveClipCollection? _clips;
   CollectionStorage? _storage;
   CollectionManifest? _manifest;
-  Future<void> _writes = Future.value();
   int _frames = 0;
 
   @override
@@ -144,9 +152,12 @@ class CollectController extends Notifier<CollectState> {
       await storage.write(manifest);
       _storage = storage;
       _manifest = manifest;
-      _collector = ClipCollector(config: config);
+      _clips = LiveClipCollection(
+        storage: storage,
+        manifest: manifest,
+        config: config,
+      );
       _frames = 0;
-      _writes = Future.value();
       _recorder = recorder;
       _subscription = recorder.pcmBlocks.listen(_onPcm);
       await recorder.start(
@@ -170,6 +181,7 @@ class CollectController extends Notifier<CollectState> {
     await _subscription?.cancel();
     _subscription = null;
     _recorder = null;
+    _clips = null;
     final m = _manifest;
     if (m != null && m.clips.isEmpty) await _storage?.delete(m.id);
     _manifest = null;
@@ -182,14 +194,11 @@ class CollectController extends Notifier<CollectState> {
     await _subscription?.cancel();
     _subscription = null;
     _recorder = null;
-    final collector = _collector;
-    _collector = null;
-    if (collector != null) _store(collector.finish());
-    await _writes;
+    final clips = _clips!;
+    _clips = null;
     final config = ref.read(configProvider);
-    final manifest = _manifest!.withRecorded(_frames / config.sampleRate);
+    final manifest = await clips.finish(recordedS: _frames / config.sampleRate);
     _manifest = manifest;
-    await _storage!.write(manifest);
     if (!ref.mounted) return;
     state = state.copyWith(running: false, clipCount: manifest.clips.length);
     ref.invalidate(collectionsProvider);
@@ -200,33 +209,16 @@ class CollectController extends Notifier<CollectState> {
     final config = ref.read(configProvider);
     final block = deinterleavePcm16Bytes(bytes);
     _frames += block.length;
-    final clips = _collector?.add(block) ?? const [];
-    _store(clips);
+    final live = _clips;
+    final clips = live?.add(block) ?? const [];
     state = state.copyWith(
       elapsedS: _frames / config.sampleRate,
-      clipCount: _manifest?.clips.length,
+      clipCount: live?.manifest.clips.length,
       lastClipAboveFloorDb: clips.isEmpty
           ? null
           : clips.last.event.levelAboveFloorDb,
       left: measureLevel(block.left, clipThreshold: config.clipThreshold),
       right: measureLevel(block.right, clipThreshold: config.clipThreshold),
     );
-  }
-
-  /// Adds [clips] to the manifest at once and writes their files in order.
-  void _store(List<CollectedClip> clips) {
-    final storage = _storage;
-    if (clips.isEmpty || storage == null) return;
-    final rate = ref.read(configProvider).sampleRate;
-    for (final clip in clips) {
-      final m = _manifest!;
-      final name = m.nextClipFile;
-      final next = m.withClip(clipEntry(clip, name, rate));
-      _manifest = next;
-      _writes = _writes.then((_) async {
-        await storage.writeClip(m.id, name, clip.signal, rate);
-        await storage.write(next);
-      });
-    }
   }
 }

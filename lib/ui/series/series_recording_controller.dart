@@ -7,13 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../audio/simulated_stereo_recorder.dart';
 import '../../audio/stereo_recorder.dart';
 import '../../audio/wav.dart';
+import '../../core/collect/collection_manifest.dart';
 import '../../core/pipeline/pass_record.dart';
 import '../../core/series/series_metadata.dart';
 import '../../core/signal/level.dart';
 import '../../core/signal/pcm.dart';
 import '../../core/site/site.dart';
 import '../../core/sim/traffic.dart';
+import '../../data/collection_storage.dart';
 import '../../data/live_pipeline.dart';
+import '../collect/collect_controller.dart'
+    show collectionStorageProvider, seriesClipsProvider;
 import '../providers.dart';
 
 /// What the user chose on the start screen.
@@ -23,6 +27,7 @@ class SeriesStartRequest {
     required this.temperatureC,
     this.simulate = false,
     this.saveRawAudio = true,
+    this.collectClips = false,
     this.inputDevice,
   });
 
@@ -30,6 +35,10 @@ class SeriesStartRequest {
   final double temperatureC;
   final bool simulate;
   final bool saveRawAudio;
+
+  /// Cut every detected event into a clip of the series, as the data
+  /// collector does, for listening, labelling and analysing single clips.
+  final bool collectClips;
 
   /// External input (USB stereo microphone); null for the internal
   /// microphones.
@@ -136,6 +145,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
   LivePipeline? _live;
   StreamSubscription<PassRecord>? _liveSub;
   Future<void> _liveWrites = Future.value();
+  LiveClipCollection? _clips;
 
   @override
   SeriesRecordingState build() {
@@ -198,6 +208,25 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
               sampleRate: config.sampleRate,
             )
           : null;
+      if (request.collectClips) {
+        final collections = await ref.read(collectionStorageProvider.future);
+        final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+        final manifest = CollectionManifest(
+          id: now,
+          createdAtUtcMs: now,
+          source: seriesCollectionSource(id),
+          deviceModel: capabilities.deviceModel,
+          inputDevice: inputName,
+          sampleRate: config.sampleRate,
+          clips: const [],
+        );
+        await collections.write(manifest);
+        _clips = LiveClipCollection(
+          storage: collections,
+          manifest: manifest,
+          config: config,
+        );
+      }
       final info = await _record(
         id,
         recorder,
@@ -241,6 +270,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
           simulated: request.simulate,
           saveRawAudio: request.saveRawAudio,
           inputDevice: inputName,
+          collectClips: request.collectClips,
         ),
       );
       if (!ref.mounted) return;
@@ -298,6 +328,19 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
       final offsetS = writer != null
           ? writer.frameCount / config.sampleRate
           : series.durationS ?? previous.elapsedS;
+      final clips = (await storage.readMetadata(seriesId))?.collectClips == true
+          ? await (await ref.read(collectionStorageProvider.future))
+                .forSeries(seriesId)
+          : null;
+      if (clips != null) {
+        final collections = await ref.read(collectionStorageProvider.future);
+        _clips = LiveClipCollection(
+          storage: collections,
+          manifest: clips,
+          config: config,
+          offsetS: offsetS,
+        );
+      }
       await repo.resumeSeries(
         seriesId,
         offsetS: offsetS,
@@ -405,6 +448,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
     await _liveSub?.cancel();
     _liveSub = null;
     _recorder = null;
+    _clips = null;
     final writer = _writer;
     _writer = null;
     await writer?.close();
@@ -428,6 +472,14 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
     await _liveSub?.cancel();
     _liveSub = null;
     await _liveWrites;
+    final clips = _clips;
+    _clips = null;
+    if (clips != null) {
+      await clips.finish(
+        recordedS: _frames / ref.read(configProvider).sampleRate,
+      );
+      ref.invalidate(seriesClipsProvider(id));
+    }
     await ref
         .read(repositoryProvider)
         .finishSeries(
@@ -447,6 +499,7 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
       _pendingWrites = _pendingWrites.then((_) => writer.addPcm16Bytes(bytes));
     }
     _frames += block.length;
+    _clips?.add(block);
     final live = _live;
     live?.add(block);
     for (final l in List.of(_listeners)) {

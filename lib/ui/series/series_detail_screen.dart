@@ -3,10 +3,10 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/site/site.dart' show laneDirectionLabel;
 import '../../data/repository.dart';
-import '../collect/collect_screens.dart';
 import '../evaluation/pass_widgets.dart';
 import '../inspection/inspection_screen.dart';
 import '../providers.dart';
+import 'series_clips_section.dart';
 import 'series_recording_controller.dart';
 import 'series_screens.dart';
 
@@ -17,7 +17,7 @@ typedef SeriesSection = Widget Function(BuildContext context, StoredSeries s);
 final seriesSectionsProvider = Provider<List<SeriesSection>>(
   (ref) => [
     (context, s) => EvaluationSection(series: s),
-    (context, s) => CollectFromSeriesSection(series: s),
+    (context, s) => SeriesClipsSection(seriesId: s.id),
   ],
 );
 

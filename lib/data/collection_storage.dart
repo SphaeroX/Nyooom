@@ -79,6 +79,15 @@ class CollectionStorage {
     return out;
   }
 
+  /// Newest collection cut from series [seriesId], null if there is none.
+  Future<CollectionManifest?> forSeries(int seriesId) async {
+    final source = seriesCollectionSource(seriesId);
+    for (final m in await list()) {
+      if (m.source == source) return m;
+    }
+    return null;
+  }
+
   Future<void> delete(int id) async {
     final dir = directoryFor(id);
     if (await dir.exists()) await dir.delete(recursive: true);
@@ -101,18 +110,83 @@ class CollectionStorage {
   }
 }
 
-/// Entry of [clip] under file name [file].
-ClipEntry clipEntry(CollectedClip clip, String file, int sampleRate) =>
-    ClipEntry(
-      file: file,
-      startS: clip.startS,
-      peakTimeS: clip.event.peakTimeS,
-      durationS: clip.durationS(sampleRate),
-      peakLevelDb: clip.event.peakLevelDb,
-      floorDb: clip.event.floorDb,
-      eventDurationS: clip.event.durationS,
-      overlap: clip.event.overlap,
-    );
+/// `source` of a collection cut from series [seriesId].
+String seriesCollectionSource(int seriesId) => 'messreihe $seriesId';
+
+/// Entry of [clip] under file name [file]; [offsetS] is added to its times
+/// (start of the recorded segment the collector was fed from).
+ClipEntry clipEntry(
+  CollectedClip clip,
+  String file,
+  int sampleRate, {
+  double offsetS = 0,
+}) => ClipEntry(
+  file: file,
+  startS: offsetS + clip.startS,
+  peakTimeS: offsetS + clip.event.peakTimeS,
+  durationS: clip.durationS(sampleRate),
+  peakLevelDb: clip.event.peakLevelDb,
+  floorDb: clip.event.floorDb,
+  eventDurationS: clip.event.durationS,
+  overlap: clip.event.overlap,
+);
+
+/// Collects the clips of a running recording into [manifest]: every clip is
+/// added to the manifest at once, its file and the manifest are written in
+/// order in the background. Used by the data collector and by series with
+/// the collector switched on.
+class LiveClipCollection {
+  LiveClipCollection({
+    required this.storage,
+    required this._manifest,
+    required this.config,
+    this.offsetS = 0,
+  }) : _collector = ClipCollector(config: config);
+
+  final CollectionStorage storage;
+  final NyooomConfig config;
+
+  /// Position of the first fed sample in the recording, s.
+  final double offsetS;
+  final ClipCollector _collector;
+  CollectionManifest _manifest;
+  Future<void> _writes = Future.value();
+
+  CollectionManifest get manifest => _manifest;
+
+  /// Feeds [block]; returns the clips cut from it.
+  List<CollectedClip> add(StereoBlock block) {
+    final clips = _collector.add(block);
+    _store(clips);
+    return clips;
+  }
+
+  /// Cuts the events at the end of the stream, waits for all writes and
+  /// stores [recordedS] as the recorded duration.
+  Future<CollectionManifest> finish({required double recordedS}) async {
+    _store(_collector.finish());
+    await _writes;
+    _manifest = _manifest.withRecorded(recordedS);
+    await storage.write(_manifest);
+    return _manifest;
+  }
+
+  void _store(List<CollectedClip> clips) {
+    final rate = config.sampleRate;
+    for (final clip in clips) {
+      final id = _manifest.id;
+      final name = _manifest.nextClipFile;
+      final next = _manifest.withClip(
+        clipEntry(clip, name, rate, offsetS: offsetS),
+      );
+      _manifest = next;
+      _writes = _writes.then((_) async {
+        await storage.writeClip(id, name, clip.signal, rate);
+        await storage.write(next);
+      });
+    }
+  }
+}
 
 /// Cuts the event clips out of a recorded series ([wav]) into the
 /// collection [base]; reports the processed fraction to [onProgress].

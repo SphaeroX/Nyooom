@@ -91,7 +91,7 @@ lib/
   data/event_pipeline.dart          EventPipeline: vollständige Auswertung eines Ereignisfensters (offline und live), `evaluateAll` für alle Fahrzeuge des Fensters
   data/live_pipeline.dart           Live-Auswertung: Ringpuffer, Worker-Isolate, Warteschlange
   data/series_analysis.dart         Datei-Auswertung in 1-s-Stücken, Hintergrund-Isolate mit Fortschritt; lernt auf Wunsch b und Δ0 aus den Vorbeifahrten (learnSeriesSpacing)
-  data/collection_evaluation.dart   wertet die Clips einer gelabelten Sammlung aus (evaluateCollection, evaluateClip) und vergleicht mit den Markierungen
+  data/collection_evaluation.dart   wertet die Clips einer gelabelten Sammlung aus (evaluateCollection, evaluateClip, evaluateStoredClip für einen gespeicherten Clip) und vergleicht mit den Markierungen
   data/series_export.dart           Export einer Messreihe in Dateien bzw. ZIP (gestreamt)
   data/series_storage.dart          Dateiablage <Dokumente>/series/<id>/{audio.wav, metadata.json}
   data/onboarding_store.dart        Merker-Datei <Dokumente>/onboarding_done (Einführung gesehen)
@@ -109,10 +109,11 @@ lib/
   ui/calibration/                   Tab "Gerät", Kalibrier-Assistent (CalibrationController)
   ui/device/                        Eingabegeräte-Auswahl (InputDeviceSelector im Tab Gerät, InputDeviceHint auf Aufnahme-Bildschirmen, inputDevicesProvider, activeInputDeviceProvider, inputChoiceStoreProvider)
   ui/series/                        Messreihenliste, Start, Aufnahme (SeriesRecordingController), Detailansicht
-  ui/collect/                       Tab "Sammeln": Sammlungen, freie Aufnahme (CollectController), Clips anhören und markieren (ClipLabelScreen), Clips aus Messreihe (CollectFromSeriesSection)
+  ui/collect/                       Tab "Sammeln": Sammlungen, freie Aufnahme (CollectController), Clips anhören und markieren (ClipLabelScreen, optional ab initialIndex), Clips aus Messreihe (CollectFromSeriesSection), seriesClipsProvider (Sammlung einer Messreihe)
+  ui/series/series_clips_section.dart  Detailansicht der Messreihe: Clips der Reihe abspielen, zum Markieren öffnen und einzeln auswerten (clipAnalyzerProvider: learnedSetup der Reihe, evaluateClip im Hintergrund-Isolate); ohne Clips der Knopf aus CollectFromSeriesSection
   core/collect/clip_collector.dart  schneidet das Auswertefenster jedes erkannten Ereignisses (EventDetector) als Clip aus einem laufenden Strom
   core/collect/collection_manifest.dart  collection.json (Clips, Markierung auto/kein_auto/unklar/offen) und labels.csv
-  data/collection_storage.dart      Ablage <App-Dokumente>/collections/<id>/clip_NNN.wav + collection.json, ZIP-Export, collectFromWav (Messreihe → Clips)
+  data/collection_storage.dart      Ablage <App-Dokumente>/collections/<id>/clip_NNN.wav + collection.json, ZIP-Export, collectFromWav (Messreihe → Clips), LiveClipCollection (Clips einer laufenden Aufnahme, genutzt vom Datensammler und von Messreihen mit „Clips“), forSeries/seriesCollectionSource (Sammlung mit `source` = `messreihe <id>`)
   audio/clip_player.dart            Wiedergabe der Clips: ClipPlayer, PlatformClipPlayer (Kotlin-Plugin), AudioplayersClipPlayer (PC)
   audio/desktop_stereo_recorder.dart  StereoRecorder für den PC (Paket record, ersetzbares DesktopAudioBackend)
   audio/platform_audio.dart         Auswahl von Recorder und Player je Plattform

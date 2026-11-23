@@ -49,10 +49,18 @@ class ClassBadge extends StatelessWidget {
 
 /// One row of a result list: time, direction, v ± σ, class, reason.
 class PassTile extends StatelessWidget {
-  const PassTile({super.key, required this.record, this.onTap});
+  const PassTile({
+    super.key,
+    required this.record,
+    this.onTap,
+    this.showTime = true,
+  });
 
   final PassRecord record;
   final VoidCallback? onTap;
+
+  /// False for records of a single clip, whose times count from the clip.
+  final bool showTime;
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +72,10 @@ class PassTile extends StatelessWidget {
       leading: ClassBadge(r.klasse),
       title: Text('${arrow(r.richtung)}  $speed km/h'),
       subtitle: Text(
-        '${formatTime(r.zeitUtcMs)}'
-        '${r.grund == null ? '' : ' · ${r.grund}'}',
+        [
+          if (showTime) formatTime(r.zeitUtcMs) else 'Klasse ${r.klasse.label}',
+          ?r.grund,
+        ].join(' · '),
       ),
       onTap: onTap,
     );

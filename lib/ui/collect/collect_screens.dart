@@ -6,7 +6,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../audio/clip_player.dart';
 import '../../core/collect/collection_manifest.dart';
 import '../../data/collection_storage.dart';
-import '../../data/repository.dart';
 import '../device/input_device_selection.dart';
 import '../export/export_buttons.dart';
 import '../providers.dart';
@@ -225,9 +224,16 @@ class CollectRecordingScreen extends ConsumerWidget {
 /// Plays the clips of a collection one after another; the user marks each
 /// as vehicle, no vehicle or unclear.
 class ClipLabelScreen extends ConsumerStatefulWidget {
-  const ClipLabelScreen({super.key, required this.collectionId});
+  const ClipLabelScreen({
+    super.key,
+    required this.collectionId,
+    this.initialIndex,
+  });
 
   final int collectionId;
+
+  /// Clip to start with; default the first one without a label.
+  final int? initialIndex;
 
   @override
   ConsumerState<ClipLabelScreen> createState() => _ClipLabelScreenState();
@@ -266,7 +272,7 @@ class _ClipLabelScreenState extends ConsumerState<ClipLabelScreen> {
     setState(() {
       _storage = storage;
       _manifest = m;
-      _index = m?.firstOpenIndex ?? 0;
+      _index = widget.initialIndex ?? m?.firstOpenIndex ?? 0;
     });
     if (m != null && m.clips.isNotEmpty) await _play();
   }
@@ -306,6 +312,7 @@ class _ClipLabelScreenState extends ConsumerState<ClipLabelScreen> {
     await _storage!.write(m);
     ref.invalidate(collectionsProvider);
     ref.invalidate(collectionProvider(m.id));
+    ref.invalidate(seriesClipsProvider);
     if (_index < m.clips.length - 1) {
       await _go(_index + 1);
     } else {
@@ -388,7 +395,7 @@ class _ClipLabelScreenState extends ConsumerState<ClipLabelScreen> {
                   'Clip ${c.durationS.toStringAsFixed(1)} s'
                   '${c.overlap ? ' · zweites Ereignis im Clip' : ''}',
                 ),
-                Text('Markierung: ${_labelText(c.label)}'),
+                Text('Markierung: ${clipLabelText(c.label)}'),
               ],
             ),
           ),
@@ -456,20 +463,21 @@ class _ClipLabelScreenState extends ConsumerState<ClipLabelScreen> {
       ],
     );
   }
-
-  static String _labelText(ClipLabel label) => switch (label) {
-    ClipLabel.open => 'offen',
-    ClipLabel.vehicle => 'Auto',
-    ClipLabel.noVehicle => 'kein Auto',
-    ClipLabel.unclear => 'unklar',
-  };
 }
+
+/// German text of [label].
+String clipLabelText(ClipLabel label) => switch (label) {
+  ClipLabel.open => 'offen',
+  ClipLabel.vehicle => 'Auto',
+  ClipLabel.noVehicle => 'kein Auto',
+  ClipLabel.unclear => 'unklar',
+};
 
 /// Section of the series detail: cut the raw audio of a series into clips.
 class CollectFromSeriesSection extends ConsumerStatefulWidget {
-  const CollectFromSeriesSection({super.key, required this.series});
+  const CollectFromSeriesSection({super.key, required this.seriesId});
 
-  final StoredSeries series;
+  final int seriesId;
 
   @override
   ConsumerState<CollectFromSeriesSection> createState() =>
@@ -487,20 +495,20 @@ class _CollectFromSeriesSectionState
       _error = null;
     });
     try {
-      final s = widget.series;
+      final id = widget.seriesId;
       final seriesStorage = await ref.read(seriesStorageProvider.future);
       final storage = await ref.read(collectionStorageProvider.future);
-      final meta = await seriesStorage.readMetadata(s.id);
+      final meta = await seriesStorage.readMetadata(id);
       final config = ref.read(configProvider);
       final now = DateTime.now().toUtc().millisecondsSinceEpoch;
       final m = await collectFromWav(
         storage: storage,
-        wav: seriesStorage.wavFile(s.id),
+        wav: seriesStorage.wavFile(id),
         config: config,
         base: CollectionManifest(
           id: now,
           createdAtUtcMs: now,
-          source: 'messreihe ${s.id}',
+          source: seriesCollectionSource(id),
           deviceModel: meta?.deviceModel ?? '',
           inputDevice: meta?.inputDevice ?? 'intern',
           sampleRate: config.sampleRate,
@@ -511,6 +519,7 @@ class _CollectFromSeriesSectionState
         },
       );
       ref.invalidate(collectionsProvider);
+      ref.invalidate(seriesClipsProvider(id));
       if (!mounted) return;
       setState(() => _progress = null);
       await Navigator.of(context).push(
@@ -530,7 +539,7 @@ class _CollectFromSeriesSectionState
 
   @override
   Widget build(BuildContext context) {
-    final hasAudio = ref.watch(_seriesHasAudioProvider(widget.series.id));
+    final hasAudio = ref.watch(_seriesHasAudioProvider(widget.seriesId));
     if (hasAudio.value != true) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 12),
