@@ -8,7 +8,7 @@
 - Klassen/Enums/Typen: `UpperCamelCase`; Funktionen, Variablen, Provider: `lowerCamelCase`; Provider enden auf `Provider` (`recorderProvider`).
 - Kotlin: Paket `de.nyooom.app`, Plugin-Klassen mit Präfix `Nyooom` (`NyooomAudioPlugin`); Channel-Namen `de.nyooom/audio` und `de.nyooom/audio_stream`.
 - Tests: siehe `docs/testing.md` (Spiegelung von `lib/`, Endung `_test.dart`).
-- Datensatzfelder für Persistenz und Export heißen wie in `technik.pdf` 9.1 (`zeit`, `richtung`, `klasse`, `v`, `sigma_v`, …); im Dart-Modell in `lowerCamelCase` (`sigmaV`), die Abbildung liegt an einer Stelle.
+- Datensatzfelder für Persistenz und Export heißen wie in `technik.pdf` 9.1 (`zeit`, `richtung`, `klasse`, `v`, `sigma_v`, …); im Dart-Modell in `lowerCamelCase` (`sigmaV`), die Abbildung liegt an einer Stelle. Die CSV hängt hinter den 9.1-Feldern `audio_pos_s` (Sekunden) und `audio_pos` (`h:mm:ss.s`) an: die Position von t0 in der WAV der Messreihe (`offsetS`, bei fortgesetzten Reihen ohne Pausen), damit sich eine Vorbeifahrt im Rohaudio wiederfinden lässt.
 
 ## Struktur und Organisation
 

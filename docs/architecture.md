@@ -77,7 +77,7 @@ lib/
   core/pipeline/joint_fit.dart      gemeinsame Ausgleichsrechnung über v, d, t0, f0_k (Option)
   core/pipeline/pass_record.dart    Datensatz nach technik.pdf 9.1
   core/pipeline/analysis_setup.dart Auswertekonstanten einer Messreihe (b, Δ0, Tausch, c, Spuren)
-  core/export/                      CSV (9.1), JSON-Export, ZIP-Writer
+  core/export/                      CSV (9.1 plus `audio_pos_s`/`audio_pos`: Position von t0 in der WAV), JSON-Export, ZIP-Writer
   core/reference/                   Referenzfahrten: GPX/CSV-Leser, Logger, abgeleitete Geschwindigkeit
   core/validation/                  Zuordnung Referenz ↔ Messung, Fehlerkennzahlen, Abnahmeprüfung (technik.pdf 8)
   core/stats/statistics.dart        Median, V85, Anteil über Limit, Korrektur 8.3, Gruppierung, Histogramm

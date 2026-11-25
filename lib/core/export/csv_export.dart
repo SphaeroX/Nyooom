@@ -1,6 +1,8 @@
 import '../pipeline/pass_record.dart';
 
-/// Column names of the CSV export: exactly the fields of technik.pdf 9.1.
+/// Column names of the CSV export: the fields of technik.pdf 9.1, then the
+/// position of t0 in the series WAV (`audio_pos_s`, `audio_pos`) so a pass
+/// can be found in the raw audio.
 const csvColumns = [
   'zeit',
   'richtung',
@@ -16,6 +18,8 @@ const csvColumns = [
   'pegel',
   'dauer',
   'grund',
+  'audio_pos_s',
+  'audio_pos',
 ];
 
 /// Units of the columns (technik.pdf 9.1), written to `einheiten.txt` and
@@ -35,6 +39,9 @@ const columnUnits = {
   'pegel': 'dB',
   'dauer': 's',
   'grund': 'Text',
+  'audio_pos_s':
+      's ab Beginn der WAV (Pausen fortgesetzter Reihen nicht enthalten)',
+  'audio_pos': 'h:mm:ss.s ab Beginn der WAV',
 };
 
 /// Separator `;`, decimal point `.`, empty field for missing values
@@ -51,6 +58,17 @@ String csvField(String value) {
     return '"${value.replaceAll('"', '""')}"';
   }
   return value;
+}
+
+/// [seconds] as `h:mm:ss.s`, rounded to tenths.
+String formatAudioPosition(double seconds) {
+  final tenths = (seconds * 10).round();
+  final h = tenths ~/ 36000;
+  final m = tenths ~/ 600 % 60;
+  final s = tenths ~/ 10 % 60;
+  final t = tenths % 10;
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '$h:${two(m)}:${two(s)}.$t';
 }
 
 String _num(double? v, int digits) =>
@@ -78,6 +96,8 @@ String passesToCsv(List<PassRecord> records) {
       _num(r.pegel, 1),
       _num(r.dauer, 2),
       r.grund ?? '',
+      _num(r.offsetS, 2),
+      formatAudioPosition(r.offsetS),
     ];
     b.writeln(fields.map(csvField).join(csvSeparator));
   }

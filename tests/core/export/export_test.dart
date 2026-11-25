@@ -58,7 +58,7 @@ void main() {
       expect(
         lines.first,
         'zeit;richtung;klasse;v;sigma_v;v_laufzeit;v_doppler;kappa;d_est;'
-        'n_toene;rest_laufzeit;pegel;dauer;grund',
+        'n_toene;rest_laufzeit;pegel;dauer;grund;audio_pos_s;audio_pos',
       );
       expect(lines, hasLength(3));
     });
@@ -70,6 +70,24 @@ void main() {
       expect(row[8], ''); // d_est
       expect(row[3], '33.00');
       expect(row[13], 'kein Ton');
+    });
+
+    test('position in the audio file in seconds and as h:mm:ss.s', () {
+      final row = const LineSplitter().convert(passesToCsv([a]))[1].split(';');
+      expect(row[14], '12.50');
+      expect(row[15], '0:00:12.5');
+    });
+
+    test('audio position formatting rounds and carries into minutes', () {
+      expect(formatAudioPosition(450), '0:07:30.0');
+      expect(formatAudioPosition(59.96), '0:01:00.0');
+      expect(formatAudioPosition(3723.44), '1:02:03.4');
+      expect(formatAudioPosition(0), '0:00:00.0');
+    });
+
+    test('units name the audio position columns', () {
+      expect(columnUnits['audio_pos_s'], contains('s'));
+      expect(unitsText(), contains('audio_pos;'));
     });
 
     test('special characters in the reason are quoted', () {
