@@ -1836,6 +1836,17 @@ class $MeasurementSeriesTable extends MeasurementSeries
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _temperatureLogJsonMeta =
+      const VerificationMeta('temperatureLogJson');
+  @override
+  late final GeneratedColumn<String> temperatureLogJson =
+      GeneratedColumn<String>(
+        'temperature_log_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1855,6 +1866,7 @@ class $MeasurementSeriesTable extends MeasurementSeries
     learnedMicSpacingM,
     learnedChannelOffsetS,
     learnedPassCount,
+    temperatureLogJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2014,6 +2026,15 @@ class $MeasurementSeriesTable extends MeasurementSeries
         ),
       );
     }
+    if (data.containsKey('temperature_log_json')) {
+      context.handle(
+        _temperatureLogJsonMeta,
+        temperatureLogJson.isAcceptableOrUnknown(
+          data['temperature_log_json']!,
+          _temperatureLogJsonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2091,6 +2112,10 @@ class $MeasurementSeriesTable extends MeasurementSeries
         DriftSqlType.int,
         data['${effectivePrefix}learned_pass_count'],
       ),
+      temperatureLogJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}temperature_log_json'],
+      ),
     );
   }
 
@@ -2124,6 +2149,10 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
   final double? learnedMicSpacingM;
   final double? learnedChannelOffsetS;
   final int? learnedPassCount;
+
+  /// Temperature readings over the recording as JSON (schema 7); null if
+  /// the start temperature held for the whole series.
+  final String? temperatureLogJson;
   const SeriesRow({
     required this.id,
     required this.siteId,
@@ -2142,6 +2171,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     this.learnedMicSpacingM,
     this.learnedChannelOffsetS,
     this.learnedPassCount,
+    this.temperatureLogJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2176,6 +2206,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     }
     if (!nullToAbsent || learnedPassCount != null) {
       map['learned_pass_count'] = Variable<int>(learnedPassCount);
+    }
+    if (!nullToAbsent || temperatureLogJson != null) {
+      map['temperature_log_json'] = Variable<String>(temperatureLogJson);
     }
     return map;
   }
@@ -2213,6 +2246,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       learnedPassCount: learnedPassCount == null && nullToAbsent
           ? const Value.absent()
           : Value(learnedPassCount),
+      temperatureLogJson: temperatureLogJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperatureLogJson),
     );
   }
 
@@ -2243,6 +2279,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
         json['learnedChannelOffsetS'],
       ),
       learnedPassCount: serializer.fromJson<int?>(json['learnedPassCount']),
+      temperatureLogJson: serializer.fromJson<String?>(
+        json['temperatureLogJson'],
+      ),
     );
   }
   @override
@@ -2268,6 +2307,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
         learnedChannelOffsetS,
       ),
       'learnedPassCount': serializer.toJson<int?>(learnedPassCount),
+      'temperatureLogJson': serializer.toJson<String?>(temperatureLogJson),
     };
   }
 
@@ -2289,6 +2329,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     Value<double?> learnedMicSpacingM = const Value.absent(),
     Value<double?> learnedChannelOffsetS = const Value.absent(),
     Value<int?> learnedPassCount = const Value.absent(),
+    Value<String?> temperatureLogJson = const Value.absent(),
   }) => SeriesRow(
     id: id ?? this.id,
     siteId: siteId ?? this.siteId,
@@ -2315,6 +2356,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     learnedPassCount: learnedPassCount.present
         ? learnedPassCount.value
         : this.learnedPassCount,
+    temperatureLogJson: temperatureLogJson.present
+        ? temperatureLogJson.value
+        : this.temperatureLogJson,
   );
   SeriesRow copyWithCompanion(MeasurementSeriesCompanion data) {
     return SeriesRow(
@@ -2359,6 +2403,9 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
       learnedPassCount: data.learnedPassCount.present
           ? data.learnedPassCount.value
           : this.learnedPassCount,
+      temperatureLogJson: data.temperatureLogJson.present
+          ? data.temperatureLogJson.value
+          : this.temperatureLogJson,
     );
   }
 
@@ -2381,7 +2428,8 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           ..write('segmentsJson: $segmentsJson, ')
           ..write('learnedMicSpacingM: $learnedMicSpacingM, ')
           ..write('learnedChannelOffsetS: $learnedChannelOffsetS, ')
-          ..write('learnedPassCount: $learnedPassCount')
+          ..write('learnedPassCount: $learnedPassCount, ')
+          ..write('temperatureLogJson: $temperatureLogJson')
           ..write(')'))
         .toString();
   }
@@ -2405,6 +2453,7 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
     learnedMicSpacingM,
     learnedChannelOffsetS,
     learnedPassCount,
+    temperatureLogJson,
   );
   @override
   bool operator ==(Object other) =>
@@ -2426,7 +2475,8 @@ class SeriesRow extends DataClass implements Insertable<SeriesRow> {
           other.segmentsJson == this.segmentsJson &&
           other.learnedMicSpacingM == this.learnedMicSpacingM &&
           other.learnedChannelOffsetS == this.learnedChannelOffsetS &&
-          other.learnedPassCount == this.learnedPassCount);
+          other.learnedPassCount == this.learnedPassCount &&
+          other.temperatureLogJson == this.temperatureLogJson);
 }
 
 class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
@@ -2447,6 +2497,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
   final Value<double?> learnedMicSpacingM;
   final Value<double?> learnedChannelOffsetS;
   final Value<int?> learnedPassCount;
+  final Value<String?> temperatureLogJson;
   const MeasurementSeriesCompanion({
     this.id = const Value.absent(),
     this.siteId = const Value.absent(),
@@ -2465,6 +2516,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.learnedMicSpacingM = const Value.absent(),
     this.learnedChannelOffsetS = const Value.absent(),
     this.learnedPassCount = const Value.absent(),
+    this.temperatureLogJson = const Value.absent(),
   });
   MeasurementSeriesCompanion.insert({
     this.id = const Value.absent(),
@@ -2484,6 +2536,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     this.learnedMicSpacingM = const Value.absent(),
     this.learnedChannelOffsetS = const Value.absent(),
     this.learnedPassCount = const Value.absent(),
+    this.temperatureLogJson = const Value.absent(),
   }) : siteId = Value(siteId),
        temperatureC = Value(temperatureC),
        speedOfSound = Value(speedOfSound),
@@ -2509,6 +2562,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Expression<double>? learnedMicSpacingM,
     Expression<double>? learnedChannelOffsetS,
     Expression<int>? learnedPassCount,
+    Expression<String>? temperatureLogJson,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2530,6 +2584,8 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       if (learnedChannelOffsetS != null)
         'learned_channel_offset_s': learnedChannelOffsetS,
       if (learnedPassCount != null) 'learned_pass_count': learnedPassCount,
+      if (temperatureLogJson != null)
+        'temperature_log_json': temperatureLogJson,
     });
   }
 
@@ -2551,6 +2607,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     Value<double?>? learnedMicSpacingM,
     Value<double?>? learnedChannelOffsetS,
     Value<int?>? learnedPassCount,
+    Value<String?>? temperatureLogJson,
   }) {
     return MeasurementSeriesCompanion(
       id: id ?? this.id,
@@ -2571,6 +2628,7 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
       learnedChannelOffsetS:
           learnedChannelOffsetS ?? this.learnedChannelOffsetS,
       learnedPassCount: learnedPassCount ?? this.learnedPassCount,
+      temperatureLogJson: temperatureLogJson ?? this.temperatureLogJson,
     );
   }
 
@@ -2630,6 +2688,9 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
     if (learnedPassCount.present) {
       map['learned_pass_count'] = Variable<int>(learnedPassCount.value);
     }
+    if (temperatureLogJson.present) {
+      map['temperature_log_json'] = Variable<String>(temperatureLogJson.value);
+    }
     return map;
   }
 
@@ -2652,7 +2713,8 @@ class MeasurementSeriesCompanion extends UpdateCompanion<SeriesRow> {
           ..write('segmentsJson: $segmentsJson, ')
           ..write('learnedMicSpacingM: $learnedMicSpacingM, ')
           ..write('learnedChannelOffsetS: $learnedChannelOffsetS, ')
-          ..write('learnedPassCount: $learnedPassCount')
+          ..write('learnedPassCount: $learnedPassCount, ')
+          ..write('temperatureLogJson: $temperatureLogJson')
           ..write(')'))
         .toString();
   }
@@ -6566,6 +6628,7 @@ typedef $$MeasurementSeriesTableCreateCompanionBuilder =
       Value<double?> learnedMicSpacingM,
       Value<double?> learnedChannelOffsetS,
       Value<int?> learnedPassCount,
+      Value<String?> temperatureLogJson,
     });
 typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
     MeasurementSeriesCompanion Function({
@@ -6586,6 +6649,7 @@ typedef $$MeasurementSeriesTableUpdateCompanionBuilder =
       Value<double?> learnedMicSpacingM,
       Value<double?> learnedChannelOffsetS,
       Value<int?> learnedPassCount,
+      Value<String?> temperatureLogJson,
     });
 
 final class $$MeasurementSeriesTableReferences
@@ -6745,6 +6809,11 @@ class $$MeasurementSeriesTableFilterComposer
 
   ColumnFilters<int> get learnedPassCount => $composableBuilder(
     column: $table.learnedPassCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get temperatureLogJson => $composableBuilder(
+    column: $table.temperatureLogJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6922,6 +6991,11 @@ class $$MeasurementSeriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get temperatureLogJson => $composableBuilder(
+    column: $table.temperatureLogJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SitesTableOrderingComposer get siteId {
     final $$SitesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -7062,6 +7136,11 @@ class $$MeasurementSeriesTableAnnotationComposer
 
   GeneratedColumn<int> get learnedPassCount => $composableBuilder(
     column: $table.learnedPassCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get temperatureLogJson => $composableBuilder(
+    column: $table.temperatureLogJson,
     builder: (column) => column,
   );
 
@@ -7215,6 +7294,7 @@ class $$MeasurementSeriesTableTableManager
                 Value<double?> learnedMicSpacingM = const Value.absent(),
                 Value<double?> learnedChannelOffsetS = const Value.absent(),
                 Value<int?> learnedPassCount = const Value.absent(),
+                Value<String?> temperatureLogJson = const Value.absent(),
               }) => MeasurementSeriesCompanion(
                 id: id,
                 siteId: siteId,
@@ -7233,6 +7313,7 @@ class $$MeasurementSeriesTableTableManager
                 learnedMicSpacingM: learnedMicSpacingM,
                 learnedChannelOffsetS: learnedChannelOffsetS,
                 learnedPassCount: learnedPassCount,
+                temperatureLogJson: temperatureLogJson,
               ),
           createCompanionCallback:
               ({
@@ -7253,6 +7334,7 @@ class $$MeasurementSeriesTableTableManager
                 Value<double?> learnedMicSpacingM = const Value.absent(),
                 Value<double?> learnedChannelOffsetS = const Value.absent(),
                 Value<int?> learnedPassCount = const Value.absent(),
+                Value<String?> temperatureLogJson = const Value.absent(),
               }) => MeasurementSeriesCompanion.insert(
                 id: id,
                 siteId: siteId,
@@ -7271,6 +7353,7 @@ class $$MeasurementSeriesTableTableManager
                 learnedMicSpacingM: learnedMicSpacingM,
                 learnedChannelOffsetS: learnedChannelOffsetS,
                 learnedPassCount: learnedPassCount,
+                temperatureLogJson: temperatureLogJson,
               ),
           withReferenceMapper: (p0) => p0
               .map(

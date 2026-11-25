@@ -84,6 +84,10 @@ class MeasurementSeries extends Table {
   RealColumn get learnedMicSpacingM => real().nullable()();
   RealColumn get learnedChannelOffsetS => real().nullable()();
   IntColumn get learnedPassCount => integer().nullable()();
+
+  /// Temperature readings over the recording as JSON (schema 7); null if
+  /// the start temperature held for the whole series.
+  TextColumn get temperatureLogJson => text().nullable()();
 }
 
 /// One vehicle pass; columns named as in technik.pdf 9.1.
@@ -176,9 +180,10 @@ class NyooomDatabase extends _$NyooomDatabase {
   /// 5 = continued series (measurement_series.segments_json);
   /// 6 = spacing learned from the passes
   /// (measurement_series.learned_mic_spacing_m, learned_channel_offset_s,
-  /// learned_pass_count).
+  /// learned_pass_count); 7 = automatic temperature update
+  /// (measurement_series.temperature_log_json).
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -209,6 +214,13 @@ class NyooomDatabase extends _$NyooomDatabase {
             await m.addColumn(measurementSeries, column);
           }
         }
+      }
+      if (from < 7 &&
+          !await _hasColumn('measurement_series', 'temperature_log_json')) {
+        await m.addColumn(
+          measurementSeries,
+          measurementSeries.temperatureLogJson,
+        );
       }
     },
     beforeOpen: (details) async {

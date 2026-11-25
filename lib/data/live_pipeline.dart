@@ -9,6 +9,7 @@ import '../core/events/event_detector.dart';
 import '../core/pipeline/analysis_setup.dart';
 import '../core/pipeline/pass_record.dart';
 import '../core/pipeline/track_dedup.dart';
+import '../core/series/temperature_log.dart';
 import '../core/signal/pcm.dart';
 import 'event_pipeline.dart';
 
@@ -27,7 +28,7 @@ typedef LiveEvaluator = Future<PassRecord> Function(
 class LivePipeline {
   LivePipeline({
     required this.config,
-    required this.setup,
+    required AnalysisSetup setup,
     LiveEvaluator? evaluator,
     this.maxPending = 4,
     this.startOffsetS = 0,
@@ -36,7 +37,8 @@ class LivePipeline {
        _dedup = TrackDeduplicator(config: config),
        _capacity = (bufferS * config.sampleRate).round(),
        _left = Float64List((bufferS * config.sampleRate).round()),
-       _right = Float64List((bufferS * config.sampleRate).round()) {
+       _right = Float64List((bufferS * config.sampleRate).round()),
+       _setup = setup {
     if (evaluator != null) {
       _evaluate = (window, event, startS) async => [
         await evaluator(window, event, startS),
@@ -49,8 +51,18 @@ class LivePipeline {
   }
 
   final NyooomConfig config;
-  final AnalysisSetup setup;
+  AnalysisSetup _setup;
   final int maxPending;
+
+  /// Current setup, with the temperature readings added while recording.
+  AnalysisSetup get setup => _setup;
+
+  /// A new air temperature from [TemperatureReading.offsetS] on: events
+  /// after that position are evaluated with its c (technik.pdf 7.3).
+  void addTemperatureReading(TemperatureReading reading) {
+    _setup = _setup.withTemperatureReading(reading);
+    _worker?.updateSetup(_setup);
+  }
 
   /// Position of the first added sample in the recorded file in s (a
   /// continued series), so offsets of the records refer to the file.
@@ -212,6 +224,11 @@ class _IsolateWorker {
     return completer.future;
   }
 
+  /// Replaces the setup of the worker; requests sent later use it.
+  void updateSetup(AnalysisSetup setup) {
+    unawaited(_ready.then((port) => port.send(_SetupUpdate(setup))));
+  }
+
   void dispose() {
     _isolate?.kill(priority: Isolate.immediate);
     _results.close();
@@ -224,6 +241,11 @@ class _Request {
   final StereoBlock window;
   final PassEvent event;
   final double windowStartS;
+}
+
+class _SetupUpdate {
+  _SetupUpdate(this.setup);
+  final AnalysisSetup setup;
 }
 
 class _Result {
@@ -241,10 +263,14 @@ class _Failure {
 void _workerEntry(
   ({SendPort reply, NyooomConfig config, AnalysisSetup setup}) args,
 ) {
-  final pipeline = EventPipeline(config: args.config, setup: args.setup);
+  var pipeline = EventPipeline(config: args.config, setup: args.setup);
   final requests = ReceivePort();
   args.reply.send(requests.sendPort);
   requests.listen((message) {
+    if (message is _SetupUpdate) {
+      pipeline = EventPipeline(config: args.config, setup: message.setup);
+      return;
+    }
     final r = message as _Request;
     try {
       args.reply.send(

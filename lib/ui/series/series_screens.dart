@@ -9,6 +9,7 @@ import '../device/input_device_selection.dart';
 import '../providers.dart';
 import '../sites/site_form.dart';
 import '../sites/site_screens.dart';
+import '../weather/outdoor_temperature_providers.dart';
 import '../evaluation/live_panel.dart';
 import 'series_detail_screen.dart';
 import 'series_recording_controller.dart';
@@ -128,6 +129,10 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
   bool? _simulate;
   bool _saveRaw = true;
   bool _collectClips = true;
+  bool _autoTemperature = false;
+  bool _gpsUsed = false;
+  String? _temperatureNote;
+  bool _temperatureFailed = false;
 
   @override
   void dispose() {
@@ -188,13 +193,45 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
               decimal: true,
               signed: true,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Lufttemperatur (°C)',
-              helperText: 'auf etwa 2 K genau (technik.pdf 7.3)',
+              helperText:
+                  _temperatureNote ?? 'auf etwa 2 K genau (technik.pdf 7.3)',
+              helperStyle: _temperatureFailed
+                  ? TextStyle(color: Theme.of(context).colorScheme.error)
+                  : null,
+              suffixIcon: GpsTemperatureButton(
+                key: const Key('temperature-gps'),
+                onTemperature: (t) => setState(() {
+                  _temperature.text = t.temperatureC.toStringAsFixed(1);
+                  _temperatureNote = 'Wetterdienst am Standort (Open-Meteo)';
+                  _temperatureFailed = false;
+                  _autoTemperature = true;
+                  _gpsUsed = true;
+                }),
+                onError: (message) => setState(() {
+                  _temperatureNote = message;
+                  _temperatureFailed = true;
+                }),
+              ),
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() {
+              _temperatureNote = null;
+              _temperatureFailed = false;
+            }),
           ),
-          const SizedBox(height: 12),
+          // Only after a GPS lookup, to keep the start button in view.
+          if (_gpsUsed)
+            CheckboxListTile(
+              key: const Key('auto-temperature'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Alle 15 min per GPS aktualisieren'),
+              value: _autoTemperature && !simulate,
+              onChanged: simulate
+                  ? null
+                  : (v) => setState(() => _autoTemperature = v ?? false),
+            ),
           if (temperature != null)
             Text(
               'Schallgeschwindigkeit c = '
@@ -255,6 +292,7 @@ class _SeriesStartScreenState extends ConsumerState<SeriesStartScreen> {
                       saveRawAudio: _saveRaw,
                       collectClips: _collectClips,
                       inputDevice: device,
+                      autoUpdateTemperature: _autoTemperature && !simulate,
                     );
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute<void>(
@@ -381,6 +419,14 @@ class _SeriesRecordingScreenState extends ConsumerState<SeriesRecordingScreen> {
               level: state.right,
               clipSeen: state.rightClipSeen,
             ),
+            if (state.temperatureC != null)
+              Text(
+                'Temperatur ${state.temperatureC!.toStringAsFixed(1)} °C '
+                '(c = ${speedOfSound(state.temperatureC!).toStringAsFixed(1)} '
+                'm/s)${state.temperatureNote == null ? '' : ' · ${state.temperatureNote}'}',
+                key: const Key('recording-temperature'),
+                textAlign: TextAlign.center,
+              ),
             if (state.leftClipSeen || state.rightClipSeen)
               Text(
                 'Übersteuerung (> ${(threshold * 100).round()} % '

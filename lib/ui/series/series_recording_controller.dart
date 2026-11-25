@@ -10,15 +10,18 @@ import '../../audio/wav.dart';
 import '../../core/collect/collection_manifest.dart';
 import '../../core/pipeline/pass_record.dart';
 import '../../core/series/series_metadata.dart';
+import '../../core/series/temperature_log.dart';
 import '../../core/signal/level.dart';
 import '../../core/signal/pcm.dart';
 import '../../core/site/site.dart';
 import '../../core/sim/traffic.dart';
 import '../../data/collection_storage.dart';
 import '../../data/live_pipeline.dart';
+import '../../data/outdoor_temperature.dart';
 import '../collect/collect_controller.dart'
     show collectionStorageProvider, seriesClipsProvider;
 import '../providers.dart';
+import '../weather/outdoor_temperature_providers.dart';
 
 /// What the user chose on the start screen.
 class SeriesStartRequest {
@@ -29,7 +32,12 @@ class SeriesStartRequest {
     this.saveRawAudio = true,
     this.collectClips = false,
     this.inputDevice,
+    this.autoUpdateTemperature = false,
   });
+
+  /// Fetch the outdoor temperature again while recording (GPS + weather
+  /// service, every [temperatureRefreshIntervalProvider]).
+  final bool autoUpdateTemperature;
 
   final int siteId;
   final double temperatureC;
@@ -64,7 +72,15 @@ class SeriesRecordingState {
     this.liveRecords = const [],
     this.livePending = 0,
     this.liveDropped = 0,
+    this.temperatureC,
+    this.temperatureNote,
   });
+
+  /// Current air temperature while it is updated automatically, else null.
+  final double? temperatureC;
+
+  /// Why the last automatic update failed; null after a success.
+  final String? temperatureNote;
 
   /// Records evaluated live, newest last.
   final List<PassRecord> liveRecords;
@@ -101,6 +117,9 @@ class SeriesRecordingState {
     List<PassRecord>? liveRecords,
     int? livePending,
     int? liveDropped,
+    double? temperatureC,
+    String? temperatureNote,
+    bool clearTemperatureNote = false,
   }) => SeriesRecordingState(
     running: running ?? this.running,
     starting: starting ?? this.starting,
@@ -115,6 +134,10 @@ class SeriesRecordingState {
     liveRecords: liveRecords ?? this.liveRecords,
     livePending: livePending ?? this.livePending,
     liveDropped: liveDropped ?? this.liveDropped,
+    temperatureC: temperatureC ?? this.temperatureC,
+    temperatureNote: clearTemperatureNote
+        ? null
+        : temperatureNote ?? this.temperatureNote,
   );
 }
 
@@ -146,10 +169,14 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
   StreamSubscription<PassRecord>? _liveSub;
   Future<void> _liveWrites = Future.value();
   LiveClipCollection? _clips;
+  Timer? _temperatureTimer;
+  Future<void> _temperatureUpdate = Future.value();
+  bool _temperatureBusy = false;
 
   @override
   SeriesRecordingState build() {
     ref.onDispose(() {
+      _temperatureTimer?.cancel();
       unawaited(_subscription?.cancel());
       _subscription = null;
       unawaited(_recorder?.stop());
@@ -271,10 +298,19 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
           saveRawAudio: request.saveRawAudio,
           inputDevice: inputName,
           collectClips: request.collectClips,
+          temperatureAutoUpdate: request.autoUpdateTemperature,
         ),
       );
       if (!ref.mounted) return;
-      state = SeriesRecordingState(running: true, seriesId: id, info: info);
+      state = SeriesRecordingState(
+        running: true,
+        seriesId: id,
+        info: info,
+        temperatureC: request.autoUpdateTemperature
+            ? request.temperatureC
+            : null,
+      );
+      if (request.autoUpdateTemperature) _startTemperatureUpdates(id);
     } on MicrophonePermissionDeniedException {
       await _abort(
         'Mikrofon-Berechtigung fehlt. Bitte in den Einstellungen '
@@ -354,10 +390,11 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
         offsetS: offsetS,
       );
       final metadata = await storage.readMetadata(seriesId);
+      final updated = (await repo.series(seriesId))!;
       if (metadata != null) {
-        final updated = (await repo.series(seriesId))!;
         await storage.writeMetadata(metadata.withSegments(updated.segments));
       }
+      final autoTemperature = metadata?.temperatureAutoUpdate ?? false;
       if (!ref.mounted) return;
       state = SeriesRecordingState(
         running: true,
@@ -365,7 +402,16 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
         info: info,
         elapsedS: offsetS,
         liveRecords: previous.liveRecords,
+        temperatureC: autoTemperature
+            ? (updated.temperatureLog.lastOrNull?.temperatureC ??
+                  updated.temperatureC)
+            : null,
       );
+      if (autoTemperature) {
+        // Time has passed since the stop: fetch at once.
+        _temperatureUpdate = _refreshTemperature(seriesId);
+        _startTemperatureUpdates(seriesId);
+      }
     } on MicrophonePermissionDeniedException {
       await _abort(
         'Mikrofon-Berechtigung fehlt. Bitte in den Einstellungen '
@@ -441,6 +487,8 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
   }
 
   Future<void> _abort(String message) async {
+    _temperatureTimer?.cancel();
+    _temperatureTimer = null;
     unawaited(_subscription?.cancel());
     _subscription = null;
     await _live?.dispose();
@@ -458,6 +506,9 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
   Future<void> stop() async {
     if (!state.running) return;
     final id = state.seriesId!;
+    _temperatureTimer?.cancel();
+    _temperatureTimer = null;
+    await _temperatureUpdate;
     await _recorder?.stop();
     unawaited(_subscription?.cancel());
     _subscription = null;
@@ -480,15 +531,69 @@ class SeriesRecordingController extends Notifier<SeriesRecordingState> {
       );
       ref.invalidate(seriesClipsProvider(id));
     }
-    await ref
-        .read(repositoryProvider)
-        .finishSeries(
-          id,
-          endedAtUtcMs: DateTime.now().toUtc().millisecondsSinceEpoch,
-        );
+    final repo = ref.read(repositoryProvider);
+    await repo.finishSeries(
+      id,
+      endedAtUtcMs: DateTime.now().toUtc().millisecondsSinceEpoch,
+    );
+    final log = (await repo.series(id))?.temperatureLog ?? const [];
+    if (log.isNotEmpty) {
+      final storage = await ref.read(seriesStorageProvider.future);
+      final metadata = await storage.readMetadata(id);
+      if (metadata != null) {
+        await storage.writeMetadata(metadata.withTemperatureLog(log));
+      }
+    }
     if (!ref.mounted) return;
     state = state.copyWith(running: false);
     ref.invalidate(seriesListProvider);
+  }
+
+  void _startTemperatureUpdates(int seriesId) {
+    _temperatureTimer?.cancel();
+    _temperatureTimer = Timer.periodic(
+      ref.read(temperatureRefreshIntervalProvider),
+      (_) {
+        if (_temperatureBusy) return;
+        _temperatureUpdate = _refreshTemperature(seriesId);
+      },
+    );
+  }
+
+  /// Fetches the outdoor temperature and stores it from the current signal
+  /// position on; a failure keeps the last value and says why.
+  Future<void> _refreshTemperature(int seriesId) async {
+    _temperatureBusy = true;
+    try {
+      final OutdoorTemperature t;
+      try {
+        t = await ref.read(outdoorTemperatureServiceProvider).current();
+      } on OutdoorTemperatureException catch (e) {
+        if (ref.mounted && state.running) {
+          state = state.copyWith(temperatureNote: e.message);
+        }
+        return;
+      }
+      if (!ref.mounted || !state.running) return;
+      final reading = TemperatureReading(
+        offsetS: _frames / ref.read(configProvider).sampleRate,
+        temperatureC: t.temperatureC,
+        utcMs: t.utcMs,
+        source: TemperatureReading.sourceGps,
+      );
+      await ref
+          .read(repositoryProvider)
+          .addTemperatureReading(seriesId, reading);
+      _live?.addTemperatureReading(reading);
+      if (ref.mounted) {
+        state = state.copyWith(
+          temperatureC: t.temperatureC,
+          clearTemperatureNote: true,
+        );
+      }
+    } finally {
+      _temperatureBusy = false;
+    }
   }
 
   void _onPcm(Uint8List bytes) {

@@ -9,6 +9,7 @@ import '../core/pipeline/pass_record.dart';
 import '../core/pipeline/reasons.dart';
 import '../core/reference/reference_track.dart';
 import '../core/series/recording_segment.dart';
+import '../core/series/temperature_log.dart';
 import '../core/site/site.dart';
 import 'database.dart';
 
@@ -49,6 +50,11 @@ class StoredSeries {
         ? stored
         : [RecordingSegment(offsetS: 0, startedAtUtcMs: row.startedAtUtcMs)];
   }
+
+  /// Temperature readings over the recording, starting with the start
+  /// value; empty if the start temperature held throughout.
+  List<TemperatureReading> get temperatureLog =>
+      temperatureLogFromJson(row.temperatureLogJson);
 
   /// Recorded duration in s without pauses, null while recording.
   double? get durationS =>
@@ -245,6 +251,33 @@ class NyooomRepository {
     );
   }
 
+  /// Stores a new temperature of series [id] (automatic update). The first
+  /// update also stores the start temperature at position 0; an unchanged
+  /// temperature is not stored again.
+  Future<void> addTemperatureReading(int id, TemperatureReading reading) async {
+    final current = (await series(id))!;
+    final stored = current.temperatureLog;
+    final log = stored.isNotEmpty
+        ? stored
+        : [
+            TemperatureReading(
+              offsetS: 0,
+              temperatureC: current.temperatureC,
+              utcMs: current.startedAtUtcMs,
+              source: TemperatureReading.sourceStart,
+            ),
+          ];
+    final updated = appendTemperatureReading(log, reading);
+    if (stored.isNotEmpty && identical(updated, stored)) return;
+    await (db.update(
+      db.measurementSeries,
+    )..where((s) => s.id.equals(id))).write(
+      MeasurementSeriesCompanion(
+        temperatureLogJson: Value(temperatureLogToJson(updated)),
+      ),
+    );
+  }
+
   Future<StoredSeries?> series(int id) async {
     final row = await (db.select(
       db.measurementSeries,
@@ -337,6 +370,9 @@ class NyooomRepository {
       speedLimitKmh: series.site.spec.speedLimitKmh,
       startedAtUtcMs: series.startedAtUtcMs,
       segments: series.segments,
+      temperatureLog: series.temperatureLog.isEmpty
+          ? null
+          : series.temperatureLog,
       lanes: [
         for (var i = 0; i < series.site.spec.lanes.length; i++)
           LaneGeometry(

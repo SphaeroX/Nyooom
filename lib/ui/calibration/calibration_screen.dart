@@ -11,6 +11,7 @@ import '../providers.dart';
 import '../recorder/recorder_screen.dart';
 import '../series/series_screens.dart' show formatDate;
 import '../sites/site_form.dart' show parseDecimal;
+import '../weather/outdoor_temperature_providers.dart';
 import 'calibration_controller.dart';
 
 /// "Gerät" tab: calibration status, assistant and level test.
@@ -144,6 +145,7 @@ const _pageCount = 6;
 
 class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
   final _temperature = TextEditingController(text: '15');
+  String? _temperatureNote;
   bool? _simulate;
   int _page = 0;
 
@@ -314,9 +316,18 @@ class _CalibrationScreenState extends ConsumerState<CalibrationScreen> {
               decimal: true,
               signed: true,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Lufttemperatur draußen (°C)',
-              helperText: 'Ein ungefährer Wert reicht.',
+              helperText: _temperatureNote ?? 'Ein ungefährer Wert reicht.',
+              suffixIcon: GpsTemperatureButton(
+                key: const Key('wizard-temperature-gps'),
+                onTemperature: (t) => setState(() {
+                  _temperature.text = t.temperatureC.toStringAsFixed(1);
+                  _temperatureNote = 'Wetterdienst am Standort (Open-Meteo)';
+                }),
+                onError: (message) =>
+                    setState(() => _temperatureNote = message),
+              ),
             ),
           ),
           const SizedBox(height: 8),

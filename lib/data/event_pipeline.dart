@@ -30,6 +30,22 @@ class EventPipeline {
   final NyooomConfig config;
   final AnalysisSetup setup;
   final EventEvaluator _evaluator;
+
+  /// Pipelines with a fixed c, one per temperature of the log.
+  final Map<double, EventPipeline> _byC = {};
+
+  /// The pipeline for an event window at [windowStartS]: this one, or one
+  /// with c of the temperature reading at that position.
+  EventPipeline _at(double windowStartS) {
+    final log = setup.temperatureLog;
+    if (log == null || log.isEmpty) return this;
+    final fixed = setup.atOffset(windowStartS);
+    return _byC.putIfAbsent(
+      fixed.speedOfSound,
+      () => EventPipeline(config: config, setup: fixed),
+    );
+  }
+
   final DopplerEstimator _doppler;
   final SharpnessEstimator _sharpness;
 
@@ -39,8 +55,12 @@ class EventPipeline {
     StereoBlock window,
     PassEvent event, {
     required double windowStartS,
-  }) =>
-      _complete(_evaluator.analyse(window, event, windowStartS: windowStartS));
+  }) {
+    final p = _at(windowStartS);
+    return p._complete(
+      p._evaluator.analyse(window, event, windowStartS: windowStartS),
+    );
+  }
 
   /// All vehicles of the event window (track separation, see
   /// [EventEvaluator.analyseTracks]): none for a secondary event without a
@@ -64,14 +84,17 @@ class EventPipeline {
     StereoBlock window,
     PassEvent event, {
     required double windowStartS,
-  }) => [
-    for (final analysis in _evaluator.analyseTracks(
-      window,
-      event,
-      windowStartS: windowStartS,
-    ))
-      (record: _complete(analysis), analysis: analysis),
-  ];
+  }) {
+    final p = _at(windowStartS);
+    return [
+      for (final analysis in p._evaluator.analyseTracks(
+        window,
+        event,
+        windowStartS: windowStartS,
+      ))
+        (record: p._complete(analysis), analysis: analysis),
+    ];
+  }
 
   /// Doppler and fusion for one track.
   PassRecord _complete(EventAnalysis analysis) {

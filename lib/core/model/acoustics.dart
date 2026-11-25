@@ -10,6 +10,16 @@ const double zeroCelsiusInKelvin = 273.15;
 double speedOfSound(double temperatureC) =>
     speedOfSoundAtZeroC * math.sqrt(1 + temperatureC / zeroCelsiusInKelvin);
 
+/// Air temperature in °C for a speed of sound in m/s (inverse of
+/// [speedOfSound]), rounded to 1e-6 K so that entered values come back
+/// exactly.
+double temperatureForSpeedOfSound(double speedOfSound) {
+  final t =
+      (math.pow(speedOfSound / speedOfSoundAtZeroC, 2) - 1) *
+      zeroCelsiusInKelvin;
+  return (t * 1e6).round() / 1e6;
+}
+
 /// Slant distance between the microphone pair and the source path
 /// (technik.pdf 3.1): d = sqrt(dh² + Δh²).
 double slantDistance(double horizontalDistance, double heightDifference) =>

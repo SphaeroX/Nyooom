@@ -87,6 +87,7 @@ AnalysisSetup withLearnedDistances(
   speedLimitKmh: setup.speedLimitKmh,
   startedAtUtcMs: setup.startedAtUtcMs,
   segments: setup.segments,
+  temperatureLog: setup.temperatureLog,
   lanes: [
     for (final lane in setup.lanes)
       LaneGeometry(

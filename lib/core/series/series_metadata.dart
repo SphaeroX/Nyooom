@@ -1,4 +1,5 @@
 import 'recording_segment.dart';
+import 'temperature_log.dart';
 
 /// Lane entry of [SeriesMetadata].
 class LaneMetadata {
@@ -80,6 +81,8 @@ class SeriesMetadata {
     this.inputDevice = 'intern',
     this.collectClips = false,
     this.segments = const [],
+    this.temperatureAutoUpdate = false,
+    this.temperatureLog = const [],
   });
 
   /// Channel convention of the stored WAV (see docs/architecture.md).
@@ -122,6 +125,11 @@ class SeriesMetadata {
       for (final m in json['segments'] as List? ?? const [])
         RecordingSegment.fromJson((m as Map).cast<String, dynamic>()),
     ],
+    temperatureAutoUpdate: json['temperatureAutoUpdate'] == true,
+    temperatureLog: [
+      for (final m in json['temperatureLog'] as List? ?? const [])
+        TemperatureReading.fromJson((m as Map).cast<String, dynamic>()),
+    ],
   );
 
   final int seriesId;
@@ -155,6 +163,20 @@ class SeriesMetadata {
   /// recording from [startedAtUtcMs].
   final List<RecordingSegment> segments;
 
+  /// The temperature is fetched again while recording (GPS + weather
+  /// service).
+  final bool temperatureAutoUpdate;
+
+  /// Temperature readings over the recording, starting with the start
+  /// value; empty if the temperature never changed.
+  final List<TemperatureReading> temperatureLog;
+
+  SeriesMetadata withTemperatureLog(List<TemperatureReading> log) =>
+      SeriesMetadata.fromJson({
+        ...toJson(),
+        'temperatureLog': [for (final r in log) r.toJson()],
+      });
+
   SeriesMetadata withSegments(List<RecordingSegment> segments) =>
       SeriesMetadata.fromJson({
         ...toJson(),
@@ -184,5 +206,8 @@ class SeriesMetadata {
     'inputDevice': inputDevice,
     'collectClips': collectClips,
     if (segments.isNotEmpty) 'segments': [for (final s in segments) s.toJson()],
+    'temperatureAutoUpdate': temperatureAutoUpdate,
+    if (temperatureLog.isNotEmpty)
+      'temperatureLog': [for (final r in temperatureLog) r.toJson()],
   };
 }

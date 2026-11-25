@@ -44,7 +44,9 @@ const helpSteps = [
     Icons.fiber_manual_record,
     'Messreihe starten',
     'Tab „Messreihen“ → „Neue Messreihe“. Standort wählen, Lufttemperatur '
-        'eintragen, „Aufnahme starten“. Handy liegen lassen, bis genug Autos '
+        'eintragen oder über das Standort-Symbol im Feld per GPS vom '
+        'Wetterdienst holen (dann wird sie alle 15 min aktualisiert), '
+        '„Aufnahme starten“. Handy liegen lassen, bis genug Autos '
         'vorbeigefahren sind, dann „Aufnahme beenden“. Mit „Weiter '
         'aufnehmen“ geht dieselbe Messreihe später weiter. Ein '
         'USB-Stereomikrofon vorher anstecken und unter „Mikrofon“ wählen.',

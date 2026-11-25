@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -52,6 +54,15 @@ class SeriesDetailScreen extends ConsumerWidget {
                     'c = ${s.speedOfSound.toStringAsFixed(1)} m/s'
                     '${s.row.simulated ? ' · Simulation' : ''}',
                   ),
+                  if (s.temperatureLog.length > 1)
+                    Text(
+                      'Temperatur automatisch aktualisiert: '
+                      '${s.temperatureLog.map((r) => r.temperatureC).reduce(math.min).toStringAsFixed(1)} bis '
+                      '${s.temperatureLog.map((r) => r.temperatureC).reduce(math.max).toStringAsFixed(1)} °C '
+                      '(${s.temperatureLog.length} Werte), c je Vorbeifahrt '
+                      'passend zur Uhrzeit',
+                      key: const Key('series-temperature-log'),
+                    ),
                   for (var i = 0; i < s.site.spec.lanes.length; i++)
                     Text(
                       'Spur ${laneDirectionLabel(s.site.spec.lanes[i].direction)}: '

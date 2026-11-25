@@ -113,6 +113,10 @@ Zufallsverkehr auf zwei Spuren, 2 Minuten, seitliche Streuung 0,4 m, 10 % beschl
 
 Der Fehler von κ liegt bei etwa 1 % (quadratisches Mittel). Der Fehler der Geschwindigkeit in Klasse B kommt wie in 6.2 fast ganz aus der seitlichen Lage in der Spur.
 
+## Temperatur über lange Messreihen
+
+technik.pdf 7.3 verlangt die Temperatur auf etwa 2 K genau; 1 K ändert c um rund 0,18 %, also auch v_T und v_D um diesen Anteil. Über einen Nachmittag ändert sich die Lufttemperatur leicht um 5 bis 10 K (1 bis 2 %). Die App holt deshalb auf Wunsch die 2-m-Temperatur des Wetterdienstes am Standort (Open-Meteo, Modellwert, kein Messwert am Fenster) und aktualisiert sie alle 15 min. Jedes Ereignis wird mit c der zuletzt davor gültigen Temperatur ausgewertet (Stufenfunktion, keine Interpolation). Grenzen: Der Modellwert kann bei Sonne auf der Fassade oder im Straßenschlucht-Mikroklima um mehrere Kelvin abweichen; der Mikrofonabstand aus der Kalibrierung und aus den Vorbeifahrten wird mit dem Start-c bzw. dem c der Kalibrierung gerechnet.
+
 ## Bekannte Grenzen (nicht geändert, weil Startwerte der PDF)
 
 - **Grundpegel bei Dauerverkehr.** Der Grundpegel ist das 20. Perzentil der letzten 60 s. Ist fast immer ein Fahrzeug zu hören, steigt er, und leise oder entfernte Fahrzeuge erreichen die 10 dB nicht. Bei 4,5 s mittlerem Abstand fehlten 7 von 45 Fahrzeugen; im genauer untersuchten Lauf hatten 4 von 5 fehlenden gar kein Pegelereignis. Die Zählung ist dann eine untere Grenze. Stellgrößen: `noiseFloorPercentile`, `noiseFloorHistoryS`, `eventThresholdDb`.
